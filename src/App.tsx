@@ -6,7 +6,6 @@ import {
   Sun,
   Moon,
   Waves,
-  LayoutGrid,
   Plus,
   ArrowUpRight,
   ChevronDown,
@@ -27,6 +26,8 @@ import { Dialog } from './components/Dialog';
 import { Settings } from './components/Settings';
 import { Gallery } from './components/Gallery';
 import { DataControls } from './components/DataControls';
+import { UpdateNotice } from './components/UpdateNotice';
+import { download } from './data/transfer';
 export default function App() {
   const store = useStore(),
     { workspace, preferences } = store,
@@ -39,7 +40,9 @@ export default function App() {
     [inputError, setInputError] = useState(''),
     [name, setName] = useState(''),
     [deleted, setDeleted] = useState<Solve | null>(null),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState(false),
+    [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
+    [saving, setSaving] = useState(false);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -53,24 +56,36 @@ export default function App() {
   useEffect(() => {
     void useStore.getState().boot();
   }, []);
+  const persistSolve = async (solve: Solve) => {
+    setSaving(true);
+    setPendingSolve(solve);
+    const ok = await safeWrite(() => db.solves.put(solve));
+    setSaving(false);
+    if (ok) {
+      setPendingSolve(null);
+      void scramble.next();
+    }
+    return ok;
+  };
   const saveSolve = async (duration: number, penalty: Penalty = 'none') => {
     const solve: Solve = {
       id: id(),
-      duration,
+      duration: Math.round(duration),
       penalty,
       sessionId: preferences.activeSessionId,
       scramble: scramble.scramble,
       timestamp: Date.now(),
       note: '',
     };
-    if (await safeWrite(() => db.solves.add(solve))) void scramble.next();
+    return persistSolve(solve);
   };
   const timer = useTimer(
     preferences.inspection,
     preferences.holdMs,
     !!dialog ||
       view !== 'Timer' ||
-      store.editing ||
+      !!pendingSolve ||
+      saving ||
       !scramble.scramble ||
       scramble.loading ||
       !preferences.activeSessionId,
@@ -106,15 +121,17 @@ export default function App() {
       ...workspace,
       appearance: { ...a, theme: a.theme === 'light' ? 'dark' : 'light' },
     });
-  const displayed = busy
-    ? timer.phase === 'running'
-      ? formatTime(timer.elapsed, a.precision)
-      : timer.inspectionPenalty !== 'none'
-        ? timer.inspectionPenalty
-        : preferences.inspection
-          ? String(Math.ceil(timer.elapsed / 1000))
-          : formatTime(last ? value(last) : 0, a.precision)
-    : formatTime(last ? value(last) : 0, a.precision);
+  const displayed = pendingSolve
+    ? formatTime(value(pendingSolve), a.precision)
+    : busy
+      ? timer.phase === 'running'
+        ? formatTime(timer.elapsed, a.precision)
+        : timer.inspectionPenalty !== 'none'
+          ? timer.inspectionPenalty
+          : preferences.inspection
+            ? String(Math.ceil(timer.elapsed / 1000))
+            : formatTime(last ? value(last) : 0, a.precision)
+      : formatTime(last ? value(last) : 0, a.precision);
   const hint =
     timer.phase === 'ready'
       ? 'Release to start'
@@ -135,6 +152,7 @@ export default function App() {
       style={variables}
     >
       <Background appearance={a} paused={busy} />
+      <UpdateNotice busy={busy || saving} />
       <header className="topbar">
         <a
           className="brand"
@@ -186,6 +204,23 @@ export default function App() {
         <div className="error-banner" role="alert">
           {store.error}
           <button onClick={() => store.setError('')}>Dismiss</button>
+        </div>
+      )}
+      {pendingSolve && !saving && (
+        <div className="error-banner" role="alert">
+          {formatTime(value(pendingSolve))} has not been saved.
+          <button onClick={() => void persistSolve(pendingSolve)}>Retry save</button>
+          <button
+            onClick={() =>
+              download(
+                JSON.stringify(pendingSolve, null, 2),
+                'unsaved-solve.json',
+                'application/json',
+              )
+            }
+          >
+            Download unsaved solve
+          </button>
         </div>
       )}
       {!store.ready ? (
@@ -248,13 +283,19 @@ export default function App() {
               data-timer
               className={`timer-number ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
               aria-label="Timer. Hold to start, press to stop"
-              style={{ fontWeight: a.timerWeight, fontSize: `clamp(64px,11vw,${a.timerSize}px)` }}
+              style={{
+                fontWeight: a.timerWeight,
+                fontSize: a.autoFit ? `clamp(64px,11vw,${a.timerSize}px)` : `${a.timerSize}px`,
+                fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',
+              }}
               onPointerDown={(e) => {
                 e.currentTarget.setPointerCapture(e.pointerId);
                 timer.press();
               }}
               onPointerUp={() => timer.release()}
-              onPointerCancel={() => timer.cancel()}
+              onPointerCancel={() => {
+                if (!running) timer.cancel();
+              }}
             >
               {displayed}
             </button>
@@ -272,7 +313,7 @@ export default function App() {
               ))}
             </section>
           )}
-          <section className="widget-row">
+          <section className="widget-row" inert={busy}>
             <article className="widget glass recent">
               <header>
                 <h2>Recent solves</h2>
@@ -333,13 +374,7 @@ export default function App() {
             </article>
           </section>
           <footer className="workspace-footer">
-            <button
-              className="text-button"
-              disabled
-              title="Layout editor arrives in the next increment"
-            >
-              <LayoutGrid size={18} /> Edit widgets
-            </button>
+            <span>Space to start / stop · tap the timer on mobile</span>
             <span>Saved on this device</span>
           </footer>
         </main>
@@ -367,13 +402,15 @@ export default function App() {
       {dialog && (
         <Dialog
           title={
-            dialog === 'manual'
-              ? 'Add a solve'
-              : dialog === 'solve'
-                ? 'Solve details'
-                : dialog === 'history'
-                  ? 'Recent solves'
-                  : 'Sessions'
+            dialog === 'delete-session'
+              ? 'Delete this session?'
+              : dialog === 'manual'
+                ? 'Add a solve'
+                : dialog === 'solve'
+                  ? 'Solve details'
+                  : dialog === 'history'
+                    ? 'Recent solves'
+                    : 'Sessions'
           }
           onClose={close}
           wide={dialog === 'history'}
@@ -392,8 +429,9 @@ export default function App() {
                     if (ok) close();
                   });
                 } else {
-                  void saveSolve(duration);
-                  close();
+                  void saveSolve(duration).then((ok) => {
+                    if (ok) close();
+                  });
                 }
               }}
             >
@@ -491,8 +529,48 @@ export default function App() {
               </button>
             </>
           )}
+          {dialog === 'delete-session' && (
+            <>
+              <p>
+                Delete “{session?.name}” and its {solves.length} solves? Export a backup first if
+                you want to keep them.
+              </p>
+              <div className="button-row">
+                <button onClick={() => setDialog('sessions')}>Keep session</button>
+                <button
+                  className="danger"
+                  onClick={() => {
+                    if (!session) return;
+                    const sid = session.id;
+                    void safeWrite(() =>
+                      db.transaction('rw', db.sessions, db.solves, async () => {
+                        await db.solves.where('sessionId').equals(sid).delete();
+                        await db.sessions.delete(sid);
+                      }),
+                    ).then((ok) => {
+                      if (ok) {
+                        const next = sessions.find((s) => s.id !== sid);
+                        if (next) store.setPreferences({ activeSessionId: next.id });
+                        close();
+                      }
+                    });
+                  }}
+                >
+                  Delete session
+                </button>
+              </div>
+            </>
+          )}
           {dialog === 'sessions' && (
             <>
+              <button
+                className="danger session-delete"
+                disabled={sessions.length < 2}
+                onClick={() => setDialog('delete-session')}
+              >
+                Delete current session
+              </button>
+              <p className="subtle">Keep at least one session.</p>
               <div className="session-list">
                 {sessions.map((s) => (
                   <button

@@ -1,122 +1,108 @@
 import type { Session, Solve, Workspace } from '../core/types';
-import { db, id, migrateWorkspace } from './db';
+import { db, id } from './db';
+import { validateWorkspace } from './validate';
+import {
+  backupEnvelopeSchema,
+  sessionSchema,
+  importedSolveSchema,
+  objectSchema,
+  rowsSchema,
+  csTimerMetadataSchema,
+  csTimerRowSchema,
+} from './schemas';
 export interface ImportPreview {
   sessions: Session[];
   solves: Solve[];
   issues: string[];
   workspace?: Workspace;
 }
-const record = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === 'object' && !Array.isArray(v);
 export function parseImport(raw: unknown): ImportPreview {
-  if (!record(raw)) throw new Error('Choose a turn backup or a standard csTimer JSON export.');
+  const envelope = objectSchema.safeParse(raw);
+  if (!envelope.success) throw new Error('Choose a turn backup or a standard csTimer JSON export.');
+  const input = envelope.data;
   const result: ImportPreview = { sessions: [], solves: [], issues: [] };
-  if (raw.app === 'turn') {
-    if (raw.version !== 1 || !Array.isArray(raw.sessions) || !Array.isArray(raw.solves))
-      throw new Error('Unsupported or incomplete turn backup.');
+  if (input.app === 'turn') {
+    const parsed = backupEnvelopeSchema.safeParse(input);
+    if (!parsed.success) throw new Error('Unsupported or incomplete turn backup.');
+    const native = parsed.data;
     const map = new Map<string, string>();
-    for (const s of raw.sessions) {
-      if (!record(s) || typeof s.id !== 'string' || typeof s.name !== 'string' || map.has(s.id)) {
+    for (const row of native.sessions) {
+      const parsedSession = sessionSchema.safeParse(row);
+      if (!parsedSession.success || map.has(parsedSession.data.id)) {
         result.issues.push('Skipped an invalid or duplicate session.');
         continue;
       }
+      const session = parsedSession.data;
       const next = id();
-      map.set(s.id, next);
-      result.sessions.push({
-        id: next,
-        name: s.name,
-        createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.now(),
-      });
+      map.set(session.id, next);
+      result.sessions.push({ ...session, id: next });
     }
-    for (const [i, s] of raw.solves.entries()) {
-      if (
-        !record(s) ||
-        typeof s.sessionId !== 'string' ||
-        !map.has(s.sessionId) ||
-        typeof s.duration !== 'number' ||
-        !Number.isFinite(s.duration) ||
-        s.duration < 0 ||
-        s.duration >= 86400000 ||
-        !['none', '+2', 'DNF'].includes(String(s.penalty)) ||
-        typeof s.scramble !== 'string' ||
-        typeof s.timestamp !== 'number' ||
-        !Number.isFinite(s.timestamp)
-      ) {
+    for (const [i, row] of native.solves.entries()) {
+      const parsedSolve = importedSolveSchema.safeParse(row);
+      if (!parsedSolve.success || !map.has(parsedSolve.data.sessionId)) {
         result.issues.push(`Skipped invalid solve ${i + 1}.`);
         continue;
       }
-      result.solves.push({
-        id: id(),
-        sessionId: map.get(s.sessionId)!,
-        duration: s.duration,
-        penalty: s.penalty as Solve['penalty'],
-        scramble: s.scramble,
-        timestamp: s.timestamp,
-        note: typeof s.note === 'string' ? s.note : '',
-      });
+      const solve = parsedSolve.data;
+      result.solves.push({ ...solve, id: id(), sessionId: map.get(solve.sessionId)! });
     }
-    if (raw.workspace)
+    if (native.workspace !== undefined) {
       try {
-        result.workspace = migrateWorkspace(raw.workspace);
+        result.workspace = validateWorkspace(native.workspace);
       } catch {
         result.issues.push('Workspace settings were unsupported; solves can still be imported.');
       }
+    }
   } else {
     let names: Record<string, unknown> = {};
     try {
-      const properties =
-        typeof raw.properties === 'string' ? JSON.parse(raw.properties) : raw.properties;
-      if (record(properties)) {
-        const data =
-          typeof properties.sessionData === 'string'
-            ? JSON.parse(properties.sessionData)
-            : properties.sessionData;
-        if (record(data)) names = data;
+      if (input.properties !== undefined) {
+        const properties = objectSchema.parse(
+          typeof input.properties === 'string' ? JSON.parse(input.properties) : input.properties,
+        );
+        if (properties.sessionData !== undefined) {
+          names = objectSchema.parse(
+            typeof properties.sessionData === 'string'
+              ? JSON.parse(properties.sessionData)
+              : properties.sessionData,
+          );
+        }
       }
     } catch {
       result.issues.push('Session labels could not be read.');
     }
-    const entries = Object.entries(raw).filter(([key]) => /^session\d+$/.test(key));
+    const entries = Object.entries(input).filter(([key]) => /^session\d+$/.test(key));
     if (!entries.length) throw new Error('No supported csTimer sessions were found.');
-    for (const [key, rows] of entries) {
-      const sid = id(),
-        meta = names[key.slice(7)];
+    for (const [key, rawRows] of entries) {
+      const sid = id();
+      const meta = csTimerMetadataSchema.safeParse(names[key.slice(7)]);
       result.sessions.push({
         id: sid,
-        name: record(meta) && typeof meta.name === 'string' ? meta.name : `Imported ${key}`,
+        name: meta.success ? meta.data.name : `Imported ${key}`,
         createdAt: Date.now(),
       });
-      if (!Array.isArray(rows)) {
+      const rows = rowsSchema.safeParse(rawRows);
+      if (!rows.success) {
         result.issues.push(`${key}: invalid session data.`);
         continue;
       }
-      rows.forEach((row, index) => {
-        if (
-          !Array.isArray(row) ||
-          !Array.isArray(row[0]) ||
-          row[0].length !== 2 ||
-          ![-1, 0, 2000].includes(row[0][0]) ||
-          typeof row[0][1] !== 'number' ||
-          !Number.isFinite(row[0][1]) ||
-          row[0][1] < 0 ||
-          row[0][1] >= 86400000 ||
-          typeof row[1] !== 'string' ||
-          typeof row[3] !== 'number' ||
-          !Number.isFinite(row[3])
-        ) {
+      rows.data.forEach((rawRow, index) => {
+        const parsed = csTimerRowSchema.safeParse(rawRow);
+        if (!parsed.success) {
           result.issues.push(
             `${key}, solve ${index + 1}: invalid or unsupported multi-phase record.`,
           );
           return;
         }
+        const [time, scramble, note, seconds] = parsed.data;
         result.solves.push({
           id: id(),
           sessionId: sid,
-          duration: row[0][1],
-          penalty: row[0][0] === -1 ? 'DNF' : row[0][0] === 2000 ? '+2' : 'none',
-          scramble: row[1],
-          note: typeof row[2] === 'string' ? row[2] : '',
-          timestamp: row[3] * 1000,
+          duration: time[1],
+          penalty: time[0] === -1 ? 'DNF' : time[0] === 2000 ? '+2' : 'none',
+          scramble,
+          note,
+          timestamp: seconds * 1000,
         });
       });
     }

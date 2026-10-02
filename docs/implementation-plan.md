@@ -4,13 +4,13 @@ Updated October 2, 2026. This document supersedes the earlier implementation pla
 
 ## Product and first release
 
-Build a usable local-first 3×3 timer with a customizable desktop workspace and separate stacked mobile layout. No account is required.
+Build a usable local-first 3×3 timer with the fixed approved desktop composition and a responsive stacked mobile layout. All widget editing, including positioning, resizing, alignment, grouping, visibility, and per-widget styles, is deferred at the user’s request on October 2, 2026. No account is required.
 
-Include timing, inspection, penalties, sessions, recent solves, core averages, scramble preview, a session-trend graph, layout and appearance editing, presets, and backup/import. Per-solve notes remain supported. Keep permanent navigation: Timer, Settings, Gallery. Gallery contains built-in and locally saved presets.
+Include timing, inspection, penalties, sessions, recent solves, core averages, scramble preview, a session-trend graph, appearance editing, presets, and backup/import. Per-solve notes remain supported. Keep permanent navigation: Timer, Settings, Gallery. Gallery contains built-in and locally saved presets.
 
 Defer the full Analytics page, distributions, advanced reporting, and community sharing. The basic session-trend widget is included in the first release.
 
-Exclude Pretext and the dedicated recent-solves sidebar/expand-collapse behavior. Recent solves is a normal resizable widget with independently selectable compact-list, detailed-table, and minimal-times styles.
+Exclude Pretext and the dedicated recent-solves sidebar/expand-collapse behavior. Recent solves uses the fixed compact list shown in the approved design. Alternate widget sizes and styles are deferred.
 
 ## Visual direction — selected
 
@@ -33,7 +33,7 @@ The default material is the selected image’s restrained, flat frosted surface 
 Provide an Appearance panel with live preview and three built-in presets: Liquid Studio, Editorial, Precision. The selected Refined Liquid design defines the default Liquid Studio preset, including its restrained frost and open center. Users can save named presets, duplicate them, and reset changes.
 
 - Global controls: palette, text/accent colors, font family and scale, card tint and opacity, glass intensity, backdrop blur (independent from background softness), outline color/thickness, corner radius, and shadow.
-- Widget overrides: surface, outline, radius, typography, and content-specific options. Unset properties inherit global values; a reset action restores inheritance.
+- Deferred widget overrides: surface, outline, radius, typography, and content-specific options. Unset properties inherit global values; a reset action restores inheritance.
 - Timer controls: digit font, weight, size or auto-fit, displayed precision, and visible inline statistics.
 - Background controls: solid color or WebGL gradient, palette, cursor distortion strength, and motion intensity. Use a real WebGL shader with smooth local displacement of a soft color field; no dots, literal water ripples, or aggressive liquid folds. Fall back to a static gradient if WebGL fails or its context is lost.
 - Light and dark modes are supported by every built-in preset. Preserve separate theme color values when switching modes.
@@ -43,7 +43,7 @@ Provide an Appearance panel with live preview and three built-in presets: Liquid
 
 ### Stack and module boundaries
 
-Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, and cubing.js. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
+Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, Zod, and cubing.js. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
 
 Keep timer/statistics logic, persistence, layout geometry, widget renderers, appearance, and background effects separate. Interact.js provides gesture input; our layout module owns constraints, snapping, collision checks, and placement.
 
@@ -59,9 +59,9 @@ Pre-generate scrambles, retain the current one until a replacement is ready, and
 
 ### Session-trend widget
 
-Replace the Session notes card with a resizable graph of the current session’s solve times. Use solve order on the horizontal axis and seconds on the vertical axis, a thin muted-blue line, small points, faint gridlines, and compact labels. Apply +2 penalties to plotted durations; mark DNF attempts without treating them as zero or connecting a misleading line through them. Provide empty and single-solve states, accessible textual values, and adapt tick density to widget size. Editing or deleting solves updates the chart. Keep chart work independent from the deferred full Analytics page.
+Replace the Session notes card with a graph of the current session’s solve times. Use solve order on the horizontal axis and seconds on the vertical axis, a thin muted-blue line, small points, faint gridlines, and compact labels. Apply +2 penalties to plotted durations; mark DNF attempts without treating them as zero or connecting a misleading line through them. Provide empty and single-solve states, accessible textual values, and adapt tick density to widget size. Editing or deleting solves updates the chart. Keep chart work independent from the deferred full Analytics page.
 
-### Layout editor
+### Future phase — widget editor (deferred)
 
 Explicit Edit layout mode supports free placement, edge/corner resizing, multi-selection, alignment, equal spacing, hide/restore, grouping, and undo/redo. Include numeric geometry controls for keyboard access. Optional 8 px snapping and edge/center guides assist placement.
 
@@ -75,22 +75,22 @@ Below 768 px, use a separate single-column mobile layout with reorder, visibilit
 
 ### Local data and offline use
 
-Save solves immediately; show storage failures visibly. Persist settings and layouts with schema versions and migrations. Include native JSON backup/restore, CSV solve export, and standard csTimer JSON session import for times, penalties, scrambles, timestamps, and comments. Preview invalid/unsupported import records before committing.
+Save solves immediately; show storage failures visibly. Persist settings and layouts with schema versions and migrations. Include native JSON backup/restore, CSV solve export, and standard csTimer JSON session import for times, penalties, scrambles, timestamps, and comments. Use shared Zod schemas at backup/import and saved-settings boundaries. Validate records individually so invalid rows can be previewed without discarding valid solves; default missing version-one appearance fields and reject unsupported versions. Preview invalid/unsupported import records before committing.
 
 Cache the app for offline use after first successful loading. Apply updates between solves. Defer accounts, sync, community publishing, hardware input, more puzzle events, advanced training, nested groups, overlapping layers, and arbitrary CSS.
 
 ## Delivery and validation
 
-Build in increments: timer/data foundation; default workspace with WebGL and themes; layout and appearance editors; presets, imports, offline behavior, and polish. Include the basic session-trend widget with the default workspace; the dedicated Analytics page and advanced reporting remain deferred.
+Build in increments: timer/data foundation; default workspace with WebGL and themes; appearance controls; presets, imports, offline behavior, and polish. Defer the layout editor and its acceptance checks to a later phase. Include the basic session-trend widget with the default workspace; the dedicated Analytics page and advanced reporting remain deferred.
 
-Use Vitest for timing, statistics, migrations, imports, and pure geometry. Use Playwright for solve flows, editor actions, persistence, and responsive behavior.
+Use Vitest for timing, statistics, migrations, imports, and pure geometry. Use Playwright for solve flows, appearance changes, persistence, and responsive behavior.
 
 Acceptance checks:
 
 - Session-trend values match stored solves and penalties, handle DNF/empty/single-solve states, and stay legible at supported widget sizes.
 - Timing stays correct under rendering load; inspection boundaries, repeated keys, touch gestures, penalties, and DNF averages behave consistently.
-- Drag/resize, collisions, alignment, groups, anchors, undo/redo, and saved presets preserve user intent.
-- Global styles and per-widget overrides survive reload, reset predictably, and work in light/dark mode.
+- Future layout-editor phase: drag/resize, collisions, alignment, groups, anchors, and undo/redo preserve user intent.
+- Global styles survive reload, reset predictably, and work in light/dark mode. Per-widget overrides are deferred.
 - Mobile transitions never alter saved desktop layouts.
 - Backup round trips, csTimer imports, offline reloads, and storage failures are exercised.
 - WebGL context loss uses the static fallback; motion pauses during solves and honors accessibility preferences.
