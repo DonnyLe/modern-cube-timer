@@ -86,6 +86,7 @@ Build in increments: timer/data foundation; default workspace with WebGL and the
 Use Vitest for timing, statistics, migrations, imports, and pure geometry. Use Playwright for solve flows, editor actions, persistence, and responsive behavior.
 
 Acceptance checks:
+
 - Session-trend values match stored solves and penalties, handle DNF/empty/single-solve states, and stay legible at supported widget sizes.
 - Timing stays correct under rendering load; inspection boundaries, repeated keys, touch gestures, penalties, and DNF averages behave consistently.
 - Drag/resize, collisions, alignment, groups, anchors, undo/redo, and saved presets preserve user intent.
