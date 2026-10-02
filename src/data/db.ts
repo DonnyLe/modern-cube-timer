@@ -1,6 +1,8 @@
 import Dexie, { type Table } from 'dexie';
-import type { Session, Solve, Workspace, Preferences, Preset } from '../core/types';
+import type { Session, Solve, Workspace, Preset } from '../core/types';
 import { defaultWorkspace } from '../layout/defaults';
+import { validateWorkspace } from './validate';
+import { preferencesSchema } from './schemas';
 class TurnDB extends Dexie {
   solves!: Table<Solve, string>;
   sessions!: Table<Session, string>;
@@ -30,24 +32,37 @@ export async function initialize() {
     }
   });
   const first = await db.sessions.orderBy('createdAt').first();
-  const prefs = (await db.settings.get('preferences'))?.value as Preferences | undefined;
-  const preferences = {
-    inspection: false,
-    holdMs: 300,
-    ...prefs,
-    activeSessionId: prefs?.activeSessionId || first!.id,
-  };
+  const storedPreferences = (await db.settings.get('preferences'))?.value;
+  const parsedPreferences = preferencesSchema.safeParse(storedPreferences);
+  const preferences = parsedPreferences.success
+    ? parsedPreferences.data
+    : { inspection: false, holdMs: 300, activeSessionId: first!.id };
   if (!(await db.sessions.get(preferences.activeSessionId)))
     preferences.activeSessionId = first!.id;
-  return { workspace: migrateWorkspace((await db.settings.get('workspace'))?.value), preferences };
+  let workspace: Workspace,
+    warning =
+      storedPreferences !== undefined && !parsedPreferences.success
+        ? 'Saved timer preferences were invalid; defaults have been restored.'
+        : '';
+  try {
+    workspace = migrateWorkspace((await db.settings.get('workspace'))?.value);
+  } catch {
+    workspace = defaultWorkspace();
+    warning =
+      'Saved appearance settings could not be read. Default styling is shown; your solves are safe.';
+  }
+  return { workspace, preferences, warning };
 }
 export function migrateWorkspace(raw: unknown): Workspace {
-  if (!raw || typeof raw !== 'object') return defaultWorkspace();
-  const w = raw as Workspace;
-  if (w.version !== 1)
-    throw new Error('This workspace uses an unsupported version. Your solves are still saved.');
-  return w;
+  if (raw === undefined || raw === null) return defaultWorkspace();
+  return validateWorkspace(raw);
 }
 export async function saveSetting(key: string, value: unknown) {
-  await db.settings.put({ key, value: structuredClone(value) });
+  const validated =
+    key === 'workspace'
+      ? validateWorkspace(value)
+      : key === 'preferences'
+        ? preferencesSchema.parse(value)
+        : value;
+  await db.settings.put({ key, value: structuredClone(validated) });
 }

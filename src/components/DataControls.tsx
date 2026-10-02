@@ -92,7 +92,7 @@ export function DataControls() {
           )}
           {preview.workspace && (
             <label className="toggle-row">
-              Also restore appearance and layout
+              Also restore appearance
               <input
                 type="checkbox"
                 checked={restore}
