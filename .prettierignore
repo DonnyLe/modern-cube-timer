@@ -1,0 +1,7 @@
+node_modules
+dist
+bun.lock
+outputs
+work
+playwright-report
+test-results
