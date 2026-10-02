@@ -43,7 +43,7 @@ Provide an Appearance panel with live preview and three built-in presets: Liquid
 
 ### Stack and module boundaries
 
-Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, Zod, and cubing.js. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
+Use Bun for dependency management and package scripts, with a pinned Bun version and frozen lockfile in CI. Retain Node for tool compatibility. Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, Zod, and cubing.js. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
 
 Keep timer/statistics logic, persistence, layout geometry, widget renderers, appearance, and background effects separate. Interact.js provides gesture input; our layout module owns constraints, snapping, collision checks, and placement.
 
