@@ -11,3 +11,5 @@ coverage/
 outputs/
 work/
 .sites-runtime/
+
+*.tsbuildinfo

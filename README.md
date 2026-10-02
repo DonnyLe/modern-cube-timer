@@ -6,14 +6,15 @@ See [the implementation plan](docs/implementation-plan.md) and [approved design]
 
 ## Development
 
-Requires Node 22.13+.
+Requires Bun 1.4.2 and Node 22.13+ for tool compatibility.
 
 ```sh
-npm ci
-npm run dev
-npm test
-npm run build
-npm run test:e2e
+bun ci
+bun run dev
+bun run test
+bun run build
+bun run lint
+bun run format:check
 ```
 
 Solve records stay in this browser. Export backups regularly before clearing browser data.
