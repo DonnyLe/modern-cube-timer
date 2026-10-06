@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Copy, Trash2 } from 'lucide-react';
-import { db, id } from '../data/db';
+import { db, id, migrateWorkspace } from '../data/db';
 import { safeWrite, useStore } from '../data/store';
 import { presetWorkspace } from '../layout/defaults';
 import type { Workspace } from '../core/types';
@@ -11,7 +11,12 @@ export function Gallery() {
     [name, setName] = useState(''),
     [notice, setNotice] = useState('');
   const apply = (w: Workspace, label: string) => {
-    setWorkspace(structuredClone(w));
+    try {
+      setWorkspace(migrateWorkspace(w));
+    } catch {
+      setNotice('This preset could not be read.');
+      return;
+    }
     setNotice(`${label} applied. Your solves are unchanged.`);
   };
   return (

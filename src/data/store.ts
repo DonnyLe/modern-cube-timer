@@ -41,7 +41,12 @@ export const useStore = create<Store>((set, get) => ({
   boot: async () => {
     try {
       const data = await initialize();
-      set({ ...data, ready: true });
+      set({
+        workspace: data.workspace,
+        preferences: data.preferences,
+        error: data.warning,
+        ready: true,
+      });
     } catch (e) {
       set({ error: `Could not open local storage: ${(e as Error).message}`, ready: true });
     }
