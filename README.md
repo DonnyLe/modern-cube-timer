@@ -22,3 +22,13 @@ bun run test:e2e
 Solve records stay in this browser. Export backups regularly before clearing browser data.
 
 Use `bun add <package>` for dependencies and `bun add -d <package>` for development tools. Commit `bun.lock`; CI uses `bun ci` to enforce it. Run `bun run test` for the existing Vitest suite; `bun test` invokes Bun’s separate test runner.
+
+## Cloudflare Workers Builds
+
+`wrangler.json` configures the built static assets in `dist` for production and branch previews. In the Worker's build settings, use:
+
+- Build command: `bun run build`
+- Deploy command: `npx wrangler deploy`
+- Preview command: `npx wrangler preview`
+
+Wrangler reads the asset directory from the configuration. Do not add `--assets` to the Preview command; it does not support that flag. Leaving out `--name` lets each preview use its branch name.
