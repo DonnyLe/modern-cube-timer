@@ -8,44 +8,48 @@
     "bun": ">=1.4.2"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "dev": "bun run build:cubing && vite --host 127.0.0.1",
+    "build:cubing": "node scripts/build-cubing.mjs",
+    "build": "bun run build:cubing && tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:production": "PLAYWRIGHT_PRODUCTION=1 playwright test",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "zustand": "^5.0.0",
+    "cubing": "^0.63.0",
     "dexie": "^4.0.0",
     "dexie-react-hooks": "^1.1.7",
-    "cubing": "^0.63.0",
     "interactjs": "^1.10.27",
+    "lucide-react": "^0.468.0",
     "motion": "^12.0.0",
-    "lucide-react": "^0.468.0"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^22.20.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.4.1",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.0",
-    "vitest": "^3.1.0",
-    "@playwright/test": "^1.51.0",
-    "fake-indexeddb": "^6.0.0",
-    "vite-plugin-pwa": "^1.0.0",
-    "@eslint/js": "^9.39.5",
+    "esbuild": "0.25.12",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "fake-indexeddb": "^6.0.0",
     "globals": "^17.13.0",
     "prettier": "^3.9.9",
-    "typescript-eslint": "^8.71.0"
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^6.3.0",
+    "vite-plugin-pwa": "^1.0.0",
+    "vitest": "^3.1.0"
   },
   "packageManager": "bun@1.4.2"
 }
