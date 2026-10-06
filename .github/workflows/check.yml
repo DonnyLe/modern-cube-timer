@@ -14,3 +14,5 @@ jobs:
       - run: bun ci
       - run: bun run format:check
       - run: bun run lint
+      - run: bun run test
+      - run: bun run build
