@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { loadScramble } from './cubing';
 let queued: Promise<string> | null = null;
 const generate = () =>
-  import('cubing/scramble').then((m) => m.randomScrambleForEvent('333')).then((a) => a.toString());
+  loadScramble()
+    .then((m) => m.randomScrambleForEvent('333'))
+    .then((a) => a.toString());
 function prefetch() {
   const pending = generate();
   queued = pending;

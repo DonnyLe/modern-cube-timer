@@ -1,4 +1,20 @@
 import { test, expect } from '@playwright/test';
+test('scrambles load and refresh without worker errors', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  const scramble = page.locator('.scramble-text');
+  const validScramble = /^[URFDLB]2?'?(?: [URFDLB]2?'?)+$/;
+  await expect(scramble).toHaveText(validScramble, { timeout: 30000 });
+  const first = await scramble.innerText();
+  await page.getByRole('button', { name: 'New scramble', exact: true }).click();
+  await expect(scramble).not.toHaveText(first, { timeout: 30000 });
+  await expect(scramble).toHaveText(validScramble);
+  await expect(page.locator('.cube-preview twisty-player')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.preview-caption')).toHaveText('3×3 state preview');
+  await expect(page.getByText('Scramble could not load.', { exact: false })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
 test('manual solve, penalty, statistics, theme and persistence', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({

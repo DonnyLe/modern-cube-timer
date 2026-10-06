@@ -1,11 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+const production = process.env.PLAYWRIGHT_PRODUCTION === '1';
+const port = production ? 4173 : 5173;
 export default defineConfig({
   testDir: './tests/browser',
   fullyParallel: true,
-  use: { baseURL: 'http://127.0.0.1:5173', trace: 'retain-on-failure' },
+  use: { baseURL: `http://127.0.0.1:${port}`, trace: 'retain-on-failure' },
   webServer: {
-    command: 'bun run dev --port 5173',
-    url: 'http://127.0.0.1:5173',
+    command: production ? `bun run preview --port ${port}` : `bun run dev --port ${port}`,
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
   },
   projects: [
