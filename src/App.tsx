@@ -241,19 +241,22 @@ export default function App() {
       ) : view === 'Timer' ? (
         <main className="workspace-default">
           <section className="scramble-bar glass">
-            <select
-              className="event-pill"
-              aria-label="Puzzle"
-              value={puzzle}
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onChange={(e) => void changePuzzle(e.target.value as PuzzleEvent)}
-            >
-              {puzzleEvents.map((event) => (
-                <option key={event} value={event}>
-                  {puzzles[event].label}
-                </option>
-              ))}
-            </select>
+            <div className="puzzle-picker">
+              <select
+                className="event-pill"
+                aria-label="Puzzle"
+                value={puzzle}
+                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                onChange={(e) => void changePuzzle(e.target.value as PuzzleEvent)}
+              >
+                {puzzleEvents.map((event) => (
+                  <option key={event} value={event}>
+                    {puzzles[event].label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </div>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
             <div className="scramble-actions">
               <button

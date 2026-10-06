@@ -945,9 +945,24 @@ input[type='range'] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-select.event-pill {
-  width: 160px;
+.puzzle-picker {
+  position: relative;
   flex-shrink: 0;
+}
+.puzzle-picker > svg {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.puzzle-picker:has(select:disabled) > svg {
+  opacity: 0.45;
+}
+select.event-pill {
+  appearance: none;
+  width: 160px;
+  padding-right: 42px;
   cursor: pointer;
 }
 .scramble-text {
