@@ -4,6 +4,12 @@ A local-first, customizable speedcubing timer. Built with React, TypeScript, Vit
 
 See [the implementation plan](docs/implementation-plan.md) and [approved design](docs/design-reference.png).
 
+## Puzzles
+
+Choose 2×2–7×7, Pyraminx, Skewb, Megaminx, Square-1, or Clock from the scramble bar. Each puzzle has its own sessions, scrambles, statistics, and 2D state preview. Switching puzzles resumes its most recently created session or creates one.
+
+Existing sessions migrate to 3×3. JSON backups use version 2 to preserve puzzle types; version 1 backups remain importable as 3×3. Standard csTimer puzzle sessions are recognized; unsupported scramble types are reported and skipped. CSV exports include puzzle and session columns.
+
 ## Development
 
 Requires Bun 1.4.2 and Node 22.13+ (used by the existing build and browser-testing tools).

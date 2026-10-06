@@ -1,44 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
-export function Preview({ scramble }: { scramble: string }) {
+import { puzzles, type PuzzleEvent } from '../core/puzzles';
+export function Preview({ scramble, event }: { scramble: string; event: PuzzleEvent }) {
   const ref = useRef<HTMLDivElement>(null),
-    [error, setError] = useState(false);
+    [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const puzzle = puzzles[event];
   useEffect(() => {
     let alive = true;
-    let player: HTMLElement | undefined;
+    const container = ref.current!;
+    container.replaceChildren();
+    setStatus('loading');
     if (scramble)
-      import('cubing/twisty')
-        .then(({ TwistyPlayer }) => {
+      void Promise.all([import('cubing/puzzles'), import('cubing/twisty')])
+        .then(async ([{ puzzles: loaders }, { ExperimentalSVGAnimator }]) => {
+          const loader = loaders[puzzle.puzzleId];
+          const [kpuzzle, svg] = await Promise.all([loader.kpuzzle(), loader.svg()]);
+          const pattern = kpuzzle.defaultPattern().applyAlg(scramble);
           if (!alive) return;
-          player = new TwistyPlayer({
-            puzzle: '3x3x3',
-            alg: scramble,
-            visualization: '2D',
-            background: 'none',
-            controlPanel: 'none',
-            hintFacelets: 'none',
-            experimentalSetupAnchor: 'start',
-          });
-          (player as unknown as { timestamp: string }).timestamp = 'end';
-          player.style.width = '100%';
-          player.style.height = '100%';
-          ref.current?.replaceChildren(player);
-          setError(false);
+          const preview = new ExperimentalSVGAnimator(kpuzzle, svg);
+          preview.drawPattern(pattern);
+          preview.svgElement.setAttribute('width', '100%');
+          preview.svgElement.setAttribute('height', '100%');
+          container.replaceChildren(preview.svgElement);
+          setStatus('ready');
         })
-        .catch(() => setError(true));
+        .catch(() => {
+          if (alive) setStatus('error');
+        });
     return () => {
       alive = false;
-      player?.remove();
+      container.replaceChildren();
     };
-  }, [scramble]);
+  }, [scramble, puzzle.puzzleId]);
   return (
     <>
-      <div className="cube-preview" ref={ref} aria-label={`3 by 3 cube state for ${scramble}`} />
+      <div
+        className="cube-preview"
+        ref={ref}
+        aria-label={`${puzzle.label} state for ${scramble}`}
+        data-puzzle={event}
+        data-status={status}
+      />
       <p className="preview-caption">
-        {error
+        {status === 'error'
           ? 'Preview unavailable'
-          : scramble
-            ? '3×3 state preview'
-            : 'Preparing your scramble…'}
+          : status === 'ready'
+            ? `${puzzle.label} state preview`
+            : 'Preparing your preview…'}
       </p>
     </>
   );

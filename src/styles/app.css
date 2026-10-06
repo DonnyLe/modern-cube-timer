@@ -945,3 +945,26 @@ input[type='range'] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+select.event-pill {
+  width: 160px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.scramble-text {
+  max-height: 190px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.cube-preview > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (max-width: 767px) {
+  select.event-pill {
+    width: 145px;
+  }
+  .scramble-text {
+    max-height: 230px;
+  }
+}

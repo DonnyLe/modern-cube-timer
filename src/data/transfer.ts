@@ -1,9 +1,11 @@
 import type { Session, Solve, Workspace } from '../core/types';
+import { csTimerPuzzles } from '../core/puzzles';
 import { db, id } from './db';
 import { validateWorkspace } from './validate';
 import {
   backupEnvelopeSchema,
   sessionSchema,
+  puzzleEventSchema,
   importedSolveSchema,
   objectSchema,
   rowsSchema,
@@ -27,7 +29,9 @@ export function parseImport(raw: unknown): ImportPreview {
     const native = parsed.data;
     const map = new Map<string, string>();
     for (const row of native.sessions) {
-      const parsedSession = sessionSchema.safeParse(row);
+      const schema =
+        native.version === 2 ? sessionSchema.extend({ puzzle: puzzleEventSchema }) : sessionSchema;
+      const parsedSession = schema.safeParse(row);
       if (!parsedSession.success || map.has(parsedSession.data.id)) {
         result.issues.push('Skipped an invalid or duplicate session.');
         continue;
@@ -76,10 +80,26 @@ export function parseImport(raw: unknown): ImportPreview {
     for (const [key, rawRows] of entries) {
       const sid = id();
       const meta = csTimerMetadataSchema.safeParse(names[key.slice(7)]);
+      if (!meta.success && names[key.slice(7)] !== undefined) {
+        result.issues.push(`${key}: invalid puzzle metadata; session skipped.`);
+        continue;
+      }
+      const scrType = meta.success ? meta.data.opt?.scrType : undefined;
+      const puzzle =
+        scrType === undefined
+          ? '333'
+          : Object.hasOwn(csTimerPuzzles, scrType)
+            ? csTimerPuzzles[scrType]
+            : undefined;
+      if (!puzzle) {
+        result.issues.push(`${key}: unsupported puzzle type “${scrType}”; session skipped.`);
+        continue;
+      }
       result.sessions.push({
         id: sid,
-        name: meta.success ? meta.data.name : `Imported ${key}`,
+        name: (meta.success ? meta.data.name : undefined) || `Imported ${key}`,
         createdAt: Date.now(),
+        puzzle,
       });
       const rows = rowsSchema.safeParse(rawRows);
       if (!rows.success) {
@@ -112,7 +132,7 @@ export function parseImport(raw: unknown): ImportPreview {
 export async function backup(workspace: Workspace) {
   return db.transaction('r', db.sessions, db.solves, async () => ({
     app: 'turn',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     sessions: await db.sessions.toArray(),
     solves: await db.solves.toArray(),
@@ -125,17 +145,23 @@ export async function commitImport(preview: ImportPreview) {
     await db.solves.bulkAdd(preview.solves);
   });
 }
-export function csv(solves: Solve[]) {
-  const cell = (s: unknown) => `"${String(s).replaceAll('"', '""')}"`;
+export function csv(solves: Solve[], sessions: Session[] = []) {
+  const byId = new Map(sessions.map((s) => [s.id, s]));
+  const cell = (s: unknown) => {
+    const text = String(s);
+    return `"${(/^[=+@\-\t\r]/.test(text) ? "'" + text : text).replaceAll('"', '""')}"`;
+  };
   return [
-    'time_ms,penalty,scramble,timestamp,note',
+    'time_ms,penalty,scramble,timestamp,note,puzzle,session',
     ...solves.map((s) =>
       [
         s.duration,
         s.penalty,
         s.scramble,
         new Date(s.timestamp).toISOString(),
-        /^[=+@\-\t\r]/.test(s.note) ? `'${s.note}` : s.note,
+        s.note,
+        byId.get(s.sessionId)?.puzzle || '333',
+        byId.get(s.sessionId)?.name || '',
       ]
         .map(cell)
         .join(','),

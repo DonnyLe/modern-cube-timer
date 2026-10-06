@@ -1,3 +1,4 @@
+import type { PuzzleEvent } from './puzzles';
 export type Penalty = 'none' | '+2' | 'DNF';
 export interface Solve {
   id: string;
@@ -9,6 +10,7 @@ export interface Solve {
   note: string;
 }
 export interface Session {
+  puzzle: PuzzleEvent;
   id: string;
   name: string;
   createdAt: number;

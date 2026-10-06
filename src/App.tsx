@@ -14,7 +14,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
-import { db, id } from './data/db';
+import { db, id, sessionForPuzzle } from './data/db';
+import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
 import type { Solve, Penalty } from './core/types';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
 import { useTimer } from './core/useTimer';
@@ -42,7 +43,8 @@ export default function App() {
     [deleted, setDeleted] = useState<Solve | null>(null),
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [switchingPuzzle, setSwitchingPuzzle] = useState(false);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -52,7 +54,16 @@ export default function App() {
   const session = sessions.find((s) => s.id === preferences.activeSessionId),
     stats = statistics(solves),
     last = solves.at(-1);
-  const scramble = useScramble();
+  const puzzle = session?.puzzle || '333';
+  const scramble = useScramble(session?.puzzle || null);
+  const changePuzzle = async (event: PuzzleEvent) => {
+    setSwitchingPuzzle(true);
+    await safeWrite(async () => {
+      const next = await sessionForPuzzle(event);
+      store.setPreferences({ activeSessionId: next.id });
+    });
+    setSwitchingPuzzle(false);
+  };
   useEffect(() => {
     void useStore.getState().boot();
   }, []);
@@ -86,6 +97,8 @@ export default function App() {
       view !== 'Timer' ||
       !!pendingSolve ||
       saving ||
+      switchingPuzzle ||
+      !session ||
       !scramble.scramble ||
       scramble.loading ||
       !preferences.activeSessionId,
@@ -228,9 +241,19 @@ export default function App() {
       ) : view === 'Timer' ? (
         <main className="workspace-default">
           <section className="scramble-bar glass">
-            <span className="event-pill">
-              3×3×3 <ChevronDown size={16} />
-            </span>
+            <select
+              className="event-pill"
+              aria-label="Puzzle"
+              value={puzzle}
+              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+              onChange={(e) => void changePuzzle(e.target.value as PuzzleEvent)}
+            >
+              {puzzleEvents.map((event) => (
+                <option key={event} value={event}>
+                  {puzzles[event].label}
+                </option>
+              ))}
+            </select>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
             <div className="scramble-actions">
               <button
@@ -370,7 +393,7 @@ export default function App() {
               <header>
                 <h2>Scramble preview</h2>
               </header>
-              <Preview scramble={scramble.scramble} />
+              <Preview scramble={scramble.scramble} event={puzzle} />
             </article>
           </section>
           <footer className="workspace-footer">
@@ -570,7 +593,10 @@ export default function App() {
               >
                 Delete current session
               </button>
-              <p className="subtle">Keep at least one session.</p>
+              <p className="subtle">
+                New sessions use {puzzles[puzzle].label}. Choose another puzzle from the scramble
+                bar. Keep at least one session.
+              </p>
               <div className="session-list">
                 {sessions.map((s) => (
                   <button
@@ -582,6 +608,7 @@ export default function App() {
                     }}
                   >
                     {s.name}
+                    <small>{puzzles[s.puzzle].label}</small>
                     {s.id === session?.id && <Check size={16} />}
                   </button>
                 ))}
@@ -590,7 +617,7 @@ export default function App() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!name.trim()) return;
-                  const s = { id: id(), name: name.trim(), createdAt: Date.now() };
+                  const s = { id: id(), name: name.trim(), createdAt: Date.now(), puzzle };
                   void safeWrite(() => db.sessions.add(s)).then((ok) => {
                     if (ok) {
                       store.setPreferences({ activeSessionId: s.id });
