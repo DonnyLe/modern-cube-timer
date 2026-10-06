@@ -17,11 +17,14 @@ bun run test
 bun run build
 bunx --no-install playwright install
 bun run test:e2e
+bun run build && bun run test:e2e:production
 ```
 
 Solve records stay in this browser. Export backups regularly before clearing browser data.
 
 Use `bun add <package>` for dependencies and `bun add -d <package>` for development tools. Commit `bun.lock`; CI uses `bun ci` to enforce it. Run `bun run test` for the existing Vitest suite; `bun test` invokes Bun’s separate test runner.
+
+The development and production commands first bundle cubing.js with esbuild into generated `public/cubing` files. Vite serves or copies these modules without rebundling them, keeping solver workers separate from React. The generated files are ignored by Git and included in the production offline cache. Run `bun run build:cubing` again after changing the cubing entry modules or dependency.
 
 ## Cloudflare Workers Builds
 

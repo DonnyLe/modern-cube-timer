@@ -1,0 +1,12 @@
+// These modules are built by esbuild and served unchanged by Vite.
+export function loadScramble(): Promise<
+  Pick<typeof import('cubing/scramble'), 'randomScrambleForEvent'>
+> {
+  const url = `${import.meta.env.BASE_URL}cubing/scramble.js`;
+  return import(/* @vite-ignore */ url);
+}
+
+export function loadTwisty(): Promise<Pick<typeof import('cubing/twisty'), 'TwistyPlayer'>> {
+  const url = `${import.meta.env.BASE_URL}cubing/twisty.js`;
+  return import(/* @vite-ignore */ url);
+}

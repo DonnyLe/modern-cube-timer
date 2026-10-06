@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { loadTwisty } from '../core/cubing';
 export function Preview({ scramble }: { scramble: string }) {
   const ref = useRef<HTMLDivElement>(null),
     [error, setError] = useState(false);
@@ -6,7 +7,7 @@ export function Preview({ scramble }: { scramble: string }) {
     let alive = true;
     let player: HTMLElement | undefined;
     if (scramble)
-      import('cubing/twisty')
+      loadTwisty()
         .then(({ TwistyPlayer }) => {
           if (!alive) return;
           player = new TwistyPlayer({

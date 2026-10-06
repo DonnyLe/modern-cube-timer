@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { loadScramble } from './cubing';
 let queued: Promise<string> | null = null;
-const generate = () =>
-  import('cubing/scramble').then((m) => m.randomScrambleForEvent('333')).then((a) => a.toString());
+const generate = async () => {
+  const { randomScrambleForEvent } = await loadScramble();
+  return (await randomScrambleForEvent('333')).toString();
+};
 function nextScramble() {
   const next = queued || generate();
   queued = null;

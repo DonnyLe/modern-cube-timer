@@ -1,4 +1,5 @@
 node_modules/
+public/cubing/
 dist/
 .env*
 !.env.example
