@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { puzzles, type PuzzleEvent } from '../core/puzzles';
+import { loadTwisty } from '../core/cubing';
 export function Preview({ scramble, event }: { scramble: string; event: PuzzleEvent }) {
   const ref = useRef<HTMLDivElement>(null),
     [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -10,8 +11,8 @@ export function Preview({ scramble, event }: { scramble: string; event: PuzzleEv
     container.replaceChildren();
     setStatus('loading');
     if (scramble)
-      void Promise.all([import('cubing/puzzles'), import('cubing/twisty')])
-        .then(async ([{ puzzles: loaders }, { ExperimentalSVGAnimator }]) => {
+      void loadTwisty()
+        .then(async ({ puzzles: loaders, ExperimentalSVGAnimator }) => {
           const loader = loaders[puzzle.puzzleId];
           const [kpuzzle, svg] = await Promise.all([loader.kpuzzle(), loader.svg()]);
           const pattern = kpuzzle.defaultPattern().applyAlg(scramble);

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PuzzleEvent } from './puzzles';
 import { ScrambleQueue } from './scrambleQueue';
+import { loadScramble } from './cubing';
 const queue = new ScrambleQueue((event) =>
-  import('cubing/scramble').then((m) => m.randomScrambleForEvent(event)).then((a) => a.toString()),
+  loadScramble()
+    .then((m) => m.randomScrambleForEvent(event))
+    .then((a) => a.toString()),
 );
 export function useScramble(event: PuzzleEvent | null) {
   const [state, setState] = useState<{
