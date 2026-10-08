@@ -364,7 +364,7 @@ button svg {
   display: flex;
   justify-content: center;
   margin: 29px auto 40px;
-  width: min(540px, 100%);
+  width: min(640px, 100%);
   min-height: 70px;
   align-items: center;
 }
@@ -377,14 +377,23 @@ button svg {
 }
 .inline-stats span {
   display: block;
-  font-size: 14px;
+  font-size: clamp(15px, 1.3vw, 18px);
   color: color-mix(in srgb, var(--ink) 60%, var(--accent));
   margin-bottom: 6px;
 }
 .inline-stats strong {
-  font-size: 25px;
+  font-size: clamp(28px, 2.3vw, 36px);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
+}
+.is-focused .inline-stats {
+  width: min(720px, 100%);
+}
+.is-focused .inline-stats span {
+  font-size: clamp(16px, 1.5vw, 20px);
+}
+.is-focused .inline-stats strong {
+  font-size: clamp(30px, 3vw, 44px);
 }
 .widget-row {
   display: grid;

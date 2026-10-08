@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, useAnimationControls, useReducedMotion } from 'motion/react';
 import {
   Copy,
   RefreshCw,
@@ -49,16 +50,34 @@ export default function App() {
     [focused, setFocused] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const reducedMotion = useReducedMotion();
+  const focusFade = useAnimationControls();
+  const focusRequest = useRef(0);
+  const changeFocus = useCallback(
+    async (next: boolean) => {
+      const request = ++focusRequest.current;
+      if (reducedMotion) {
+        focusFade.stop();
+        focusFade.set({ opacity: 1 });
+        setFocused(next);
+        return;
+      }
+      await focusFade.start({ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.12 } });
+      if (request !== focusRequest.current) return;
+      flushSync(() => setFocused(next));
+      await focusFade.start({ opacity: 1, transition: { duration: reducedMotion ? 0 : 0.2 } });
+    },
+    [focusFade, reducedMotion],
+  );
   const focusTransition = { duration: reducedMotion ? 0 : 0.24, ease: 'easeOut' as const };
   useEffect(() => {
     if (!focused) return;
     const exitFocus = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented && !dialog && !puzzlePickerOpen)
-        setFocused(false);
+        void changeFocus(false);
     };
     window.addEventListener('keydown', exitFocus);
     return () => window.removeEventListener('keydown', exitFocus);
-  }, [focused, dialog, puzzlePickerOpen]);
+  }, [focused, dialog, puzzlePickerOpen, changeFocus]);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -177,6 +196,7 @@ export default function App() {
       <Background appearance={a} paused={busy} />
       <UpdateNotice busy={busy || saving} />
       <motion.header
+        animate={focusFade}
         className="topbar"
         layout="position"
         layoutDependency={focused}
@@ -192,11 +212,11 @@ export default function App() {
           aria-label={focused ? 'Exit focus mode' : 'turn'}
           title={focused ? 'Hover to exit focus mode · Esc' : undefined}
           onPointerEnter={(event) => {
-            if (focused && event.pointerType === 'mouse') setFocused(false);
+            if (focused && event.pointerType === 'mouse') void changeFocus(false);
           }}
           onClick={(e) => {
             e.preventDefault();
-            setFocused(false);
+            if (focused) void changeFocus(false);
             if (!busy) setView('Timer');
           }}
         >
@@ -242,7 +262,7 @@ export default function App() {
               aria-label="Enter focus mode"
               disabled={busy || view !== 'Timer'}
               onClick={(event) => {
-                setFocused(true);
+                void changeFocus(true);
                 if (event.detail === 0) brandRef.current?.focus();
                 else event.currentTarget.blur();
               }}
@@ -279,6 +299,7 @@ export default function App() {
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
         <motion.main
+          animate={focusFade}
           className="workspace-default"
           layout="position"
           layoutDependency={focused}
@@ -343,7 +364,7 @@ export default function App() {
                 fontWeight: a.timerWeight,
                 fontSize: a.autoFit
                   ? focused
-                    ? `clamp(64px, min(34vw, 32svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 420px)`
+                    ? `clamp(64px, min(28vw, 24svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 280px)`
                     : `clamp(64px,11vw,${a.timerSize}px)`
                   : `${a.timerSize}px`,
                 fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',

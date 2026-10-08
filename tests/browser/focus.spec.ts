@@ -15,6 +15,9 @@ test('the auto-fit timer grows in focus mode and keeps long times inside a narro
   await expect
     .poll(() => timer.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)))
     .toBeGreaterThan(normalSize * 1.4);
+  expect(
+    await timer.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
+  ).toBeLessThanOrEqual(280);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await timer.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
@@ -31,6 +34,68 @@ test('the auto-fit timer grows in focus mode and keeps long times inside a narro
   const timerBox = (await timer.boundingBox())!;
   expect(timerBox.x).toBeGreaterThanOrEqual(0);
   expect(timerBox.x + timerBox.width).toBeLessThanOrEqual(390);
+});
+
+test('focus transitions fade the header and workspace out and back in', async ({ page }) => {
+  await page.addInitScript(() => {
+    const state = window as typeof window & {
+      focusFades: { focused: boolean; opacity: number; header: number }[];
+    };
+    state.focusFades = [];
+    const sample = () => {
+      const main = document.querySelector('.workspace-default');
+      const header = document.querySelector('.topbar');
+      if (main && header) {
+        state.focusFades.push({
+          focused: !!document.querySelector('.is-focused'),
+          opacity: parseFloat(getComputedStyle(main).opacity),
+          header: parseFloat(getComputedStyle(header).opacity),
+        });
+      }
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 30000,
+  });
+  await page.getByRole('button', { name: 'Enter focus mode' }).click();
+  await expect(page.locator('.app')).toHaveClass(/is-focused/);
+  await expect
+    .poll(() =>
+      page
+        .locator('.workspace-default')
+        .evaluate((element) => Number(getComputedStyle(element).opacity)),
+    )
+    .toBe(1);
+  expect(
+    await page.evaluate(() =>
+      (
+        window as typeof window & {
+          focusFades: { focused: boolean; opacity: number; header: number }[];
+        }
+      ).focusFades.some((sample) => !sample.focused && sample.opacity < 0.3 && sample.header < 0.3),
+    ),
+  ).toBe(true);
+  await page.getByRole('link', { name: 'Exit focus mode' }).hover();
+  await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
+  await expect
+    .poll(() =>
+      page
+        .locator('.workspace-default')
+        .evaluate((element) => Number(getComputedStyle(element).opacity)),
+    )
+    .toBe(1);
+  expect(
+    await page.evaluate(() =>
+      (
+        window as typeof window & {
+          focusFades: { focused: boolean; opacity: number; header: number }[];
+        }
+      ).focusFades.some((sample) => sample.focused && sample.opacity < 0.3 && sample.header < 0.3),
+    ),
+  ).toBe(true);
 });
 
 test('focus mode hides header controls, puzzle selector and widgets, and exits on logo hover or Escape', async ({
