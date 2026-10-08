@@ -128,14 +128,16 @@ button svg {
   opacity: 0.65;
 }
 .topbar .segmented,
-.topbar .header-actions {
+.topbar .header-actions,
+.puzzle-selector {
   transition:
     opacity 0.2s,
     transform 0.24s,
     visibility 0s;
 }
 .is-focused .topbar .segmented,
-.is-focused .topbar .header-actions {
+.is-focused .topbar .header-actions,
+.is-focused .puzzle-selector {
   opacity: 0;
   transform: translateY(-8px);
   visibility: hidden;
@@ -244,7 +246,7 @@ button svg {
 .scramble-controls {
   display: contents;
 }
-.scramble-controls > .custom-select-trigger {
+.puzzle-selector {
   grid-column: 1;
   grid-row: 1;
 }
@@ -271,7 +273,7 @@ button svg {
   overflow-wrap: break-word;
 }
 .scramble-actions {
-  grid-column: 2;
+  grid-column: 1 / -1;
   grid-row: 2;
   justify-self: center;
   display: flex;
@@ -486,17 +488,6 @@ small {
 .plot-point {
   fill: var(--accent);
 }
-.workspace-footer {
-  margin-top: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: color-mix(in srgb, var(--ink) 58%, var(--accent));
-  font-size: 13px;
-}
-.workspace-footer .text-button {
-  gap: 10px;
-}
 .dialog {
   border: 1px solid var(--outline);
   color: var(--ink);
@@ -655,7 +646,6 @@ textarea {
   text-align: center;
 }
 .is-running .widget-row,
-.is-running .workspace-footer,
 .is-running .header-actions {
   opacity: 0.4;
   transition: opacity 0.25s;
@@ -778,10 +768,6 @@ textarea {
   .widget {
     min-height: 260px;
     padding: 20px;
-  }
-  .workspace-footer {
-    gap: 16px;
-    font-size: 12px;
   }
   .dialog-content {
     padding: 22px;

@@ -187,7 +187,10 @@ export default function App() {
           className="brand"
           href="#"
           aria-label={focused ? 'Exit focus mode' : 'turn'}
-          title={focused ? 'Exit focus mode · Esc' : undefined}
+          title={focused ? 'Hover to exit focus mode · Esc' : undefined}
+          onPointerEnter={(event) => {
+            if (focused && event.pointerType === 'mouse') setFocused(false);
+          }}
           onClick={(e) => {
             e.preventDefault();
             setFocused(false);
@@ -279,17 +282,19 @@ export default function App() {
         <main className="workspace-default">
           <section className="scramble-bar" aria-label="Scramble">
             <div className="scramble-controls">
-              <Select
-                label="Puzzle"
-                value={puzzle}
-                options={puzzleEvents.map((event) => ({
-                  value: event,
-                  label: puzzles[event].label,
-                }))}
-                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-                onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-                onOpenChange={setPuzzlePickerOpen}
-              />
+              <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
+                <Select
+                  label="Puzzle"
+                  value={puzzle}
+                  options={puzzleEvents.map((event) => ({
+                    value: event,
+                    label: puzzles[event].label,
+                  }))}
+                  disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                  onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+                  onOpenChange={setPuzzlePickerOpen}
+                />
+              </div>
               <div className="scramble-actions">
                 <button
                   aria-label="Copy scramble"
@@ -439,10 +444,6 @@ export default function App() {
               </article>
             </section>
           </div>
-          <footer className="workspace-footer">
-            <span>Space to start / stop · tap the timer on mobile</span>
-            <span>Saved on this device</span>
-          </footer>
         </main>
       ) : view === 'Settings' ? (
         <Settings dataControls={<DataControls />} />

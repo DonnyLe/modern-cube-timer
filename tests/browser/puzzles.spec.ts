@@ -85,6 +85,9 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
       await page.setViewportSize({ width, height: 1000 });
       const textBox = (await text.boundingBox())!;
       expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
+      const actionsBox = (await actions.boundingBox())!;
+      const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+      expect(actionsBox.x + actionsBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     }
   }

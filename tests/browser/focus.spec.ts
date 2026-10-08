@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('focus mode hides header controls and widgets, and exits through the logo or Escape', async ({
+test('focus mode hides header controls, puzzle selector and widgets, and exits on logo hover or Escape', async ({
   page,
 }) => {
   await page.goto('/');
@@ -14,14 +14,18 @@ test('focus mode hides header controls and widgets, and exits through the logo o
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
   await expect(nav).toBeHidden();
   await expect(page.locator('.header-actions')).toBeHidden();
+  await expect(page.locator('.puzzle-selector')).toBeHidden();
+  await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
   await expect(widgets).toBeHidden();
   await expect.poll(async () => (await widgets.boundingBox())?.height ?? 0).toBeLessThan(1);
   await expect(page.getByRole('button', { name: 'Copy scramble' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeVisible();
   expect((await text.boundingBox())!.y).toBe(originalY);
-  await page.getByRole('link', { name: 'Exit focus mode' }).click();
+  await page.getByRole('link', { name: 'Exit focus mode' }).hover();
   await expect(nav).toBeVisible();
   await expect(widgets).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toBeVisible();
+  await page.mouse.move(5, 5);
   await page.getByRole('button', { name: 'Enter focus mode' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('link', { name: 'Exit focus mode' })).toBeFocused();

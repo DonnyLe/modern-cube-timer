@@ -100,7 +100,10 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
                 onChange={(e) => setPreferences({ hideWidgetsInFocus: e.target.checked })}
               />
             </label>
-            <p className="subtle">Click the turn logo or press Esc to leave focus mode.</p>
+            <p className="subtle">
+              Hover over the turn logo or press Esc to leave focus mode. On touchscreens, tap the
+              logo.
+            </p>
           </section>
           <section className="settings-card glass">
             <h2>Surfaces</h2>
