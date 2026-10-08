@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { motion, MotionConfig } from 'motion/react';
 import {
   Copy,
   RefreshCw,
@@ -30,12 +31,16 @@ import { Gallery } from './components/Gallery';
 import { DataControls } from './components/DataControls';
 import { UpdateNotice } from './components/UpdateNotice';
 import { download } from './data/transfer';
+
+const NAVIGATION_VIEWS = ['Timer', 'Settings', 'Gallery'] as const;
+type NavigationView = (typeof NAVIGATION_VIEWS)[number];
+
 export default function App() {
   const store = useStore(),
     { workspace, preferences } = store,
     a = workspace.appearance,
     palette = a[a.theme];
-  const [view, setView] = useState('Timer'),
+  const [view, setView] = useState<NavigationView>('Timer'),
     [dialog, setDialog] = useState(''),
     [selectedSolve, setSelectedSolve] = useState<Solve | null>(null),
     [manual, setManual] = useState(''),
@@ -180,20 +185,29 @@ export default function App() {
         >
           turn
         </a>
-        <nav className="segmented" aria-label="Main navigation">
-          {['Timer', 'Settings', 'Gallery'].map((v) => (
-            <button
-              key={v}
-              disabled={busy}
-              className={view === v ? 'active' : ''}
-              aria-current={view === v ? 'page' : undefined}
-              onClick={() => setView(v)}
-            >
-              {view === v && <i />}
-              {v}
-            </button>
-          ))}
-        </nav>
+        <MotionConfig reducedMotion="user">
+          <nav className="segmented" aria-label="Main navigation">
+            {NAVIGATION_VIEWS.map((v) => (
+              <button
+                key={v}
+                disabled={busy}
+                className={view === v ? 'active' : ''}
+                aria-current={view === v ? 'page' : undefined}
+                onClick={() => setView(v)}
+              >
+                {view === v && (
+                  <motion.span
+                    className="segmented-selection"
+                    layoutId="main-navigation-selection"
+                    transition={{ type: 'spring', stiffness: 180, damping: 26 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="segmented-label">{v}</span>
+              </button>
+            ))}
+          </nav>
+        </MotionConfig>
         <div className="header-actions">
           <button
             className="icon-button glass"
