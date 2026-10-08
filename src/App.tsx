@@ -51,8 +51,7 @@ export default function App() {
     [saving, setSaving] = useState(false),
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
     [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false),
-    [focused, setFocused] = useState(false),
-    [navigationGeneration, setNavigationGeneration] = useState(0);
+    [focused, setFocused] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const reducedMotion = useReducedMotion();
   const focusFade = useAnimationControls();
@@ -63,16 +62,12 @@ export default function App() {
       if (reducedMotion) {
         focusFade.stop();
         focusFade.set({ opacity: 1 });
-        setNavigationGeneration((generation) => generation + 1);
         setFocused(next);
         return;
       }
       await focusFade.start({ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.12 } });
       if (request !== focusRequest.current) return;
-      flushSync(() => {
-        setNavigationGeneration((generation) => generation + 1);
-        setFocused(next);
-      });
+      flushSync(() => setFocused(next));
       await focusFade.start({ opacity: 1, transition: { duration: reducedMotion ? 0 : 0.2 } });
     },
     [focusFade, reducedMotion],
@@ -221,7 +216,7 @@ export default function App() {
         >
           turn
         </motion.a>
-        <MotionConfig key={navigationGeneration} reducedMotion="user">
+        <MotionConfig reducedMotion="user">
           <nav
             className="segmented"
             aria-label="Main navigation"
@@ -236,11 +231,11 @@ export default function App() {
                 aria-current={view === v ? 'page' : undefined}
                 onClick={() => setView(v)}
               >
-                {view === v && (
+                {!focused && view === v && (
                   <motion.span
                     initial={false}
                     className="segmented-selection"
-                    layoutId={`main-navigation-selection-${navigationGeneration}`}
+                    layoutId="main-navigation-selection"
                     transition={{ type: 'spring', stiffness: 180, damping: 26 }}
                     aria-hidden="true"
                   />
