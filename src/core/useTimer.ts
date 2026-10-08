@@ -7,6 +7,7 @@ export function useTimer(
   onSolve: (r: Result) => void,
 ) {
   const engine = useRef(new TimerEngine(inspection, holdMs));
+  const spaceHeld = useRef(false);
   const callback = useRef(onSolve);
   callback.current = onSolve;
   const [display, setDisplay] = useState({
@@ -65,16 +66,38 @@ export function useTimer(
         engine.current.cancel();
         update();
       }
-      if (e.code !== 'Space' || e.repeat || ignored(e.target) || disabled) return;
+      if (
+        e.code !== 'Space' ||
+        ignored(e.target) ||
+        e.defaultPrevented ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey
+      )
+        return;
+      if (disabled && !spaceHeld.current) return;
       e.preventDefault();
+      // Keep consuming repeats while a stopped solve is being saved.
+      if (e.repeat || spaceHeld.current || disabled) return;
+      spaceHeld.current = true;
       press();
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
-      if (!ignored(e.target) && !disabled) e.preventDefault();
+      if (e.code !== 'Space' || !spaceHeld.current) return;
+      spaceHeld.current = false;
+      if (ignored(e.target) || disabled || e.defaultPrevented) {
+        if (engine.current.phase !== 'running') {
+          engine.current.cancel();
+          update();
+        }
+        return;
+      }
+      e.preventDefault();
       release();
     };
     const blur = () => {
+      spaceHeld.current = false;
       if (engine.current.phase !== 'running') {
         engine.current.cancel();
         update();

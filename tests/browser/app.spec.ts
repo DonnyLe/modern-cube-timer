@@ -1,4 +1,39 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+async function openTimer(page: Page) {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 30000,
+  });
+}
+
+for (const focus of ['background', 'timer'] as const) {
+  test(`held Space does not scroll with ${focus} focus`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 400 });
+    await openTimer(page);
+    if (focus === 'timer') await page.locator('[data-timer]').focus();
+    else await page.locator('body').click({ position: { x: 5, y: 5 } });
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(400);
+    const scrollY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.down('Space');
+    await expect(page.locator('.timer-hint')).toHaveText('Release to start');
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.down('Space');
+      await page.waitForTimeout(50);
+    }
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    await page.keyboard.up('Space');
+    await expect(page.locator('.app')).toHaveClass(/is-running/);
+    await page.keyboard.down('Space');
+    await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
+    await page.keyboard.down('Space');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('Space');
+    await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
+    await expect(page.locator('.app')).not.toHaveClass(/is-running/);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  });
+}
+
 test('scrambles load and refresh without worker errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
