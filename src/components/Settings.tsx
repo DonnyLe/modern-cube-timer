@@ -211,15 +211,13 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
           </section>
           <section className="settings-card glass">
             <h2>Color & background</h2>
-            <label>
-              Theme
-              <select
-                value={a.theme}
-                onChange={(e) => update({ theme: e.target.value as 'light' | 'dark' })}
-              >
-                <option>light</option>
-                <option>dark</option>
-              </select>
+            <label className="toggle-row">
+              Night mode
+              <input
+                type="checkbox"
+                checked={a.theme === 'dark'}
+                onChange={(e) => update({ theme: e.target.checked ? 'dark' : 'light' })}
+              />
             </label>
             <div className="color-grid">
               {(

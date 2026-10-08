@@ -3,9 +3,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Copy,
   RefreshCw,
-  Sun,
-  Moon,
-  Waves,
   Plus,
   ArrowUpRight,
   ChevronDown,
@@ -144,11 +141,6 @@ export default function App() {
     setDialog('');
     setInputError('');
   };
-  const theme = () =>
-    store.setWorkspace({
-      ...workspace,
-      appearance: { ...a, theme: a.theme === 'light' ? 'dark' : 'light' },
-    });
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
     : busy
@@ -245,25 +237,6 @@ export default function App() {
               }}
             >
               <Scan />
-            </button>
-            <button
-              className="icon-button glass"
-              title="Toggle theme"
-              aria-label="Toggle theme"
-              onClick={theme}
-            >
-              {a.theme === 'light' ? <Sun /> : <Moon />}
-            </button>
-            <button
-              className={`icon-button glass ${!a.motion ? 'muted' : ''}`}
-              title="Toggle background motion"
-              aria-label="Toggle background motion"
-              aria-pressed={a.motion}
-              onClick={() =>
-                store.setWorkspace({ ...workspace, appearance: { ...a, motion: !a.motion } })
-              }
-            >
-              <Waves />
             </button>
           </div>
         </div>

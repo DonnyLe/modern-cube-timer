@@ -99,7 +99,7 @@ button svg {
 }
 .topbar {
   display: grid;
-  grid-template-columns: minmax(358px, 1fr) minmax(0, 465px) minmax(358px, 1fr);
+  grid-template-columns: minmax(246px, 1fr) minmax(0, 465px) minmax(246px, 1fr);
   align-items: center;
   justify-content: space-between;
   margin: 0 0 36px;
