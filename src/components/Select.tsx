@@ -32,11 +32,7 @@ export function Select<Value extends string>({
       onValueChange={(next) => onValueChange(next as Value)}
       onOpenChange={onOpenChange}
     >
-      <SelectPrimitive.Trigger
-        ref={trigger}
-        className="event-pill custom-select-trigger"
-        aria-label={label}
-      >
+      <SelectPrimitive.Trigger ref={trigger} className="custom-select-trigger" aria-label={label}>
         <SelectPrimitive.Value />
         <SelectPrimitive.Icon className="custom-select-icon">
           <ChevronDown size={16} aria-hidden="true" />
