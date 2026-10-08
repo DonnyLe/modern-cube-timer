@@ -8,7 +8,6 @@ export function useTimer(
 ) {
   const engine = useRef(new TimerEngine(inspection, holdMs));
   const spaceHeld = useRef(false);
-  const spaceConsumed = useRef(false);
   const callback = useRef(onSolve);
   callback.current = onSolve;
   const [display, setDisplay] = useState({
@@ -56,70 +55,49 @@ export function useTimer(
     return () => cancelAnimationFrame(frame);
   }, [update]);
   useEffect(() => {
-    const ignored = (target: EventTarget | null) => {
-      if (!(target instanceof Element)) return false;
-      if (target.closest('dialog,[role="dialog"],[role="alertdialog"]')) return true;
-      if (target.closest('[data-timer]')) return false;
-      return (
-        (target instanceof HTMLElement && target.isContentEditable) ||
-        !!target.closest(
-          'input,textarea,select,button,a[href],summary,[role="button"],[role="link"],[role="combobox"],[role="listbox"],[role="option"],[role="checkbox"],[role="radio"],[role="switch"],[role="slider"],[role="spinbutton"],[role="textbox"],[role="searchbox"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="tab"],[role="treeitem"]',
-        )
-      );
-    };
-    const modified = (e: KeyboardEvent) => e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
-    const cancelSpace = () => {
-      if (!spaceHeld.current) return;
-      spaceHeld.current = false;
-      if (engine.current.phase === 'running') engine.current.release(performance.now());
-      else engine.current.cancel();
-      update();
-    };
+    const ignored = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      !!target.closest(
+        'input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="combobox"],[role="listbox"],[role="option"]',
+      ) &&
+      !(target instanceof HTMLElement && target.closest('[data-timer]'));
     const down = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || modified(e)) return;
-      if (e.code === 'Escape' && !ignored(e.target) && engine.current.phase !== 'running') {
-        spaceHeld.current = false;
+      if (e.code === 'Escape' && engine.current.phase !== 'running') {
         engine.current.cancel();
         update();
       }
-      if (e.code !== 'Space' || ignored(e.target)) return;
-      // Saving a stopped solve temporarily disables timing, but repeats from
-      // that same gesture must still be consumed until the physical keyup.
-      if (e.repeat && spaceConsumed.current) {
-        e.preventDefault();
+      if (
+        e.code !== 'Space' ||
+        ignored(e.target) ||
+        e.defaultPrevented ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey
+      )
         return;
-      }
-      if (disabled) return;
-      if (e.repeat && !spaceHeld.current) return;
+      if (disabled && !spaceHeld.current) return;
       e.preventDefault();
-      if (e.repeat || spaceHeld.current) return;
+      // Keep consuming repeats while a stopped solve is being saved.
+      if (e.repeat || spaceHeld.current || disabled) return;
       spaceHeld.current = true;
-      spaceConsumed.current = true;
       press();
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
-      const consumed = spaceConsumed.current;
-      spaceConsumed.current = false;
-      if (e.defaultPrevented || modified(e) || ignored(e.target)) {
-        cancelSpace();
-        return;
-      }
-      if (consumed) e.preventDefault();
-      if (!spaceHeld.current) return;
-      if (disabled) {
-        cancelSpace();
-        return;
-      }
+      if (e.code !== 'Space' || !spaceHeld.current) return;
       spaceHeld.current = false;
+      if (ignored(e.target) || disabled || e.defaultPrevented) {
+        if (engine.current.phase !== 'running') {
+          engine.current.cancel();
+          update();
+        }
+        return;
+      }
+      e.preventDefault();
       release();
     };
-    const focus = (e: FocusEvent) => {
-      if (ignored(e.target)) cancelSpace();
-    };
     const blur = () => {
-      spaceConsumed.current = false;
-      cancelSpace();
+      spaceHeld.current = false;
       if (engine.current.phase !== 'running') {
         engine.current.cancel();
         update();
@@ -128,13 +106,10 @@ export function useTimer(
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
-    window.addEventListener('focusin', focus);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
-      window.removeEventListener('focusin', focus);
-      cancelSpace();
     };
   }, [disabled, press, release, update]);
   useEffect(() => {
