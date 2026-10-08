@@ -43,6 +43,31 @@ test('the widget focus preference persists and leaves widgets visible when disab
   const setting = page.getByLabel('Hide widgets in focus mode');
   await expect(setting).toBeChecked();
   await setting.uncheck();
+  // The checkbox updates immediately; reload only after the IndexedDB write commits.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<boolean | undefined>((resolve, reject) => {
+            const request = indexedDB.open('turn-timer');
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+              const database = request.result;
+              const transaction = database.transaction('settings', 'readonly');
+              const setting = transaction.objectStore('settings').get('preferences');
+              transaction.oncomplete = () => {
+                database.close();
+                resolve(setting.result?.value.hideWidgetsInFocus);
+              };
+              transaction.onabort = () => {
+                database.close();
+                reject(transaction.error);
+              };
+            };
+          }),
+      ),
+    )
+    .toBe(false);
   await page.reload();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(setting).not.toBeChecked();
