@@ -179,12 +179,23 @@ button svg {
   box-shadow: var(--shadow);
 }
 .scramble-bar {
+  container-type: inline-size;
   display: flex;
   align-items: center;
   gap: 28px;
   border-radius: 50px;
   padding: 18px 22px;
   min-height: 96px;
+}
+.scramble-controls {
+  display: contents;
+}
+.scramble-bar-expanded .scramble-controls {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 .event-pill {
   font-size: 19px;
@@ -198,15 +209,18 @@ button svg {
   background: color-mix(in srgb, var(--tint) 50%, transparent);
 }
 .scramble-text {
+  order: 1;
   flex: 1;
+  min-width: 0;
   text-align: center;
   letter-spacing: 1px;
-  font-size: clamp(16px, 1.5vw, 24px);
+  font-size: clamp(14px, 1.65cqi, 24px);
   line-height: 1.7;
   font-family: ui-monospace, 'SFMono-Regular', monospace;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .scramble-actions {
+  order: 2;
   display: flex;
   gap: 12px;
 }
@@ -637,9 +651,6 @@ textarea {
   .scramble-bar {
     gap: 16px;
   }
-  .scramble-text {
-    font-size: 16px;
-  }
   .event-pill {
     padding: 12px;
   }
@@ -682,13 +693,15 @@ textarea {
     order: 0;
   }
   .scramble-actions {
-    margin-left: auto;
+    gap: 8px;
+  }
+  .scramble-bar:not(.scramble-bar-expanded) .scramble-actions {
     order: 1;
+    margin-left: auto;
   }
   .scramble-text {
     order: 2;
     flex-basis: 100%;
-    font-size: 16px;
     letter-spacing: 0.5px;
   }
   .timer-area {

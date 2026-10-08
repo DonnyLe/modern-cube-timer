@@ -24,6 +24,7 @@ import { Background } from './components/Background';
 import { Trend } from './components/Trend';
 import { Preview } from './components/Preview';
 import { Select } from './components/Select';
+import { ScrambleBar } from './components/ScrambleBar';
 import { Dialog } from './components/Dialog';
 import { Settings } from './components/Settings';
 import { Gallery } from './components/Gallery';
@@ -243,45 +244,50 @@ export default function App() {
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
         <main className="workspace-default">
-          <section className="scramble-bar glass">
-            <Select
-              label="Puzzle"
-              value={puzzle}
-              options={puzzleEvents.map((event) => ({ value: event, label: puzzles[event].label }))}
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-              onOpenChange={setPuzzlePickerOpen}
-            />
-            <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
-            <div className="scramble-actions">
-              <button
-                aria-label="Copy scramble"
-                className="icon-button"
-                disabled={!scramble.scramble}
-                onClick={() => {
-                  void navigator.clipboard
-                    .writeText(scramble.scramble)
-                    .then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1600);
-                    })
-                    .catch(() =>
-                      store.setError('Could not copy. Select and copy the scramble text.'),
-                    );
-                }}
-              >
-                {copied ? <Check /> : <Copy />}
-              </button>
-              <button
-                aria-label="New scramble"
-                className="icon-button"
-                disabled={busy || scramble.loading}
-                onClick={() => void scramble.next()}
-              >
-                <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
-              </button>
+          <ScrambleBar scramble={scramble.scramble}>
+            <div className="scramble-controls">
+              <Select
+                label="Puzzle"
+                value={puzzle}
+                options={puzzleEvents.map((event) => ({
+                  value: event,
+                  label: puzzles[event].label,
+                }))}
+                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+                onOpenChange={setPuzzlePickerOpen}
+              />
+              <div className="scramble-actions">
+                <button
+                  aria-label="Copy scramble"
+                  className="icon-button"
+                  disabled={!scramble.scramble}
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(scramble.scramble)
+                      .then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1600);
+                      })
+                      .catch(() =>
+                        store.setError('Could not copy. Select and copy the scramble text.'),
+                      );
+                  }}
+                >
+                  {copied ? <Check /> : <Copy />}
+                </button>
+                <button
+                  aria-label="New scramble"
+                  className="icon-button"
+                  disabled={busy || scramble.loading}
+                  onClick={() => void scramble.next()}
+                >
+                  <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
+                </button>
+              </div>
             </div>
-          </section>
+            <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
+          </ScrambleBar>
           {scramble.error && (
             <p role="alert" className="inline-error">
               {scramble.error}

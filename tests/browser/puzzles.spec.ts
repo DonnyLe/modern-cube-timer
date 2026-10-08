@@ -72,6 +72,38 @@ test('long scrambles fit the mobile layout', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
+test('scramble actions move below the selector only for long scrambles', async ({ page }) => {
+  await page.goto('/');
+  const bar = page.locator('.scramble-bar');
+  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+  const actions = page.locator('.scramble-actions');
+  const ready = () =>
+    expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+      timeout: 60000,
+    });
+  await ready();
+  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
+  expect((await actions.boundingBox())!.x).toBeGreaterThan((await selector.boundingBox())!.x);
+
+  await selectPuzzle(page, '666');
+  await ready();
+  await expect(bar).toHaveClass(/scramble-bar-expanded/);
+  const selectorBox = (await selector.boundingBox())!;
+  expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(
+    selectorBox.y + selectorBox.height,
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(bar).toHaveClass(/scramble-bar-expanded/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+
+  await selectPuzzle(page, '222');
+  await ready();
+  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
+});
+
 test('puzzle dropdown supports keyboard selection, Escape, and guards timer shortcuts', async ({
   page,
 }) => {
