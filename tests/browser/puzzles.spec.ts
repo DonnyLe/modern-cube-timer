@@ -2,8 +2,26 @@ import { test, expect, type Page } from '@playwright/test';
 import { puzzleEvents, puzzles } from '../../src/core/puzzles';
 
 async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
-  await page.getByRole('combobox', { name: 'Puzzle', exact: true }).click();
-  await page.getByRole('option', { name: puzzles[event].label, exact: true }).click();
+  const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+  await expect(picker).toBeEnabled();
+  await picker.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('listbox')).toBeVisible();
+  // Use the dropdown's keyboard navigation rather than racing Firefox's
+  // pointer handling while the popup positions and scrolls its current item.
+  await page.keyboard.press('Home');
+  await expect(
+    page.getByRole('option', { name: puzzles[puzzleEvents[0]].label, exact: true }),
+  ).toBeFocused();
+  for (let index = 0; index < puzzleEvents.indexOf(event); index++) {
+    await page.keyboard.press('ArrowDown');
+    await expect(
+      page.getByRole('option', { name: puzzles[puzzleEvents[index + 1]].label, exact: true }),
+    ).toBeFocused();
+  }
+  await expect(page.getByRole('option', { name: puzzles[event].label, exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(picker).toHaveText(puzzles[event].label);
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
