@@ -188,3 +188,67 @@ test('focus mode fits on mobile and respects reduced motion', async ({ page }) =
   await page.getByRole('link', { name: 'Exit focus mode' }).click();
   await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
 });
+
+test('exiting focus restores settled widgets and the Timer selection before fading in', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 850, height: 1000 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 30000,
+  });
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await page.getByRole('button', { name: 'Enter focus mode' }).click();
+  await expect(page.locator('.app')).toHaveClass(/is-focused/);
+  await expect
+    .poll(() =>
+      page.locator('.workspace-default').evaluate((el) => Number(getComputedStyle(el).opacity)),
+    )
+    .toBe(1);
+  await page.evaluate(() => {
+    const state = window as typeof window & {
+      exitFrames: { y: number; selectionOffset: number }[];
+    };
+    state.exitFrames = [];
+    const sample = () => {
+      const main = document.querySelector('.workspace-default');
+      const widget = document.querySelector('.widget-row');
+      const selection = document.querySelector('.segmented-selection');
+      const timer = document.querySelector('.segmented button');
+      if (
+        !document.querySelector('.is-focused') &&
+        main &&
+        widget &&
+        selection &&
+        timer &&
+        Number(getComputedStyle(main).opacity) > 0.01
+      ) {
+        state.exitFrames.push({
+          y: widget.getBoundingClientRect().y,
+          selectionOffset: selection.getBoundingClientRect().x - timer.getBoundingClientRect().x,
+        });
+      }
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
+  await expect
+    .poll(() =>
+      page.locator('.workspace-default').evaluate((el) => Number(getComputedStyle(el).opacity)),
+    )
+    .toBe(1);
+  const frames = await page.evaluate(
+    () =>
+      (window as typeof window & { exitFrames: { y: number; selectionOffset: number }[] })
+        .exitFrames,
+  );
+  expect(frames.length).toBeGreaterThan(1);
+  const finalY = frames.at(-1)!.y;
+  for (const frame of frames) {
+    expect(Math.abs(frame.y - finalY)).toBeLessThan(1);
+    expect(Math.abs(frame.selectionOffset)).toBeLessThan(1);
+  }
+});

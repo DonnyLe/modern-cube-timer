@@ -151,14 +151,6 @@ button svg {
 .is-focused .brand::after {
   opacity: 0.65;
 }
-.topbar .segmented,
-.topbar .header-actions,
-.puzzle-selector {
-  transition:
-    opacity 0.2s,
-    transform 0.24s,
-    visibility 0s;
-}
 .is-focused .topbar .segmented,
 .is-focused .topbar .header-actions,
 .is-focused .puzzle-selector {
@@ -166,10 +158,6 @@ button svg {
   transform: translateY(-8px);
   visibility: hidden;
   pointer-events: none;
-  transition:
-    opacity 0.2s,
-    transform 0.24s,
-    visibility 0s 0.24s;
 }
 .focus-widgets {
   display: grid;

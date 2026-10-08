@@ -51,7 +51,8 @@ export default function App() {
     [saving, setSaving] = useState(false),
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
     [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false),
-    [focused, setFocused] = useState(false);
+    [focused, setFocused] = useState(false),
+    [navigationGeneration, setNavigationGeneration] = useState(0);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const reducedMotion = useReducedMotion();
   const focusFade = useAnimationControls();
@@ -62,17 +63,20 @@ export default function App() {
       if (reducedMotion) {
         focusFade.stop();
         focusFade.set({ opacity: 1 });
+        setNavigationGeneration((generation) => generation + 1);
         setFocused(next);
         return;
       }
       await focusFade.start({ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.12 } });
       if (request !== focusRequest.current) return;
-      flushSync(() => setFocused(next));
+      flushSync(() => {
+        setNavigationGeneration((generation) => generation + 1);
+        setFocused(next);
+      });
       await focusFade.start({ opacity: 1, transition: { duration: reducedMotion ? 0 : 0.2 } });
     },
     [focusFade, reducedMotion],
   );
-  const focusTransition = { duration: reducedMotion ? 0 : 0.24, ease: 'easeOut' as const };
   useEffect(() => {
     if (!focused) return;
     const exitFocus = (event: KeyboardEvent) => {
@@ -199,17 +203,8 @@ export default function App() {
     >
       <Background appearance={a} paused={busy} />
       <UpdateNotice busy={busy || saving} />
-      <motion.header
-        animate={focusFade}
-        className="topbar"
-        layout="position"
-        layoutDependency={focused}
-        transition={focusTransition}
-      >
+      <motion.header animate={focusFade} className="topbar">
         <motion.a
-          layout="position"
-          layoutDependency={focused}
-          transition={focusTransition}
           ref={brandRef}
           className="brand"
           href="#"
@@ -226,7 +221,7 @@ export default function App() {
         >
           turn
         </motion.a>
-        <MotionConfig reducedMotion="user">
+        <MotionConfig key={navigationGeneration} reducedMotion="user">
           <nav
             className="segmented"
             aria-label="Main navigation"
@@ -243,8 +238,9 @@ export default function App() {
               >
                 {view === v && (
                   <motion.span
+                    initial={false}
                     className="segmented-selection"
-                    layoutId="main-navigation-selection"
+                    layoutId={`main-navigation-selection-${navigationGeneration}`}
                     transition={{ type: 'spring', stiffness: 180, damping: 26 }}
                     aria-hidden="true"
                   />
@@ -311,13 +307,7 @@ export default function App() {
       {!store.ready ? (
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
-        <motion.main
-          animate={focusFade}
-          className="workspace-default"
-          layout="position"
-          layoutDependency={focused}
-          transition={focusTransition}
-        >
+        <motion.main animate={focusFade} className="workspace-default">
           <section className="scramble-bar" aria-label="Scramble">
             <div className="scramble-controls">
               <div className="scramble-actions">
