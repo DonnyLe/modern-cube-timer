@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { layout, prepare, type PreparedText } from '@chenglou/pretext';
 
 export function ScrambleBar({ scramble, children }: { scramble: string; children: ReactNode }) {
@@ -49,7 +50,12 @@ export function ScrambleBar({ scramble, children }: { scramble: string; children
       );
       setExpanded(lineCount > 2);
     };
-    const observer = new ResizeObserver(measure);
+    // Resolve new scramble content before paint, rather than waiting for the observer.
+    measure();
+    const observer = new ResizeObserver(() => {
+      // ResizeObserver runs before paint, but React may otherwise defer its state update.
+      flushSync(measure);
+    });
     observer.observe(bar);
     return () => observer.disconnect();
   }, [scramble]);

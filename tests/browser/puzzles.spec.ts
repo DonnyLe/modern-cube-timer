@@ -104,6 +104,45 @@ test('scramble actions move below the selector only for long scrambles', async (
   await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
 });
 
+test('long scrambles use the expanded layout on their first frame', async ({ page }) => {
+  await page.addInitScript(() => {
+    const state = window as typeof window & { scrambleLayoutFrames: boolean[] };
+    state.scrambleLayoutFrames = [];
+    const sample = () => {
+      const bar = document.querySelector('.scramble-bar');
+      const text = bar?.querySelector('.scramble-text')?.textContent || '';
+      if (text.length > 200) {
+        state.scrambleLayoutFrames.push(bar!.classList.contains('scramble-bar-expanded'));
+      }
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.goto('/');
+  await selectPuzzle(page, '666');
+  const assertFrames = async () => {
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as typeof window & { scrambleLayoutFrames: boolean[] }).scrambleLayoutFrames
+              .length,
+        ),
+      )
+      .toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        (window as typeof window & { scrambleLayoutFrames: boolean[] }).scrambleLayoutFrames.every(
+          Boolean,
+        ),
+      ),
+    ).toBe(true);
+  };
+  await assertFrames();
+  await page.reload();
+  await assertFrames();
+});
+
 test('puzzle dropdown supports keyboard selection, Escape, and guards timer shortcuts', async ({
   page,
 }) => {
