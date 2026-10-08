@@ -218,6 +218,19 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
+          <Select
+            label="Puzzle"
+            value={puzzle}
+            options={puzzleEvents.map((event) => ({
+              value: event,
+              label: puzzles[event].label,
+            }))}
+            disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+            onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+            onOpenChange={setPuzzlePickerOpen}
+          />
+        </div>
         <div className="header-actions" inert={focused} aria-hidden={focused}>
           <button
             className="icon-button glass"
@@ -282,19 +295,6 @@ export default function App() {
         <main className="workspace-default">
           <section className="scramble-bar" aria-label="Scramble">
             <div className="scramble-controls">
-              <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
-                <Select
-                  label="Puzzle"
-                  value={puzzle}
-                  options={puzzleEvents.map((event) => ({
-                    value: event,
-                    label: puzzles[event].label,
-                  }))}
-                  disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-                  onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-                  onOpenChange={setPuzzlePickerOpen}
-                />
-              </div>
               <div className="scramble-actions">
                 <button
                   aria-label="Copy scramble"

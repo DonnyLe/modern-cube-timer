@@ -76,6 +76,12 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   await page.goto('/');
   const actions = page.locator('.scramble-actions');
   const text = page.locator('.scramble-text');
+  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+  const navBox = (await page.locator('.segmented').boundingBox())!;
+  const selectorBox = (await selector.boundingBox())!;
+  const headerActionsBox = (await page.locator('.header-actions').boundingBox())!;
+  expect(selectorBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width);
+  expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(headerActionsBox.x);
   for (const event of ['333', '666', '222'] as const) {
     await selectPuzzle(page, event);
     await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
