@@ -62,21 +62,6 @@ test('rapid switches cannot leave an old puzzle scramble or preview', async ({ p
   });
   await expect(page.locator('.preview-caption')).toHaveText('Pyraminx state preview');
 });
-test('long scrambles fit the mobile layout', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
-  await selectPuzzle(page, 'minx');
-  await expect(page.locator('.cube-preview')).toHaveAttribute('data-status', 'ready', {
-    timeout: 30000,
-  });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  expect(
-    await page
-      .locator('.scramble-text')
-      .evaluate((element) => element.scrollHeight <= element.clientHeight + 1),
-  ).toBe(true);
-});
-
 test('Megaminx uses the available width without an inner scrollbar and navigation stacks above controls', async ({
   page,
 }) => {
@@ -102,6 +87,9 @@ test('Megaminx uses the available width without an inner scrollbar and navigatio
     expect(navBox.y + navBox.height).toBeLessThanOrEqual(selectorBox.y);
     expect(navBox.y + navBox.height).toBeLessThanOrEqual(actionsBox.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    expect(await text.evaluate((element) => element.scrollHeight <= element.clientHeight + 1)).toBe(
+      true,
+    );
   }
 });
 

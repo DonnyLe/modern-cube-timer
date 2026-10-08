@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { flushSync } from 'react-dom';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { motion, MotionConfig, useAnimationControls, useReducedMotion } from 'motion/react';
+import { motion, MotionConfig } from 'motion/react';
 import {
   Copy,
   RefreshCw,
@@ -19,6 +18,7 @@ import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
 import type { Solve, Penalty } from './core/types';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
 import { useTimer } from './core/useTimer';
+import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
 import { Background } from './components/Background';
 import { Trend } from './components/Trend';
@@ -50,37 +50,9 @@ export default function App() {
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false),
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
-    [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false),
-    [focused, setFocused] = useState(false);
+    [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
-  const reducedMotion = useReducedMotion();
-  const focusFade = useAnimationControls();
-  const focusRequest = useRef(0);
-  const changeFocus = useCallback(
-    async (next: boolean) => {
-      const request = ++focusRequest.current;
-      if (reducedMotion) {
-        focusFade.stop();
-        focusFade.set({ opacity: 1 });
-        setFocused(next);
-        return;
-      }
-      await focusFade.start({ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.12 } });
-      if (request !== focusRequest.current) return;
-      flushSync(() => setFocused(next));
-      await focusFade.start({ opacity: 1, transition: { duration: reducedMotion ? 0 : 0.2 } });
-    },
-    [focusFade, reducedMotion],
-  );
-  useEffect(() => {
-    if (!focused) return;
-    const exitFocus = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !event.defaultPrevented && !dialog && !puzzlePickerOpen)
-        void changeFocus(false);
-    };
-    window.addEventListener('keydown', exitFocus);
-    return () => window.removeEventListener('keydown', exitFocus);
-  }, [focused, dialog, puzzlePickerOpen, changeFocus]);
+  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || puzzlePickerOpen);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(

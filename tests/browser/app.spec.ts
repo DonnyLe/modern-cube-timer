@@ -31,6 +31,10 @@ for (const focus of ['background', 'timer'] as const) {
     await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
     await expect(page.locator('.app')).not.toHaveClass(/is-running/);
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    await page.getByRole('button', { name: 'Add manual solve' }).click();
+    await page.getByLabel('Time in seconds').press('Space');
+    await expect(page.locator('.app')).not.toHaveClass(/is-running/);
+    await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   });
 }
 
@@ -71,24 +75,6 @@ test('manual solve, penalty, statistics, theme and persistence', async ({ page }
   await page.reload();
   await expect(page.locator('.recent-list')).toContainText('14.84');
   await expect(page.locator('.app')).toHaveClass(/theme-dark/);
-});
-test('keyboard timing and input guards', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
-    timeout: 30000,
-  });
-  await page.locator('body').click({ position: { x: 5, y: 5 } });
-  await page.keyboard.down('Space');
-  await page.waitForTimeout(350);
-  await page.keyboard.up('Space');
-  await expect(page.locator('.app')).toHaveClass(/is-running/);
-  await page.waitForTimeout(150);
-  await page.keyboard.down('Space');
-  await page.keyboard.up('Space');
-  await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Add manual solve' }).click();
-  await page.getByLabel('Time in seconds').press('Space');
-  await expect(page.locator('.app')).not.toHaveClass(/is-running/);
 });
 test('mobile workspace fits and settings apply', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

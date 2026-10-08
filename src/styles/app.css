@@ -193,13 +193,13 @@ button svg {
   background: transparent;
 }
 .segmented button.active {
-  color: var(--ink);
+  color: var(--tint);
 }
 .segmented-selection {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: color-mix(in srgb, var(--accent) 10%, var(--tint));
+  background: var(--accent);
   pointer-events: none;
 }
 .segmented-label {
