@@ -98,12 +98,26 @@ button svg {
   transition: opacity 0.4s;
 }
 .topbar {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(246px, 1fr) minmax(0, 465px) minmax(246px, 1fr);
   align-items: center;
   justify-content: space-between;
   margin: 0 0 36px;
   gap: 20px;
+}
+.is-focused .topbar {
+  display: flex;
+  margin-bottom: 24px;
+}
+.is-focused .topbar .segmented,
+.is-focused .topbar-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.is-focused .topbar-controls {
+  display: flex;
 }
 .topbar .segmented {
   width: 100%;
@@ -679,17 +693,21 @@ textarea {
     margin: auto;
   }
 }
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .topbar {
     grid-template-columns: auto 1fr;
   }
+  .topbar .brand {
+    grid-column: 1;
+    grid-row: 2;
+  }
   .topbar-controls {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 2;
   }
   .topbar .segmented {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 1;
     justify-self: center;
     width: min(465px, 100%);
   }
@@ -746,12 +764,12 @@ textarea {
   }
   .header-actions {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 2;
     justify-self: end;
   }
   .segmented {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 1;
     width: 100%;
     margin-top: 8px;
   }
@@ -1109,11 +1127,6 @@ input[type='range'] {
     transition: none;
   }
 }
-.scramble-text {
-  max-height: 190px;
-  overflow: auto;
-  white-space: pre-wrap;
-}
 .cube-preview > svg {
   display: block;
   width: 100%;
@@ -1123,8 +1136,5 @@ input[type='range'] {
   .custom-select-trigger {
     width: 145px;
     padding: 8px 14px;
-  }
-  .scramble-text {
-    max-height: 230px;
   }
 }

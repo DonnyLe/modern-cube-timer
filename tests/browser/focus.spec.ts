@@ -20,7 +20,7 @@ test('focus mode hides header controls, puzzle selector and widgets, and exits o
   await expect.poll(async () => (await widgets.boundingBox())?.height ?? 0).toBeLessThan(1);
   await expect(page.getByRole('button', { name: 'Copy scramble' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeVisible();
-  expect((await text.boundingBox())!.y).toBe(originalY);
+  await expect.poll(async () => (await text.boundingBox())!.y).toBeLessThan(originalY);
   await page.getByRole('link', { name: 'Exit focus mode' }).hover();
   await expect(nav).toBeVisible();
   await expect(widgets).toBeVisible();
@@ -56,9 +56,17 @@ test('focus mode fits on mobile and respects reduced motion', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
+  const originalHeaderHeight = (await page.locator('.topbar').boundingBox())!.height;
+  const originalScrambleY = (await page.locator('.scramble-text').boundingBox())!.y;
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
   await expect(page.locator('.segmented')).toBeHidden();
   await expect(page.locator('.focus-widgets')).toBeHidden();
+  expect((await page.locator('.topbar').boundingBox())!.height).toBeLessThan(
+    originalHeaderHeight - 50,
+  );
+  expect((await page.locator('.scramble-text').boundingBox())!.y).toBeLessThan(
+    originalScrambleY - 50,
+  );
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   expect(
     await page

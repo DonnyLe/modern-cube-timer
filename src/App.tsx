@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   Copy,
   RefreshCw,
@@ -47,6 +48,8 @@ export default function App() {
     [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false),
     [focused, setFocused] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
+  const reducedMotion = useReducedMotion();
+  const focusTransition = { duration: reducedMotion ? 0 : 0.24, ease: 'easeOut' as const };
   useEffect(() => {
     if (!focused) return;
     const exitFocus = (event: KeyboardEvent) => {
@@ -173,8 +176,16 @@ export default function App() {
     >
       <Background appearance={a} paused={busy} />
       <UpdateNotice busy={busy || saving} />
-      <header className="topbar">
-        <a
+      <motion.header
+        className="topbar"
+        layout="position"
+        layoutDependency={focused}
+        transition={focusTransition}
+      >
+        <motion.a
+          layout="position"
+          layoutDependency={focused}
+          transition={focusTransition}
           ref={brandRef}
           className="brand"
           href="#"
@@ -190,7 +201,7 @@ export default function App() {
           }}
         >
           turn
-        </a>
+        </motion.a>
         <nav
           className="segmented"
           aria-label="Main navigation"
@@ -240,7 +251,7 @@ export default function App() {
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
       {store.error && (
         <div className="error-banner" role="alert">
           {store.error}
@@ -267,7 +278,12 @@ export default function App() {
       {!store.ready ? (
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
-        <main className="workspace-default">
+        <motion.main
+          className="workspace-default"
+          layout="position"
+          layoutDependency={focused}
+          transition={focusTransition}
+        >
           <section className="scramble-bar" aria-label="Scramble">
             <div className="scramble-controls">
               <div className="scramble-actions">
@@ -419,7 +435,7 @@ export default function App() {
               </article>
             </section>
           </div>
-        </main>
+        </motion.main>
       ) : view === 'Settings' ? (
         <Settings dataControls={<DataControls />} />
       ) : (

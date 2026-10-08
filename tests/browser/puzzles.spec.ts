@@ -70,6 +70,39 @@ test('long scrambles fit the mobile layout', async ({ page }) => {
     timeout: 30000,
   });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  expect(
+    await page
+      .locator('.scramble-text')
+      .evaluate((element) => element.scrollHeight <= element.clientHeight + 1),
+  ).toBe(true);
+});
+
+test('Megaminx uses the available width without an inner scrollbar and navigation stacks above controls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1130, height: 900 });
+  await page.goto('/');
+  await selectPuzzle(page, 'minx');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 60000,
+  });
+  const text = page.locator('.scramble-text');
+  const textBox = (await text.boundingBox())!;
+  const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+  expect(textBox.width).toBeCloseTo(barBox.width, 0);
+  expect(await text.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe('normal');
+  expect(await text.evaluate((element) => element.scrollHeight <= element.clientHeight + 1)).toBe(
+    true,
+  );
+  for (const width of [850, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const navBox = (await page.locator('.segmented').boundingBox())!;
+    const selectorBox = (await page.locator('.puzzle-selector').boundingBox())!;
+    const actionsBox = (await page.locator('.header-actions').boundingBox())!;
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(selectorBox.y);
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(actionsBox.y);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
 });
 
 test('scramble controls stay below floating text at desktop and mobile sizes', async ({ page }) => {
