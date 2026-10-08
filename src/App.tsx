@@ -218,52 +218,54 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
-          <Select
-            label="Puzzle"
-            value={puzzle}
-            options={puzzleEvents.map((event) => ({
-              value: event,
-              label: puzzles[event].label,
-            }))}
-            disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-            onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-            onOpenChange={setPuzzlePickerOpen}
-          />
-        </div>
-        <div className="header-actions" inert={focused} aria-hidden={focused}>
-          <button
-            className="icon-button glass"
-            title="Enter focus mode"
-            aria-label="Enter focus mode"
-            disabled={busy || view !== 'Timer'}
-            onClick={(event) => {
-              setFocused(true);
-              if (event.detail === 0) brandRef.current?.focus();
-              else event.currentTarget.blur();
-            }}
-          >
-            <Scan />
-          </button>
-          <button
-            className="icon-button glass"
-            title="Toggle theme"
-            aria-label="Toggle theme"
-            onClick={theme}
-          >
-            {a.theme === 'light' ? <Sun /> : <Moon />}
-          </button>
-          <button
-            className={`icon-button glass ${!a.motion ? 'muted' : ''}`}
-            title="Toggle background motion"
-            aria-label="Toggle background motion"
-            aria-pressed={a.motion}
-            onClick={() =>
-              store.setWorkspace({ ...workspace, appearance: { ...a, motion: !a.motion } })
-            }
-          >
-            <Waves />
-          </button>
+        <div className="topbar-controls">
+          <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
+            <Select
+              label="Puzzle"
+              value={puzzle}
+              options={puzzleEvents.map((event) => ({
+                value: event,
+                label: puzzles[event].label,
+              }))}
+              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+              onOpenChange={setPuzzlePickerOpen}
+            />
+          </div>
+          <div className="header-actions" inert={focused} aria-hidden={focused}>
+            <button
+              className="icon-button glass"
+              title="Enter focus mode"
+              aria-label="Enter focus mode"
+              disabled={busy || view !== 'Timer'}
+              onClick={(event) => {
+                setFocused(true);
+                if (event.detail === 0) brandRef.current?.focus();
+                else event.currentTarget.blur();
+              }}
+            >
+              <Scan />
+            </button>
+            <button
+              className="icon-button glass"
+              title="Toggle theme"
+              aria-label="Toggle theme"
+              onClick={theme}
+            >
+              {a.theme === 'light' ? <Sun /> : <Moon />}
+            </button>
+            <button
+              className={`icon-button glass ${!a.motion ? 'muted' : ''}`}
+              title="Toggle background motion"
+              aria-label="Toggle background motion"
+              aria-pressed={a.motion}
+              onClick={() =>
+                store.setWorkspace({ ...workspace, appearance: { ...a, motion: !a.motion } })
+              }
+            >
+              <Waves />
+            </button>
+          </div>
         </div>
       </header>
       {store.error && (

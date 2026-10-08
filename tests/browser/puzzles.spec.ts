@@ -78,6 +78,8 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   const text = page.locator('.scramble-text');
   const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
   const navBox = (await page.locator('.segmented').boundingBox())!;
+  const topbarBox = (await page.locator('.topbar').boundingBox())!;
+  expect(navBox.x + navBox.width / 2).toBeCloseTo(topbarBox.x + topbarBox.width / 2, 0);
   const selectorBox = (await selector.boundingBox())!;
   const headerActionsBox = (await page.locator('.header-actions').boundingBox())!;
   expect(selectorBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width);
@@ -93,6 +95,12 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
       expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
       const actionsBox = (await actions.boundingBox())!;
       const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+      const currentNav = (await page.locator('.segmented').boundingBox())!;
+      const currentTopbar = (await page.locator('.topbar').boundingBox())!;
+      expect(currentNav.x + currentNav.width / 2).toBeCloseTo(
+        currentTopbar.x + currentTopbar.width / 2,
+        0,
+      );
       expect(actionsBox.x + actionsBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     }
