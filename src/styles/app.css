@@ -174,10 +174,6 @@ button svg {
 .focus-widgets {
   display: grid;
   grid-template-rows: 1fr;
-  transition:
-    grid-template-rows 0.24s,
-    opacity 0.2s,
-    visibility 0s;
 }
 .focus-widgets > .widget-row {
   min-height: 0;
@@ -187,10 +183,6 @@ button svg {
   grid-template-rows: 0fr;
   opacity: 0;
   visibility: hidden;
-  transition:
-    grid-template-rows 0.24s,
-    opacity 0.2s,
-    visibility 0s 0.24s;
 }
 .segmented {
   display: flex;

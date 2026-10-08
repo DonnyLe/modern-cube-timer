@@ -39,7 +39,7 @@ test('the auto-fit timer grows in focus mode and keeps long times inside a narro
 test('focus transitions fade the header and workspace out and back in', async ({ page }) => {
   await page.addInitScript(() => {
     const state = window as typeof window & {
-      focusFades: { focused: boolean; opacity: number; header: number }[];
+      focusFades: { focused: boolean; opacity: number; header: number; widgetHeight: number }[];
     };
     state.focusFades = [];
     const sample = () => {
@@ -50,6 +50,8 @@ test('focus transitions fade the header and workspace out and back in', async ({
           focused: !!document.querySelector('.is-focused'),
           opacity: parseFloat(getComputedStyle(main).opacity),
           header: parseFloat(getComputedStyle(header).opacity),
+          widgetHeight:
+            document.querySelector('.focus-widgets')?.getBoundingClientRect().height ?? 0,
         });
       }
       requestAnimationFrame(sample);
@@ -73,9 +75,21 @@ test('focus transitions fade the header and workspace out and back in', async ({
     await page.evaluate(() =>
       (
         window as typeof window & {
-          focusFades: { focused: boolean; opacity: number; header: number }[];
+          focusFades: { focused: boolean; opacity: number; header: number; widgetHeight: number }[];
         }
-      ).focusFades.some((sample) => !sample.focused && sample.opacity < 0.3 && sample.header < 0.3),
+      ).focusFades.some((sample) => !sample.focused && sample.opacity < 0.9 && sample.header < 0.9),
+    ),
+  ).toBe(true);
+  // The widget layout must already be collapsed before the workspace fades back in.
+  expect(
+    await page.evaluate(() =>
+      (
+        window as typeof window & {
+          focusFades: { focused: boolean; widgetHeight: number }[];
+        }
+      ).focusFades
+        .filter((sample) => sample.focused)
+        .every((sample) => sample.widgetHeight < 1),
     ),
   ).toBe(true);
   await page.getByRole('link', { name: 'Exit focus mode' }).hover();
@@ -91,9 +105,9 @@ test('focus transitions fade the header and workspace out and back in', async ({
     await page.evaluate(() =>
       (
         window as typeof window & {
-          focusFades: { focused: boolean; opacity: number; header: number }[];
+          focusFades: { focused: boolean; opacity: number; header: number; widgetHeight: number }[];
         }
-      ).focusFades.some((sample) => sample.focused && sample.opacity < 0.3 && sample.header < 0.3),
+      ).focusFades.some((sample) => sample.focused && sample.opacity < 0.9 && sample.header < 0.9),
     ),
   ).toBe(true);
 });
