@@ -337,11 +337,15 @@ export default function App() {
             </button>
             <button
               data-timer
-              className={`timer-number ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
+              className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
               aria-label="Timer. Hold to start, press to stop"
               style={{
                 fontWeight: a.timerWeight,
-                fontSize: a.autoFit ? `clamp(64px,11vw,${a.timerSize}px)` : `${a.timerSize}px`,
+                fontSize: a.autoFit
+                  ? focused
+                    ? `clamp(64px, min(34vw, 32svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 420px)`
+                    : `clamp(64px,11vw,${a.timerSize}px)`
+                  : `${a.timerSize}px`,
                 fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',
               }}
               onPointerDown={(e) => {

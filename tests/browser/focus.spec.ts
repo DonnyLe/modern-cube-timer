@@ -1,5 +1,38 @@
 import { test, expect } from '@playwright/test';
 
+test('the auto-fit timer grows in focus mode and keeps long times inside a narrow viewport', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const timer = page.locator('[data-timer]');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 30000,
+  });
+  const normalSize = await timer.evaluate((element) =>
+    parseFloat(getComputedStyle(element).fontSize),
+  );
+  await page.getByRole('button', { name: 'Enter focus mode' }).click();
+  await expect
+    .poll(() => timer.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)))
+    .toBeGreaterThan(normalSize * 1.4);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await timer.evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
+  ).toBeGreaterThan(100);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.getByRole('link', { name: 'Exit focus mode' }).click();
+  await page.getByRole('button', { name: 'Add manual solve' }).click();
+  await page.getByLabel('Time in seconds').fill('83.45');
+  await page.getByRole('button', { name: 'Save solve' }).click();
+  await expect(timer).toHaveText('1:23.45');
+  await page.getByRole('button', { name: 'Enter focus mode' }).click();
+  await expect(timer).toHaveText('1:23.45');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  const timerBox = (await timer.boundingBox())!;
+  expect(timerBox.x).toBeGreaterThanOrEqual(0);
+  expect(timerBox.x + timerBox.width).toBeLessThanOrEqual(390);
+});
+
 test('focus mode hides header controls, puzzle selector and widgets, and exits on logo hover or Escape', async ({
   page,
 }) => {
