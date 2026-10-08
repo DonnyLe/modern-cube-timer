@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { motion, MotionConfig } from 'motion/react';
 import {
   Copy,
   RefreshCw,
@@ -180,20 +181,29 @@ export default function App() {
         >
           turn
         </a>
-        <nav className="segmented" aria-label="Main navigation">
-          {['Timer', 'Settings', 'Gallery'].map((v) => (
-            <button
-              key={v}
-              disabled={busy}
-              className={view === v ? 'active' : ''}
-              aria-current={view === v ? 'page' : undefined}
-              onClick={() => setView(v)}
-            >
-              {view === v && <i />}
-              {v}
-            </button>
-          ))}
-        </nav>
+        <MotionConfig reducedMotion="user">
+          <nav className="segmented" aria-label="Main navigation">
+            {['Timer', 'Settings', 'Gallery'].map((v) => (
+              <button
+                key={v}
+                disabled={busy}
+                className={view === v ? 'active' : ''}
+                aria-current={view === v ? 'page' : undefined}
+                onClick={() => setView(v)}
+              >
+                {view === v && (
+                  <motion.span
+                    className="segmented-selection"
+                    layoutId="main-navigation-selection"
+                    transition={{ type: 'spring', stiffness: 180, damping: 26 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="segmented-label">{v}</span>
+              </button>
+            ))}
+          </nav>
+        </MotionConfig>
         <div className="header-actions">
           <button
             className="icon-button glass"
