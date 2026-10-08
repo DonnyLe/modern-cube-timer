@@ -1,10 +1,10 @@
 # Customizable speed-solving timer — implementation plan
 
-Updated October 2, 2026. This document supersedes the earlier implementation plan and the proposed-product sections of the original feature brief. The selected mockup defines the default visual direction; sample data and decorative preview labels are illustrative, not functional requirements.
+Updated October 6, 2026. This document supersedes the earlier implementation plan and the proposed-product sections of the original feature brief. The selected mockup defines the default visual direction; sample data and decorative preview labels are illustrative, not functional requirements.
 
 ## Product and first release
 
-Build a usable local-first 3×3 timer with the fixed approved desktop composition and a responsive stacked mobile layout. All widget editing, including positioning, resizing, alignment, grouping, visibility, and per-widget styles, is deferred at the user’s request on October 2, 2026. No account is required.
+Build a usable local-first multi-puzzle timer with the fixed approved desktop composition and a responsive stacked mobile layout. All widget editing, including positioning, resizing, alignment, grouping, visibility, and per-widget styles, is deferred at the user’s request on October 2, 2026. No account is required.
 
 Include timing, inspection, penalties, sessions, recent solves, core averages, scramble preview, a session-trend graph, appearance editing, presets, and backup/import. Per-solve notes remain supported. Keep permanent navigation: Timer, Settings, Gallery. Gallery contains built-in and locally saved presets.
 
@@ -43,7 +43,7 @@ Provide an Appearance panel with live preview and three built-in presets: Liquid
 
 ### Stack and module boundaries
 
-Use Bun for dependency management and package scripts, with a pinned Bun version and frozen lockfile in CI. Retain Node for tool compatibility. Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, Zod, and cubing.js. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
+Use Bun for dependency management and package scripts, with a pinned Bun version and frozen lockfile in CI. Retain Node for tool compatibility. Use React, TypeScript, Vite, CSS Modules/variables/container queries, Motion for React, Interact.js, Zustand, Dexie/IndexedDB, Zod, and cubing.js. Use Radix Select for the styled puzzle picker, with keyboard navigation, typeahead, focus restoration, and theme-aware surfaces. Background rendering uses WebGL; there is no Canvas 2D animation or Pretext dependency. Browser text wrapping and fluid sizing handle responsive typography.
 
 Keep timer/statistics logic, persistence, layout geometry, widget renderers, appearance, and background effects separate. Interact.js provides gesture input; our layout module owns constraints, snapping, collision checks, and placement.
 
@@ -56,6 +56,12 @@ Support keyboard, touch, and manual entry. Use an independent state machine and 
 Ignore shortcuts while editing text, in dialogs, and in layout-edit mode. Ignore repeated key events and prevent the touch release after stopping from starting another solve. Preserve explicit editable penalties. Record duration, penalty, scramble, timestamp, session, and optional notes. Include sessions, solve editing, and deletion with undo; confirm session deletion.
 
 Pre-generate scrambles, retain the current one until a replacement is ready, and expose retry on failure. Generate the static puzzle preview from the actual scramble. Core statistics are count, best, mean, mo3, ao5, ao12, and ao100; apply penalties before calculation and test trimming and DNF handling. Detailed analytics are postponed.
+
+### Puzzle support
+
+Support 2×2 through 7×7, Pyraminx, Skewb, Megaminx, Square-1, and Clock. The scramble-bar selector switches to a separate session for that puzzle; each session retains a fixed puzzle type. Lock puzzle changes during timing and solve saving. Generate event-specific scrambles with a per-event prefetch queue, discard stale asynchronous results after switching, and render a matching static SVG state preview. Long scrambles wrap and scroll on smaller screens.
+
+Migrate legacy sessions to 3×3 without altering solves. Version-two native backups preserve and validate puzzle types; version-one backups default missing types to 3×3. Recognize standard csTimer scramble-type metadata and report unsupported types instead of silently importing them as 3×3. CSV exports identify the puzzle and session.
 
 ### Session-trend widget
 
@@ -77,7 +83,7 @@ Below 768 px, use a separate single-column mobile layout with reorder, visibilit
 
 Save solves immediately; show storage failures visibly. Persist settings and layouts with schema versions and migrations. Include native JSON backup/restore, CSV solve export, and standard csTimer JSON session import for times, penalties, scrambles, timestamps, and comments. Use shared Zod schemas at backup/import and saved-settings boundaries. Validate records individually so invalid rows can be previewed without discarding valid solves; default missing version-one appearance fields and reject unsupported versions. Preview invalid/unsupported import records before committing.
 
-Cache the app for offline use after first successful loading. Apply updates between solves. Defer accounts, sync, community publishing, hardware input, more puzzle events, advanced training, nested groups, overlapping layers, and arbitrary CSS.
+Cache the app for offline use after first successful loading. Apply updates between solves. Defer accounts, sync, community publishing, hardware input, specialized solving events, advanced training, nested groups, overlapping layers, and arbitrary CSS.
 
 ## Delivery and validation
 

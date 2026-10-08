@@ -1,42 +1,56 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PuzzleEvent } from './puzzles';
+import { ScrambleQueue } from './scrambleQueue';
 import { loadScramble } from './cubing';
-let queued: Promise<string> | null = null;
-const generate = () =>
+const queue = new ScrambleQueue((event) =>
   loadScramble()
-    .then((m) => m.randomScrambleForEvent('333'))
-    .then((a) => a.toString());
-function prefetch() {
-  const pending = generate();
-  queued = pending;
-  void pending.catch(() => {
-    if (queued === pending) queued = null;
-  });
-}
-export function useScramble() {
-  const [scramble, setScramble] = useState(''),
-    [loading, setLoading] = useState(false),
-    [error, setError] = useState('');
-  const inFlight = useRef(false);
+    .then((m) => m.randomScrambleForEvent(event))
+    .then((a) => a.toString()),
+);
+export function useScramble(event: PuzzleEvent | null) {
+  const [state, setState] = useState<{
+    event: PuzzleEvent | null;
+    scramble: string;
+    loading: boolean;
+    error: string;
+  }>({ event: null, scramble: '', loading: true, error: '' });
+  const active = useRef<object | null>(null);
   const next = useCallback(async () => {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setLoading(true);
+    if (!event || active.current) return;
+    const request = {};
+    active.current = request;
+    setState((previous) => ({
+      event,
+      scramble: previous.event === event ? previous.scramble : '',
+      loading: true,
+      error: '',
+    }));
     try {
-      const pending = queued || generate();
-      queued = null;
-      const result = await pending;
-      setScramble(result);
-      setError('');
-      prefetch();
+      const scramble = await queue.next(event);
+      if (active.current === request) setState({ event, scramble, loading: false, error: '' });
     } catch {
-      setError('Scramble could not load. Retry to continue.');
+      if (active.current === request)
+        setState((previous) => ({
+          ...previous,
+          loading: false,
+          error: 'Scramble could not load. Retry to continue.',
+        }));
     } finally {
-      inFlight.current = false;
-      setLoading(false);
+      if (active.current === request) active.current = null;
     }
-  }, []);
+  }, [event]);
   useEffect(() => {
+    active.current = null;
     void next();
+    return () => {
+      active.current = null;
+    };
   }, [next]);
-  return { scramble, loading, error, next };
+  // Never expose a previous puzzle's scramble during a selection change.
+  return {
+    scramble: state.event === event ? state.scramble : '',
+    loading: !event || state.event !== event || state.loading,
+    error: state.event === event ? state.error : '',
+    next,
+  };
 }

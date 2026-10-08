@@ -38,7 +38,9 @@ export function DataControls() {
             void db.solves
               .orderBy('timestamp')
               .toArray()
-              .then((v) => download(csv(v), 'turn-solves.csv', 'text/csv'))
+              .then(async (v) =>
+                download(csv(v, await db.sessions.toArray()), 'turn-solves.csv', 'text/csv'),
+              )
               .catch((e) => setError(e.message))
           }
         >

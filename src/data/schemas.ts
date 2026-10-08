@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { puzzleEvents } from '../core/puzzles';
 import type { Appearance, Preferences, Session, Solve } from '../core/types';
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i, 'Use a six-digit hex color.');
@@ -56,7 +57,9 @@ export const preferencesSchema = z.object({
   activeSessionId: z.string().min(1),
 }) satisfies z.ZodType<Preferences>;
 
+export const puzzleEventSchema = z.enum(puzzleEvents);
 export const sessionSchema = z.object({
+  puzzle: puzzleEventSchema.default('333'),
   id: z.string().min(1),
   name: z.string().trim().min(1),
   createdAt: timestamp.default(() => Date.now()),
@@ -78,12 +81,15 @@ export const objectSchema = z.record(z.string(), z.unknown());
 export const rowsSchema = z.array(z.unknown());
 export const backupEnvelopeSchema = z.object({
   app: z.literal('turn'),
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   sessions: rowsSchema,
   solves: rowsSchema,
   workspace: z.unknown().optional(),
 });
-export const csTimerMetadataSchema = z.object({ name: z.string().min(1) });
+export const csTimerMetadataSchema = z.object({
+  name: z.string().min(1).optional(),
+  opt: z.object({ scrType: z.string().optional() }).optional(),
+});
 export const csTimerRowSchema = z
   .tuple([
     z.tuple([z.union([z.literal(-1), z.literal(0), z.literal(2000)]), duration]),

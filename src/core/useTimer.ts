@@ -56,7 +56,9 @@ export function useTimer(
   useEffect(() => {
     const ignored = (target: EventTarget | null) =>
       target instanceof HTMLElement &&
-      !!target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"]') &&
+      !!target.closest(
+        'input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="combobox"],[role="listbox"],[role="option"]',
+      ) &&
       !(target instanceof HTMLElement && target.closest('[data-timer]'));
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Escape' && engine.current.phase !== 'running') {

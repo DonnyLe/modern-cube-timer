@@ -10,8 +10,8 @@ test('scrambles load and refresh without worker errors', async ({ page }) => {
   await page.getByRole('button', { name: 'New scramble', exact: true }).click();
   await expect(scramble).not.toHaveText(first, { timeout: 30000 });
   await expect(scramble).toHaveText(validScramble);
-  await expect(page.locator('.cube-preview twisty-player')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.preview-caption')).toHaveText('3×3 state preview');
+  await expect(page.locator('.cube-preview svg')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.preview-caption')).toHaveText('3×3×3 state preview');
   await expect(page.getByText('Scramble could not load.', { exact: false })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

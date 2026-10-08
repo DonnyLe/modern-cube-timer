@@ -6,7 +6,10 @@ export function loadScramble(): Promise<
   return import(/* @vite-ignore */ url);
 }
 
-export function loadTwisty(): Promise<Pick<typeof import('cubing/twisty'), 'TwistyPlayer'>> {
+export function loadTwisty(): Promise<
+  Pick<typeof import('cubing/twisty'), 'TwistyPlayer' | 'ExperimentalSVGAnimator'> &
+    Pick<typeof import('cubing/puzzles'), 'puzzles'>
+> {
   const url = `${import.meta.env.BASE_URL}cubing/twisty.js`;
   return import(/* @vite-ignore */ url);
 }

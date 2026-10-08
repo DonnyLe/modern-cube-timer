@@ -945,3 +945,102 @@ input[type='range'] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+.custom-select-trigger {
+  width: 160px;
+  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px 13px 20px;
+}
+.custom-select-icon {
+  display: flex;
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.custom-select-trigger[data-state='open'] .custom-select-icon {
+  transform: rotate(180deg);
+}
+.custom-select-content {
+  z-index: 50;
+  min-width: max(180px, var(--radix-select-trigger-width));
+  max-height: min(420px, var(--radix-select-content-available-height));
+  overflow: hidden;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tint) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--outline) 65%, transparent);
+  border-radius: clamp(12px, var(--radius), 22px);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 12%, transparent);
+  backdrop-filter: blur(20px);
+  animation: select-appear 140ms ease-out;
+  transform-origin: var(--radix-select-content-transform-origin);
+}
+.custom-select-viewport {
+  padding: 6px;
+}
+.custom-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+}
+.custom-select-item[data-state='checked'] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.custom-select-item[data-highlighted] {
+  background: color-mix(in srgb, var(--accent) 14%, var(--tint));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.custom-select-check,
+.custom-select-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.custom-select-scroll {
+  height: 24px;
+}
+@keyframes select-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .custom-select-content {
+    animation: none;
+  }
+  .custom-select-icon {
+    transition: none;
+  }
+}
+.scramble-text {
+  max-height: 190px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.cube-preview > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (max-width: 767px) {
+  .custom-select-trigger {
+    width: 145px;
+    padding: 8px 14px;
+  }
+  .scramble-text {
+    max-height: 230px;
+  }
+}
