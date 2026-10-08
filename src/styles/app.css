@@ -105,11 +105,66 @@ button svg {
   gap: 20px;
 }
 .brand {
+  position: relative;
   font-size: 40px;
   font-weight: 600;
   letter-spacing: -2px;
   text-decoration: none;
   line-height: 1;
+}
+.brand::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.is-focused .brand::after {
+  opacity: 0.65;
+}
+.topbar .segmented,
+.topbar .header-actions {
+  transition:
+    opacity 0.2s,
+    transform 0.24s,
+    visibility 0s;
+}
+.is-focused .topbar .segmented,
+.is-focused .topbar .header-actions {
+  opacity: 0;
+  transform: translateY(-8px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.24s,
+    visibility 0s 0.24s;
+}
+.focus-widgets {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.24s,
+    opacity 0.2s,
+    visibility 0s;
+}
+.focus-widgets > .widget-row {
+  min-height: 0;
+  overflow: hidden;
+}
+.focus-widgets-hidden {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.24s,
+    opacity 0.2s,
+    visibility 0s 0.24s;
 }
 .segmented {
   display: flex;
@@ -180,22 +235,18 @@ button svg {
 }
 .scramble-bar {
   container-type: inline-size;
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  border-radius: 50px;
-  padding: 18px 22px;
-  min-height: 96px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 28px;
+  row-gap: 8px;
 }
 .scramble-controls {
   display: contents;
 }
-.scramble-bar-expanded .scramble-controls {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+.scramble-controls > .custom-select-trigger {
+  grid-column: 1;
+  grid-row: 1;
 }
 .event-pill {
   font-size: 19px;
@@ -209,8 +260,8 @@ button svg {
   background: color-mix(in srgb, var(--tint) 50%, transparent);
 }
 .scramble-text {
-  order: 1;
-  flex: 1;
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   text-align: center;
   letter-spacing: 1px;
@@ -220,14 +271,17 @@ button svg {
   overflow-wrap: break-word;
 }
 .scramble-actions {
-  order: 2;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
   display: flex;
   gap: 12px;
 }
 .scramble-actions .icon-button {
-  width: 52px;
-  height: 52px;
-  background: color-mix(in srgb, var(--tint) 38%, transparent);
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
 }
 .timer-area {
   display: flex;
@@ -682,9 +736,7 @@ textarea {
     margin-top: 8px;
   }
   .scramble-bar {
-    border-radius: 24px;
-    flex-wrap: wrap;
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
   .event-pill {
@@ -694,14 +746,12 @@ textarea {
   }
   .scramble-actions {
     gap: 8px;
-  }
-  .scramble-bar:not(.scramble-bar-expanded) .scramble-actions {
-    order: 1;
-    margin-left: auto;
+    grid-column: 1;
+    grid-row: 3;
   }
   .scramble-text {
-    order: 2;
-    flex-basis: 100%;
+    grid-column: 1;
+    grid-row: 2;
     letter-spacing: 0.5px;
   }
   .timer-area {

@@ -72,75 +72,27 @@ test('long scrambles fit the mobile layout', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
-test('scramble actions move below the selector only for long scrambles', async ({ page }) => {
+test('scramble controls stay below floating text at desktop and mobile sizes', async ({ page }) => {
   await page.goto('/');
-  const bar = page.locator('.scramble-bar');
-  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
   const actions = page.locator('.scramble-actions');
-  const ready = () =>
-    expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+  const text = page.locator('.scramble-text');
+  for (const event of ['333', '666', '222'] as const) {
+    await selectPuzzle(page, event);
+    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
       timeout: 60000,
     });
-  await ready();
-  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
-  expect((await actions.boundingBox())!.x).toBeGreaterThan((await selector.boundingBox())!.x);
-
-  await selectPuzzle(page, '666');
-  await ready();
-  await expect(bar).toHaveClass(/scramble-bar-expanded/);
-  const selectorBox = (await selector.boundingBox())!;
-  expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(
-    selectorBox.y + selectorBox.height,
-  );
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(bar).toHaveClass(/scramble-bar-expanded/);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-
-  await selectPuzzle(page, '222');
-  await ready();
-  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(bar).not.toHaveClass(/scramble-bar-expanded/);
-});
-
-test('long scrambles use the expanded layout on their first frame', async ({ page }) => {
-  await page.addInitScript(() => {
-    const state = window as typeof window & { scrambleLayoutFrames: boolean[] };
-    state.scrambleLayoutFrames = [];
-    const sample = () => {
-      const bar = document.querySelector('.scramble-bar');
-      const text = bar?.querySelector('.scramble-text')?.textContent || '';
-      if (text.length > 200) {
-        state.scrambleLayoutFrames.push(bar!.classList.contains('scramble-bar-expanded'));
-      }
-      requestAnimationFrame(sample);
-    };
-    requestAnimationFrame(sample);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const textBox = (await text.boundingBox())!;
+      expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    }
+  }
+  const style = await page.locator('.scramble-bar').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { background: style.backgroundColor, border: style.borderTopWidth };
   });
-  await page.goto('/');
-  await selectPuzzle(page, '666');
-  const assertFrames = async () => {
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            (window as typeof window & { scrambleLayoutFrames: boolean[] }).scrambleLayoutFrames
-              .length,
-        ),
-      )
-      .toBeGreaterThan(0);
-    expect(
-      await page.evaluate(() =>
-        (window as typeof window & { scrambleLayoutFrames: boolean[] }).scrambleLayoutFrames.every(
-          Boolean,
-        ),
-      ),
-    ).toBe(true);
-  };
-  await assertFrames();
-  await page.reload();
-  await assertFrames();
+  expect(style).toEqual({ background: 'rgba(0, 0, 0, 0)', border: '0px' });
 });
 
 test('puzzle dropdown supports keyboard selection, Escape, and guards timer shortcuts', async ({

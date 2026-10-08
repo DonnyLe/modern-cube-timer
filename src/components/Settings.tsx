@@ -91,6 +91,18 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
             </label>
           </section>
           <section className="settings-card glass">
+            <h2>Focus mode</h2>
+            <label className="toggle-row">
+              Hide widgets in focus mode
+              <input
+                type="checkbox"
+                checked={preferences.hideWidgetsInFocus}
+                onChange={(e) => setPreferences({ hideWidgetsInFocus: e.target.checked })}
+              />
+            </label>
+            <p className="subtle">Click the turn logo or press Esc to leave focus mode.</p>
+          </section>
+          <section className="settings-card glass">
             <h2>Surfaces</h2>
             <Range
               label="Card opacity"

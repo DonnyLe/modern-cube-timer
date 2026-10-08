@@ -32,7 +32,7 @@ export const useStore = create<Store>((set, get) => ({
   ready: false,
   error: '',
   workspace: defaultWorkspace(),
-  preferences: { inspection: false, holdMs: 300, activeSessionId: '' },
+  preferences: { inspection: false, holdMs: 300, activeSessionId: '', hideWidgetsInFocus: true },
   past: [],
   future: [],
   editing: false,

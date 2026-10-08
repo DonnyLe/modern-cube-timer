@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Copy,
@@ -12,6 +12,7 @@ import {
   Trash2,
   Pencil,
   Check,
+  Scan,
 } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
 import { db, id, sessionForPuzzle } from './data/db';
@@ -24,7 +25,6 @@ import { Background } from './components/Background';
 import { Trend } from './components/Trend';
 import { Preview } from './components/Preview';
 import { Select } from './components/Select';
-import { ScrambleBar } from './components/ScrambleBar';
 import { Dialog } from './components/Dialog';
 import { Settings } from './components/Settings';
 import { Gallery } from './components/Gallery';
@@ -47,7 +47,18 @@ export default function App() {
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false),
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
-    [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false);
+    [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false),
+    [focused, setFocused] = useState(false);
+  const brandRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (!focused) return;
+    const exitFocus = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented && !dialog && !puzzlePickerOpen)
+        setFocused(false);
+    };
+    window.addEventListener('keydown', exitFocus);
+    return () => window.removeEventListener('keydown', exitFocus);
+  }, [focused, dialog, puzzlePickerOpen]);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -165,23 +176,32 @@ export default function App() {
                 : 'Hold space to start';
   return (
     <div
-      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''}`}
+      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
       style={variables}
     >
       <Background appearance={a} paused={busy} />
       <UpdateNotice busy={busy || saving} />
       <header className="topbar">
         <a
+          ref={brandRef}
           className="brand"
           href="#"
+          aria-label={focused ? 'Exit focus mode' : 'turn'}
+          title={focused ? 'Exit focus mode · Esc' : undefined}
           onClick={(e) => {
             e.preventDefault();
+            setFocused(false);
             if (!busy) setView('Timer');
           }}
         >
           turn
         </a>
-        <nav className="segmented" aria-label="Main navigation">
+        <nav
+          className="segmented"
+          aria-label="Main navigation"
+          inert={focused}
+          aria-hidden={focused}
+        >
           {['Timer', 'Settings', 'Gallery'].map((v) => (
             <button
               key={v}
@@ -195,7 +215,20 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="header-actions">
+        <div className="header-actions" inert={focused} aria-hidden={focused}>
+          <button
+            className="icon-button glass"
+            title="Enter focus mode"
+            aria-label="Enter focus mode"
+            disabled={busy || view !== 'Timer'}
+            onClick={(event) => {
+              setFocused(true);
+              if (event.detail === 0) brandRef.current?.focus();
+              else event.currentTarget.blur();
+            }}
+          >
+            <Scan />
+          </button>
           <button
             className="icon-button glass"
             title="Toggle theme"
@@ -244,7 +277,7 @@ export default function App() {
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
         <main className="workspace-default">
-          <ScrambleBar scramble={scramble.scramble}>
+          <section className="scramble-bar" aria-label="Scramble">
             <div className="scramble-controls">
               <Select
                 label="Puzzle"
@@ -287,7 +320,7 @@ export default function App() {
               </div>
             </div>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
-          </ScrambleBar>
+          </section>
           {scramble.error && (
             <p role="alert" className="inline-error">
               {scramble.error}
@@ -340,66 +373,72 @@ export default function App() {
               ))}
             </section>
           )}
-          <section className="widget-row" inert={busy}>
-            <article className="widget glass recent">
-              <header>
-                <h2>Recent solves</h2>
-                <button className="text-button" onClick={() => setDialog('history')}>
-                  See all <ArrowUpRight size={16} />
-                </button>
-              </header>
-              {solves.length ? (
-                <div className="recent-list">
-                  {solves
-                    .slice(-3)
-                    .reverse()
-                    .map((s, i) => (
-                      <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
-                        <span>{solves.length - i}</span>
-                        <strong>
-                          {formatTime(value(s))}
-                          {s.penalty === '+2' && <small> +2</small>}
-                        </strong>
-                        <Pencil size={13} />
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <div className="empty">
-                  <p>Your first solve starts here.</p>
-                  <small>Hold space, then release.</small>
-                </div>
-              )}
-              <footer>
-                <button className="text-button" onClick={() => setDialog('sessions')}>
-                  {solves.length} solves · {session?.name}
-                </button>
-                <button
-                  aria-label="Add manual solve"
-                  className="icon-button small"
-                  onClick={() => {
-                    setManual('');
-                    setDialog('manual');
-                  }}
-                >
-                  <Plus size={18} />
-                </button>
-              </footer>
-            </article>
-            <article className="widget glass">
-              <header>
-                <h2>Session trend</h2>
-                <span className="subtle">Time (s)</span>
-              </header>
-              <Trend solves={solves} />
-            </article>
-            <article className="widget glass">
-              <header>
-                <h2>Scramble preview</h2>
-              </header>
-              <Preview scramble={scramble.scramble} event={puzzle} />
-            </article>
-          </section>
+          <div
+            className={`focus-widgets ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
+            inert={busy || (focused && preferences.hideWidgetsInFocus)}
+            aria-hidden={focused && preferences.hideWidgetsInFocus}
+          >
+            <section className="widget-row">
+              <article className="widget glass recent">
+                <header>
+                  <h2>Recent solves</h2>
+                  <button className="text-button" onClick={() => setDialog('history')}>
+                    See all <ArrowUpRight size={16} />
+                  </button>
+                </header>
+                {solves.length ? (
+                  <div className="recent-list">
+                    {solves
+                      .slice(-3)
+                      .reverse()
+                      .map((s, i) => (
+                        <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
+                          <span>{solves.length - i}</span>
+                          <strong>
+                            {formatTime(value(s))}
+                            {s.penalty === '+2' && <small> +2</small>}
+                          </strong>
+                          <Pencil size={13} />
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="empty">
+                    <p>Your first solve starts here.</p>
+                    <small>Hold space, then release.</small>
+                  </div>
+                )}
+                <footer>
+                  <button className="text-button" onClick={() => setDialog('sessions')}>
+                    {solves.length} solves · {session?.name}
+                  </button>
+                  <button
+                    aria-label="Add manual solve"
+                    className="icon-button small"
+                    onClick={() => {
+                      setManual('');
+                      setDialog('manual');
+                    }}
+                  >
+                    <Plus size={18} />
+                  </button>
+                </footer>
+              </article>
+              <article className="widget glass">
+                <header>
+                  <h2>Session trend</h2>
+                  <span className="subtle">Time (s)</span>
+                </header>
+                <Trend solves={solves} />
+              </article>
+              <article className="widget glass">
+                <header>
+                  <h2>Scramble preview</h2>
+                </header>
+                <Preview scramble={scramble.scramble} event={puzzle} />
+              </article>
+            </section>
+          </div>
           <footer className="workspace-footer">
             <span>Space to start / stop · tap the timer on mobile</span>
             <span>Saved on this device</span>
