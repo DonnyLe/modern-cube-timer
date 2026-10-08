@@ -201,28 +201,24 @@ button svg {
   min-height: 42px;
   font-weight: 400;
 }
-.segmented button + button:before {
-  content: '';
-  position: absolute;
-  left: 0;
-  height: 20px;
-  width: 1px;
-  background: var(--outline);
+.segmented button:hover:not(:disabled) {
+  background: transparent;
 }
 .segmented button.active {
-  background: color-mix(in srgb, var(--accent) 10%, var(--tint));
   color: var(--ink);
 }
-.segmented .active:before,
-.segmented .active + button:before {
-  display: none;
+.segmented-selection {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--accent) 10%, var(--tint));
+  pointer-events: none;
 }
-.segmented i {
-  height: 9px;
-  width: 9px;
-  border-radius: 50%;
-  background: var(--accent);
-  margin-right: 5px;
+.segmented-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 1;
 }
 .header-actions {
   display: flex;
