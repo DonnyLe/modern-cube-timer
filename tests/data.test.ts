@@ -81,6 +81,17 @@ describe('local records', () => {
 });
 
 describe('Zod boundaries', () => {
+  it('keeps saved card rounding and defaults the new control radius for older settings', () => {
+    const w = migrateWorkspace({ version: 1, appearance: { radius: 32 } });
+    expect(w.appearance.radius).toBe(32);
+    expect(w.appearance.controlRadius).toBe(10);
+    const restored = migrateWorkspace({
+      version: 1,
+      appearance: { radius: 32, controlRadius: 4 },
+    });
+    expect(restored.appearance.radius).toBe(32);
+    expect(restored.appearance.controlRadius).toBe(4);
+  });
   it('defaults missing v1 appearance values and strips unknown properties', () => {
     const w = migrateWorkspace({
       version: 1,

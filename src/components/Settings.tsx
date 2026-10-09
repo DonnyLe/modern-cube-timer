@@ -127,12 +127,20 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
               onChange={(glass) => update({ glass })}
             />
             <Range
-              label="Corner radius"
+              label="Card radius"
               value={a.radius}
               max={40}
               step={1}
               suffix=" px"
               onChange={(radius) => update({ radius })}
+            />
+            <Range
+              label="Control radius"
+              value={a.controlRadius}
+              max={40}
+              step={1}
+              suffix=" px"
+              onChange={(controlRadius) => update({ controlRadius })}
             />
             <Range
               label="Outline weight"

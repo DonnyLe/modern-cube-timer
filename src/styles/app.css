@@ -33,7 +33,7 @@ button {
   color: inherit;
   border: 1px solid var(--outline, #c4d4ec);
   background: transparent;
-  border-radius: 12px;
+  border-radius: var(--control-radius, 10px);
   padding: 10px 16px;
   display: inline-flex;
   align-items: center;
@@ -176,14 +176,14 @@ button svg {
   display: flex;
   padding: 6px;
   border: 1px solid color-mix(in srgb, var(--outline) 70%, transparent);
-  border-radius: 40px;
+  border-radius: var(--control-radius);
   background: color-mix(in srgb, var(--tint) 42%, transparent);
   backdrop-filter: blur(12px);
 }
 .segmented button {
   position: relative;
   border: 0;
-  border-radius: 30px;
+  border-radius: max(0px, calc(var(--control-radius) - 6px));
   flex: 1;
   min-height: 42px;
   font-weight: 400;
@@ -215,7 +215,7 @@ button svg {
 }
 .icon-button {
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--control-radius);
   width: 46px;
   height: 46px;
   flex-shrink: 0;
@@ -508,7 +508,7 @@ small {
   color: var(--ink);
   background: color-mix(in srgb, var(--tint) 94%, transparent);
   backdrop-filter: blur(28px);
-  border-radius: 24px;
+  border-radius: var(--radius);
   padding: 0;
   width: min(480px, calc(100% - 32px));
   max-height: 85svh;
@@ -553,7 +553,7 @@ select,
 textarea {
   border: 1px solid var(--outline);
   color: var(--ink);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   padding: 10px 12px;
   background: color-mix(in srgb, var(--tint) 80%, transparent);
   min-width: 0;
@@ -773,7 +773,7 @@ input[type='range'] {
   text-align: left;
   border: 1px solid var(--outline);
   padding: 20px;
-  border-radius: 22px;
+  border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
 }
@@ -855,7 +855,7 @@ input[type='range'] {
   white-space: nowrap;
   display: flex;
   border: 1px solid color-mix(in srgb, var(--outline) 70%, transparent);
-  border-radius: 35px;
+  border-radius: var(--control-radius);
   background: color-mix(in srgb, var(--tint) 50%, transparent);
   width: 160px;
   flex-shrink: 0;
@@ -867,10 +867,6 @@ input[type='range'] {
 .topbar .custom-select-trigger,
 .topbar .icon-button {
   border-width: var(--border);
-  border-radius: var(--radius);
-}
-.topbar .segmented button {
-  border-radius: max(0px, calc(var(--radius) - 6px));
 }
 .custom-select-icon {
   display: flex;
@@ -888,7 +884,7 @@ input[type='range'] {
   color: var(--ink);
   background: color-mix(in srgb, var(--tint) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--outline) 65%, transparent);
-  border-radius: clamp(12px, var(--radius), 22px);
+  border-radius: var(--control-radius);
   box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 12%, transparent);
   backdrop-filter: blur(20px);
   animation: select-appear 140ms ease-out;
@@ -904,7 +900,7 @@ input[type='range'] {
   gap: 20px;
   min-height: 38px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: max(0px, calc(var(--control-radius) - 6px));
   font-size: 15px;
   outline: none;
   cursor: pointer;

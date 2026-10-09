@@ -54,6 +54,7 @@ export interface Palette {
   colorB: string;
 }
 export interface Appearance extends Surface {
+  controlRadius: number;
   theme: 'light' | 'dark';
   font: 'system' | 'editorial' | 'mono';
   shadow: number;

@@ -23,6 +23,7 @@ export const appearanceSchema = z.object({
   opacity: z.number().min(0.15).max(1),
   blur: z.number().min(0).max(40),
   radius: z.number().min(0).max(40),
+  controlRadius: z.number().min(0).max(40),
   border: z.number().min(0).max(2),
   fontScale: z.number().min(0.85).max(1.3),
   glass: unit,
