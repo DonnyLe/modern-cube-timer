@@ -26,6 +26,11 @@ bun run test:e2e
 bun run build && bun run test:e2e:production
 ```
 
+On macOS, the Playwright setup gives its Firefox browser a separate app-data identity
+to avoid macOS 27 blocking access to the regular Firefox profile directory. It uses
+temporary files and leaves the installed browser and personal profiles untouched.
+See [the upstream issue](https://github.com/microsoft/playwright/issues/42768).
+
 Solve records stay in this browser. Export backups regularly before clearing browser data.
 
 Use `bun add <package>` for dependencies and `bun add -d <package>` for development tools. Commit `bun.lock`; CI uses `bun ci` to enforce it. Run `bun run test` for the existing Vitest suite; `bun test` invokes Bun’s separate test runner.
