@@ -122,6 +122,7 @@ export default function App() {
     '--outline': palette.outline,
     '--surface': `color-mix(in srgb, ${palette.tint} ${a.opacity * 100}%, transparent)`,
     '--radius': `${a.radius}px`,
+    '--control-radius': `${a.controlRadius}px`,
     '--blur': `${a.blur}px`,
     '--border': `${a.border}px`,
     '--font-scale': a.fontScale,
