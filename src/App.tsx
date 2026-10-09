@@ -276,35 +276,33 @@ export default function App() {
       ) : view === 'Timer' ? (
         <motion.main animate={focusFade} className="workspace-default">
           <section className="scramble-bar" aria-label="Scramble">
-            <div className="scramble-controls">
-              <div className="scramble-actions">
-                <button
-                  aria-label="Copy scramble"
-                  className="icon-button"
-                  disabled={!scramble.scramble}
-                  onClick={() => {
-                    void navigator.clipboard
-                      .writeText(scramble.scramble)
-                      .then(() => {
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 1600);
-                      })
-                      .catch(() =>
-                        store.setError('Could not copy. Select and copy the scramble text.'),
-                      );
-                  }}
-                >
-                  {copied ? <Check /> : <Copy />}
-                </button>
-                <button
-                  aria-label="New scramble"
-                  className="icon-button"
-                  disabled={busy || scramble.loading}
-                  onClick={() => void scramble.next()}
-                >
-                  <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
-                </button>
-              </div>
+            <div className="scramble-actions">
+              <button
+                aria-label="Copy scramble"
+                className="icon-button"
+                disabled={!scramble.scramble}
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(scramble.scramble)
+                    .then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1600);
+                    })
+                    .catch(() =>
+                      store.setError('Could not copy. Select and copy the scramble text.'),
+                    );
+                }}
+              >
+                {copied ? <Check /> : <Copy />}
+              </button>
+              <button
+                aria-label="New scramble"
+                className="icon-button"
+                disabled={busy || scramble.loading}
+                onClick={() => void scramble.next()}
+              >
+                <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
+              </button>
             </div>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
           </section>
