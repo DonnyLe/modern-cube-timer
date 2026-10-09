@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { firefoxLaunchOptions } from './scripts/playwright-firefox';
 const production = process.env.PLAYWRIGHT_PRODUCTION === '1';
 const port = production ? 4173 : 5173;
 export default defineConfig({
@@ -17,7 +18,11 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 1000 } },
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1440, height: 1000 },
+        launchOptions: firefoxLaunchOptions(),
+      },
     },
     {
       name: 'webkit',

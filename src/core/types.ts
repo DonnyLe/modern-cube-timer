@@ -82,6 +82,7 @@ export interface Workspace {
   snap: boolean;
 }
 export interface Preferences {
+  hideWidgetsInFocus: boolean;
   inspection: boolean;
   holdMs: number;
   activeSessionId: string;

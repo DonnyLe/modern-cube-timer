@@ -1,18 +1,16 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
 import {
   Copy,
   RefreshCw,
-  Sun,
-  Moon,
-  Waves,
   Plus,
   ArrowUpRight,
   ChevronDown,
   Trash2,
   Pencil,
   Check,
+  Scan,
 } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
 import { db, id, sessionForPuzzle } from './data/db';
@@ -20,6 +18,7 @@ import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
 import type { Solve, Penalty } from './core/types';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
 import { useTimer } from './core/useTimer';
+import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
 import { Background } from './components/Background';
 import { Trend } from './components/Trend';
@@ -52,6 +51,8 @@ export default function App() {
     [saving, setSaving] = useState(false),
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
     [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false);
+  const brandRef = useRef<HTMLAnchorElement>(null);
+  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || puzzlePickerOpen);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -137,11 +138,6 @@ export default function App() {
     setDialog('');
     setInputError('');
   };
-  const theme = () =>
-    store.setWorkspace({
-      ...workspace,
-      appearance: { ...a, theme: a.theme === 'light' ? 'dark' : 'light' },
-    });
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
     : busy
@@ -169,24 +165,36 @@ export default function App() {
                 : 'Hold space to start';
   return (
     <div
-      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''}`}
+      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
       style={variables}
     >
       <Background appearance={a} paused={busy} />
       <UpdateNotice busy={busy || saving} />
-      <header className="topbar">
-        <a
+      <motion.header animate={focusFade} className="topbar">
+        <motion.a
+          ref={brandRef}
           className="brand"
           href="#"
+          aria-label={focused ? 'Exit focus mode' : 'turn'}
+          title={focused ? 'Hover to exit focus mode · Esc' : undefined}
+          onPointerEnter={(event) => {
+            if (focused && event.pointerType === 'mouse') void changeFocus(false);
+          }}
           onClick={(e) => {
             e.preventDefault();
+            if (focused) void changeFocus(false);
             if (!busy) setView('Timer');
           }}
         >
           turn
-        </a>
+        </motion.a>
         <MotionConfig reducedMotion="user">
-          <nav className="segmented" aria-label="Main navigation">
+          <nav
+            className="segmented"
+            aria-label="Main navigation"
+            inert={focused}
+            aria-hidden={focused}
+          >
             {NAVIGATION_VIEWS.map((v) => (
               <button
                 key={v}
@@ -195,8 +203,9 @@ export default function App() {
                 aria-current={view === v ? 'page' : undefined}
                 onClick={() => setView(v)}
               >
-                {view === v && (
+                {!focused && view === v && (
                   <motion.span
+                    initial={false}
                     className="segmented-selection"
                     layoutId="main-navigation-selection"
                     transition={{ type: 'spring', stiffness: 180, damping: 26 }}
@@ -208,28 +217,37 @@ export default function App() {
             ))}
           </nav>
         </MotionConfig>
-        <div className="header-actions">
-          <button
-            className="icon-button glass"
-            title="Toggle theme"
-            aria-label="Toggle theme"
-            onClick={theme}
-          >
-            {a.theme === 'light' ? <Sun /> : <Moon />}
-          </button>
-          <button
-            className={`icon-button glass ${!a.motion ? 'muted' : ''}`}
-            title="Toggle background motion"
-            aria-label="Toggle background motion"
-            aria-pressed={a.motion}
-            onClick={() =>
-              store.setWorkspace({ ...workspace, appearance: { ...a, motion: !a.motion } })
-            }
-          >
-            <Waves />
-          </button>
+        <div className="topbar-controls">
+          <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
+            <Select
+              label="Puzzle"
+              value={puzzle}
+              options={puzzleEvents.map((event) => ({
+                value: event,
+                label: puzzles[event].label,
+              }))}
+              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+              onOpenChange={setPuzzlePickerOpen}
+            />
+          </div>
+          <div className="header-actions" inert={focused} aria-hidden={focused}>
+            <button
+              className="icon-button glass"
+              title="Enter focus mode"
+              aria-label="Enter focus mode"
+              disabled={busy || view !== 'Timer'}
+              onClick={(event) => {
+                void changeFocus(true);
+                if (event.detail === 0) brandRef.current?.focus();
+                else event.currentTarget.blur();
+              }}
+            >
+              <Scan />
+            </button>
+          </div>
         </div>
-      </header>
+      </motion.header>
       {store.error && (
         <div className="error-banner" role="alert">
           {store.error}
@@ -256,45 +274,39 @@ export default function App() {
       {!store.ready ? (
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
-        <main className="workspace-default">
-          <section className="scramble-bar glass">
-            <Select
-              label="Puzzle"
-              value={puzzle}
-              options={puzzleEvents.map((event) => ({ value: event, label: puzzles[event].label }))}
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-              onOpenChange={setPuzzlePickerOpen}
-            />
-            <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
-            <div className="scramble-actions">
-              <button
-                aria-label="Copy scramble"
-                className="icon-button"
-                disabled={!scramble.scramble}
-                onClick={() => {
-                  void navigator.clipboard
-                    .writeText(scramble.scramble)
-                    .then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1600);
-                    })
-                    .catch(() =>
-                      store.setError('Could not copy. Select and copy the scramble text.'),
-                    );
-                }}
-              >
-                {copied ? <Check /> : <Copy />}
-              </button>
-              <button
-                aria-label="New scramble"
-                className="icon-button"
-                disabled={busy || scramble.loading}
-                onClick={() => void scramble.next()}
-              >
-                <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
-              </button>
+        <motion.main animate={focusFade} className="workspace-default">
+          <section className="scramble-bar" aria-label="Scramble">
+            <div className="scramble-controls">
+              <div className="scramble-actions">
+                <button
+                  aria-label="Copy scramble"
+                  className="icon-button"
+                  disabled={!scramble.scramble}
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(scramble.scramble)
+                      .then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1600);
+                      })
+                      .catch(() =>
+                        store.setError('Could not copy. Select and copy the scramble text.'),
+                      );
+                  }}
+                >
+                  {copied ? <Check /> : <Copy />}
+                </button>
+                <button
+                  aria-label="New scramble"
+                  className="icon-button"
+                  disabled={busy || scramble.loading}
+                  onClick={() => void scramble.next()}
+                >
+                  <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
+                </button>
+              </div>
             </div>
+            <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
           </section>
           {scramble.error && (
             <p role="alert" className="inline-error">
@@ -316,11 +328,15 @@ export default function App() {
             </button>
             <button
               data-timer
-              className={`timer-number ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
+              className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
               aria-label="Timer. Hold to start, press to stop"
               style={{
                 fontWeight: a.timerWeight,
-                fontSize: a.autoFit ? `clamp(64px,11vw,${a.timerSize}px)` : `${a.timerSize}px`,
+                fontSize: a.autoFit
+                  ? focused
+                    ? `clamp(64px, min(28vw, 24svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 280px)`
+                    : `clamp(64px,11vw,${a.timerSize}px)`
+                  : `${a.timerSize}px`,
                 fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',
               }}
               onPointerDown={(e) => {
@@ -348,71 +364,73 @@ export default function App() {
               ))}
             </section>
           )}
-          <section className="widget-row" inert={busy}>
-            <article className="widget glass recent">
-              <header>
-                <h2>Recent solves</h2>
-                <button className="text-button" onClick={() => setDialog('history')}>
-                  See all <ArrowUpRight size={16} />
-                </button>
-              </header>
-              {solves.length ? (
-                <div className="recent-list">
-                  {solves
-                    .slice(-3)
-                    .reverse()
-                    .map((s, i) => (
-                      <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
-                        <span>{solves.length - i}</span>
-                        <strong>
-                          {formatTime(value(s))}
-                          {s.penalty === '+2' && <small> +2</small>}
-                        </strong>
-                        <Pencil size={13} />
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <div className="empty">
-                  <p>Your first solve starts here.</p>
-                  <small>Hold space, then release.</small>
-                </div>
-              )}
-              <footer>
-                <button className="text-button" onClick={() => setDialog('sessions')}>
-                  {solves.length} solves · {session?.name}
-                </button>
-                <button
-                  aria-label="Add manual solve"
-                  className="icon-button small"
-                  onClick={() => {
-                    setManual('');
-                    setDialog('manual');
-                  }}
-                >
-                  <Plus size={18} />
-                </button>
-              </footer>
-            </article>
-            <article className="widget glass">
-              <header>
-                <h2>Session trend</h2>
-                <span className="subtle">Time (s)</span>
-              </header>
-              <Trend solves={solves} />
-            </article>
-            <article className="widget glass">
-              <header>
-                <h2>Scramble preview</h2>
-              </header>
-              <Preview scramble={scramble.scramble} event={puzzle} />
-            </article>
-          </section>
-          <footer className="workspace-footer">
-            <span>Space to start / stop · tap the timer on mobile</span>
-            <span>Saved on this device</span>
-          </footer>
-        </main>
+          <div
+            className={`focus-widgets ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
+            inert={busy || (focused && preferences.hideWidgetsInFocus)}
+            aria-hidden={focused && preferences.hideWidgetsInFocus}
+          >
+            <section className="widget-row">
+              <article className="widget glass recent">
+                <header>
+                  <h2>Recent solves</h2>
+                  <button className="text-button" onClick={() => setDialog('history')}>
+                    See all <ArrowUpRight size={16} />
+                  </button>
+                </header>
+                {solves.length ? (
+                  <div className="recent-list">
+                    {solves
+                      .slice(-3)
+                      .reverse()
+                      .map((s, i) => (
+                        <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
+                          <span>{solves.length - i}</span>
+                          <strong>
+                            {formatTime(value(s))}
+                            {s.penalty === '+2' && <small> +2</small>}
+                          </strong>
+                          <Pencil size={13} />
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="empty">
+                    <p>Your first solve starts here.</p>
+                    <small>Hold space, then release.</small>
+                  </div>
+                )}
+                <footer>
+                  <button className="text-button" onClick={() => setDialog('sessions')}>
+                    {solves.length} solves · {session?.name}
+                  </button>
+                  <button
+                    aria-label="Add manual solve"
+                    className="icon-button small"
+                    onClick={() => {
+                      setManual('');
+                      setDialog('manual');
+                    }}
+                  >
+                    <Plus size={18} />
+                  </button>
+                </footer>
+              </article>
+              <article className="widget glass">
+                <header>
+                  <h2>Session trend</h2>
+                  <span className="subtle">Time (s)</span>
+                </header>
+                <Trend solves={solves} />
+              </article>
+              <article className="widget glass">
+                <header>
+                  <h2>Scramble preview</h2>
+                </header>
+                <Preview scramble={scramble.scramble} event={puzzle} />
+              </article>
+            </section>
+          </div>
+        </motion.main>
       ) : view === 'Settings' ? (
         <Settings dataControls={<DataControls />} />
       ) : (

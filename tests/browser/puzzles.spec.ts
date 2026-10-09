@@ -2,8 +2,26 @@ import { test, expect, type Page } from '@playwright/test';
 import { puzzleEvents, puzzles } from '../../src/core/puzzles';
 
 async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
-  await page.getByRole('combobox', { name: 'Puzzle', exact: true }).click();
-  await page.getByRole('option', { name: puzzles[event].label, exact: true }).click();
+  const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+  await expect(picker).toBeEnabled();
+  await picker.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('listbox')).toBeVisible();
+  // Use the dropdown's keyboard navigation rather than racing Firefox's
+  // pointer handling while the popup positions and scrolls its current item.
+  await page.keyboard.press('Home');
+  await expect(
+    page.getByRole('option', { name: puzzles[puzzleEvents[0]].label, exact: true }),
+  ).toBeFocused();
+  for (let index = 0; index < puzzleEvents.indexOf(event); index++) {
+    await page.keyboard.press('ArrowDown');
+    await expect(
+      page.getByRole('option', { name: puzzles[puzzleEvents[index + 1]].label, exact: true }),
+    ).toBeFocused();
+  }
+  await expect(page.getByRole('option', { name: puzzles[event].label, exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(picker).toHaveText(puzzles[event].label);
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
@@ -62,14 +80,75 @@ test('rapid switches cannot leave an old puzzle scramble or preview', async ({ p
   });
   await expect(page.locator('.preview-caption')).toHaveText('Pyraminx state preview');
 });
-test('long scrambles fit the mobile layout', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('Megaminx uses the available width without an inner scrollbar and navigation stacks above controls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1130, height: 900 });
   await page.goto('/');
   await selectPuzzle(page, 'minx');
-  await expect(page.locator('.cube-preview')).toHaveAttribute('data-status', 'ready', {
-    timeout: 30000,
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 60000,
   });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  const text = page.locator('.scramble-text');
+  const textBox = (await text.boundingBox())!;
+  const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+  expect(textBox.width).toBeCloseTo(barBox.width, 0);
+  expect(await text.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe('normal');
+  expect(await text.evaluate((element) => element.scrollHeight <= element.clientHeight + 1)).toBe(
+    true,
+  );
+  for (const width of [850, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const navBox = (await page.locator('.segmented').boundingBox())!;
+    const selectorBox = (await page.locator('.puzzle-selector').boundingBox())!;
+    const actionsBox = (await page.locator('.header-actions').boundingBox())!;
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(selectorBox.y);
+    expect(navBox.y + navBox.height).toBeLessThanOrEqual(actionsBox.y);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    expect(await text.evaluate((element) => element.scrollHeight <= element.clientHeight + 1)).toBe(
+      true,
+    );
+  }
+});
+
+test('scramble controls stay below floating text at desktop and mobile sizes', async ({ page }) => {
+  await page.goto('/');
+  const actions = page.locator('.scramble-actions');
+  const text = page.locator('.scramble-text');
+  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+  const navBox = (await page.locator('.segmented').boundingBox())!;
+  const topbarBox = (await page.locator('.topbar').boundingBox())!;
+  expect(navBox.x + navBox.width / 2).toBeCloseTo(topbarBox.x + topbarBox.width / 2, 0);
+  const selectorBox = (await selector.boundingBox())!;
+  const headerActionsBox = (await page.locator('.header-actions').boundingBox())!;
+  expect(selectorBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width);
+  expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(headerActionsBox.x);
+  for (const event of ['333', '666', '222'] as const) {
+    await selectPuzzle(page, event);
+    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+      timeout: 60000,
+    });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const textBox = (await text.boundingBox())!;
+      expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
+      const actionsBox = (await actions.boundingBox())!;
+      const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+      const currentNav = (await page.locator('.segmented').boundingBox())!;
+      const currentTopbar = (await page.locator('.topbar').boundingBox())!;
+      expect(currentNav.x + currentNav.width / 2).toBeCloseTo(
+        currentTopbar.x + currentTopbar.width / 2,
+        0,
+      );
+      expect(actionsBox.x + actionsBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    }
+  }
+  const style = await page.locator('.scramble-bar').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { background: style.backgroundColor, border: style.borderTopWidth };
+  });
+  expect(style).toEqual({ background: 'rgba(0, 0, 0, 0)', border: '0px' });
 });
 
 test('puzzle dropdown supports keyboard selection, Escape, and guards timer shortcuts', async ({

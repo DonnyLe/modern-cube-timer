@@ -52,6 +52,7 @@ export const workspaceInputSchema = z.object({
 });
 
 export const preferencesSchema = z.object({
+  hideWidgetsInFocus: z.boolean().default(true),
   inspection: z.boolean().default(false),
   holdMs: z.number().min(0).max(1000).default(300),
   activeSessionId: z.string().min(1),
