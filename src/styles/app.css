@@ -187,12 +187,14 @@ button svg {
   flex: 1;
   min-height: 42px;
   font-weight: 400;
+  transition: color 160ms ease;
 }
 .segmented button:hover:not(:disabled) {
   background: transparent;
 }
 .segmented button.active {
   color: var(--tint);
+  transition-delay: 120ms;
 }
 .segmented-selection {
   position: absolute;
@@ -860,6 +862,15 @@ input[type='range'] {
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px 13px 20px;
+}
+.topbar .segmented,
+.topbar .custom-select-trigger,
+.topbar .icon-button {
+  border-width: var(--border);
+  border-radius: var(--radius);
+}
+.topbar .segmented button {
+  border-radius: max(0px, calc(var(--radius) - 6px));
 }
 .custom-select-icon {
   display: flex;
