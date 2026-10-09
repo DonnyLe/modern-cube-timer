@@ -26,10 +26,9 @@ bun run test:e2e
 bun run build && bun run test:e2e:production
 ```
 
-On macOS, the Playwright setup gives its Firefox browser a separate app-data identity
-to avoid macOS 27 blocking access to the regular Firefox profile directory. It uses
-temporary files and leaves the installed browser and personal profiles untouched.
-See [the upstream issue](https://github.com/microsoft/playwright/issues/42768).
+Firefox tests are skipped on macOS 27 because of an
+[upstream browser-launch bug](https://github.com/microsoft/playwright/issues/42768).
+Chromium and WebKit still run locally; Linux CI runs all three browsers.
 
 Solve records stay in this browser. Export backups regularly before clearing browser data.
 

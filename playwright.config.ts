@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
-import { firefoxLaunchOptions } from './scripts/playwright-firefox';
+import { execFileSync } from 'node:child_process';
+// Playwright Firefox cannot access its app-data directory on macOS 27.
+// Keep Firefox enabled on other platforms, including Linux CI.
+const skipFirefox =
+  process.platform === 'darwin' &&
+  Number(
+    execFileSync('/usr/bin/sw_vers', ['-productVersion'], { encoding: 'utf8' })
+      .trim()
+      .split('.')[0],
+  ) === 27;
 const production = process.env.PLAYWRIGHT_PRODUCTION === '1';
 const port = production ? 4173 : 5173;
 export default defineConfig({
@@ -21,12 +30,11 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         viewport: { width: 1440, height: 1000 },
-        launchOptions: firefoxLaunchOptions(),
       },
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 1000 } },
     },
-  ],
+  ].filter((project) => !skipFirefox || project.name !== 'firefox'),
 });
