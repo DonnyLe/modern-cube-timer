@@ -6,11 +6,13 @@ export function Dialog({
   onClose,
   children,
   wide = false,
+  allowOverflow = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  allowOverflow?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -32,7 +34,7 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-label={title}
-      className={wide ? 'dialog wide' : 'dialog'}
+      className={`dialog${wide ? ' wide' : ''}${allowOverflow ? ' dialog-overflow' : ''}`}
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();

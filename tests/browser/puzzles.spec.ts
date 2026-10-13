@@ -27,6 +27,10 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   await page.keyboard.press('Enter');
   await expect(picker).toHaveText(puzzles[event].label);
   await expect(picker).toBeEnabled();
+  await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-puzzle', event);
+  await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-status', 'ready', {
+    timeout: 60000,
+  });
   await page.getByRole('button', { name: 'Close dialog' }).click();
 }
 
@@ -67,12 +71,12 @@ test('puzzle switching separates solves, persists selection, and is locked durin
   await page.waitForTimeout(350);
   await page.keyboard.up('Space');
   await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeDisabled();
-  await expect(page.locator('.session-label')).toBeDisabled();
+  await expect(page.locator('.session-label')).toHaveCount(0);
   await page.keyboard.down('Space');
   await page.keyboard.up('Space');
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await page.reload();
-  await expect(page.locator('.session-label')).toContainText('2x2');
+  await expect(page.locator('.recent footer')).toContainText('2x2');
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await selectPuzzle(page, '333');
   await expect(page.locator('.recent-list')).toContainText('12.84');
@@ -202,3 +206,39 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
     page.getByRole('button', { name: 'Timer. Hold to start, press to stop' }),
   ).toBeVisible();
 });
+
+for (const viewport of [
+  { width: 1440, height: 1000 },
+  { width: 390, height: 600 },
+]) {
+  test(`puzzle dropdown's last option receives pointer input at ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+    const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+
+    await picker.click();
+    await page.keyboard.press('End');
+    const clock = page.getByRole('option', { name: 'Clock', exact: true });
+
+    await expect(clock).toBeFocused();
+    await expect
+      .poll(() =>
+        clock.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+
+          return hit !== null && element.contains(hit);
+        }),
+      )
+      .toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('puzzle-dropdown.png') });
+    await clock.click();
+    await expect(picker).toHaveText('Clock');
+    await expect(picker).toBeEnabled();
+    await page.getByRole('button', { name: 'Close dialog' }).click();
+    await expect(page.locator('.recent footer')).toContainText('Clock');
+  });
+}

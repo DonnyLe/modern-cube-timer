@@ -333,15 +333,6 @@ export default function App() {
           )}
           <section className="timer-area">
             <button
-              className="session-label"
-              title="Change puzzle or session"
-              aria-haspopup="dialog"
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onClick={openSessions}
-            >
-              {session?.name || 'Practice'}
-            </button>
-            <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
               aria-label="Timer. Hold to start, press to stop"
@@ -481,7 +472,8 @@ export default function App() {
                     : 'Puzzle and sessions'
           }
           onClose={close}
-          wide={dialog === 'history'}
+          wide={dialog === 'history' || dialog === 'sessions'}
+          allowOverflow={dialog === 'sessions'}
         >
           {(dialog === 'manual' || dialog === 'solve') && (
             <form
@@ -636,119 +628,130 @@ export default function App() {
           )}
           {dialog === 'sessions' && (
             <>
-              <div className="puzzle-selector">
-                <span>Puzzle</span>
-                <Select
-                  label="Puzzle"
-                  value={puzzle}
-                  options={puzzleEvents.map((event) => ({
-                    value: event,
-                    label: puzzles[event].label,
-                  }))}
-                  disabled={switchingPuzzle || saving || !!pendingSolve || !session}
-                  onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-                  onOpenChange={setPuzzlePickerOpen}
-                />
-              </div>
-              <div className="session-browser-heading">
-                <div>
-                  <h3>Sessions</h3>
-                  <p className="subtle">Pick up where you left off.</p>
-                </div>
-                <button
-                  className="primary"
-                  disabled={switchingPuzzle}
-                  onClick={() => {
-                    void safeWrite(async () => {
-                      const next = await newSession(puzzle);
-
-                      store.setPreferences({ activeSessionId: next.id });
-                    }).then((ok) => {
-                      if (ok) close();
-                    });
-                  }}
-                >
-                  <Plus size={16} />
-                  Start new session
-                </button>
-              </div>
-              <div className="session-list">
-                {sessions
-                  .filter((s) => s.puzzle === puzzle)
-                  .reverse()
-                  .map((s) => (
+              <div className="session-panel-layout">
+                <div className="session-panel-controls">
+                  <div className="puzzle-selector">
+                    <span>Puzzle</span>
+                    <Select
+                      label="Puzzle"
+                      value={puzzle}
+                      options={puzzleEvents.map((event) => ({
+                        value: event,
+                        label: puzzles[event].label,
+                      }))}
+                      disabled={switchingPuzzle || saving || !!pendingSolve || !session}
+                      onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+                      onOpenChange={setPuzzlePickerOpen}
+                    />
+                  </div>
+                  <div className="session-browser-heading">
+                    <div>
+                      <h3>Sessions</h3>
+                      <p className="subtle">Pick up where you left off.</p>
+                    </div>
                     <button
-                      key={s.id}
-                      className={s.id === session?.id ? 'chosen' : ''}
-                      aria-pressed={s.id === session?.id}
+                      className="primary"
                       disabled={switchingPuzzle}
                       onClick={() => {
-                        store.setPreferences({ activeSessionId: s.id });
-                        close();
+                        void safeWrite(async () => {
+                          const next = await newSession(puzzle);
+
+                          store.setPreferences({ activeSessionId: next.id });
+                        }).then((ok) => {
+                          if (ok) close();
+                        });
                       }}
                     >
-                      <span className="session-row-copy">
-                        <strong>{s.name}</strong>
-                        <small>
-                          {new Date(s.createdAt).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                        </small>
-                      </span>
-                      {s.id === session?.id && (
-                        <span className="session-current">
-                          <Check size={14} /> Current
-                        </span>
-                      )}
-                    </button>
-                  ))}
-              </div>
-              <details className="session-management">
-                <summary>Manage current session</summary>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (session && name.trim())
-                      void safeWrite(() =>
-                        db.sessions.update(session.id, { name: name.trim(), automaticName: false }),
-                      ).then((ok) => {
-                        if (ok) close();
-                      });
-                  }}
-                >
-                  <label>
-                    Session name
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Optional custom name"
-                    />
-                  </label>
-                  <div className="button-row">
-                    <button type="submit" disabled={!name.trim() || !session}>
-                      Rename current
+                      <Plus size={16} />
+                      Start new session
                     </button>
                   </div>
-                </form>
-                <button
-                  className="danger session-delete"
-                  disabled={sessions.length < 2}
-                  onClick={() => setDialog('delete-session')}
-                >
-                  Delete current session
-                </button>
-              </details>
-              <button
-                className="text-button session-settings-link"
-                onClick={async () => {
-                  if (focused) await changeFocus(false);
-                  close();
-                  setView('Settings');
-                }}
-              >
-                Automatic session settings <ArrowUpRight size={14} />
-              </button>
+                  <div className="session-list">
+                    {sessions
+                      .filter((s) => s.puzzle === puzzle)
+                      .reverse()
+                      .map((s) => (
+                        <button
+                          key={s.id}
+                          className={s.id === session?.id ? 'chosen' : ''}
+                          aria-pressed={s.id === session?.id}
+                          disabled={switchingPuzzle}
+                          onClick={() => {
+                            store.setPreferences({ activeSessionId: s.id });
+                            close();
+                          }}
+                        >
+                          <span className="session-row-copy">
+                            <strong>{s.name}</strong>
+                            <small>
+                              {new Date(s.createdAt).toLocaleString(undefined, {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </small>
+                          </span>
+                          {s.id === session?.id && (
+                            <span className="session-current">
+                              <Check size={14} /> Current
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                  <details className="session-management">
+                    <summary>Manage current session</summary>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (session && name.trim())
+                          void safeWrite(() =>
+                            db.sessions.update(session.id, {
+                              name: name.trim(),
+                              automaticName: false,
+                            }),
+                          ).then((ok) => {
+                            if (ok) close();
+                          });
+                      }}
+                    >
+                      <label>
+                        Session name
+                        <input
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Optional custom name"
+                        />
+                      </label>
+                      <div className="button-row">
+                        <button type="submit" disabled={!name.trim() || !session}>
+                          Rename current
+                        </button>
+                      </div>
+                    </form>
+                    <button
+                      className="danger session-delete"
+                      disabled={sessions.length < 2}
+                      onClick={() => setDialog('delete-session')}
+                    >
+                      Delete current session
+                    </button>
+                  </details>
+                  <button
+                    className="text-button session-settings-link"
+                    onClick={async () => {
+                      if (focused) await changeFocus(false);
+                      close();
+                      setView('Settings');
+                    }}
+                  >
+                    Automatic session settings <ArrowUpRight size={14} />
+                  </button>
+                </div>
+                <aside className="session-puzzle-art" aria-label="Selected puzzle preview">
+                  <span className="eyebrow">{puzzles[puzzle].label}</span>
+                  <Preview scramble={scramble.scramble} event={puzzle} faceOnly />
+                </aside>
+              </div>
             </>
           )}
         </Dialog>

@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { puzzles, type PuzzleEvent } from '../core/puzzles';
 import { loadTwisty } from '../core/cubing';
 
-export function Preview({ scramble, event }: { scramble: string; event: PuzzleEvent }) {
+export function Preview({
+  scramble,
+  event,
+  faceOnly = false,
+}: {
+  scramble: string;
+  event: PuzzleEvent;
+  faceOnly?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null),
     [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const puzzle = puzzles[event];
@@ -22,11 +30,71 @@ export function Preview({ scramble, event }: { scramble: string; event: PuzzleEv
 
           if (!alive) return;
           const preview = new ExperimentalSVGAnimator(kpuzzle, svg);
+          const root = preview.svgElement;
+
+          if (!(root instanceof SVGSVGElement)) throw new Error('Invalid puzzle preview');
+          const stickers = Array.from(root.querySelectorAll<SVGGraphicsElement>('[id]')).filter(
+            (element) => element instanceof SVGGraphicsElement && /-l\d+-o\d+$/.test(element.id),
+          );
+          // Read face membership from the solved source; the animator replaces fills with gradients.
+          const source = new DOMParser().parseFromString(svg, 'image/svg+xml');
+          const sourceStickers = Array.from(source.querySelectorAll<SVGElement>('[id]')).filter(
+            (element) => /-l\d+-o\d+$/.test(element.id),
+          );
+          const color =
+            event === 'sq1'
+              ? 'white'
+              : ['limegreen', '#44ee00', '#008800'].find((fill) =>
+                  sourceStickers.some((element) => element.style.fill === fill),
+                ) || sourceStickers[0]?.style.fill;
+          const faceIds = new Set(
+            sourceStickers
+              .filter((element) => element.style.fill === color)
+              .map((element) => element.id),
+          );
+          const face = stickers.filter((element) => faceIds.has(element.id));
 
           preview.drawPattern(pattern);
-          preview.svgElement.setAttribute('width', '100%');
-          preview.svgElement.setAttribute('height', '100%');
-          container.replaceChildren(preview.svgElement);
+          root.setAttribute('width', '100%');
+          root.setAttribute('height', '100%');
+          container.replaceChildren(root);
+
+          if (faceOnly) {
+            if (event === 'clock') {
+              const box = root.viewBox.baseVal;
+
+              root.setAttribute('viewBox', `${box.x} ${box.y} ${box.width / 2} ${box.height}`);
+            } else if (face.length) {
+              const inverse = root.getScreenCTM()!.inverse();
+              const points = face.flatMap((element) => {
+                const box = element.getBBox();
+                const matrix = inverse.multiply(element.getScreenCTM()!);
+
+                return [
+                  [box.x, box.y],
+                  [box.x + box.width, box.y],
+                  [box.x, box.y + box.height],
+                  [box.x + box.width, box.y + box.height],
+                ].map(([x, y]) => new DOMPoint(x, y).matrixTransform(matrix));
+              });
+              const x = Math.min(...points.map((point) => point.x));
+              const y = Math.min(...points.map((point) => point.y));
+              const width = Math.max(...points.map((point) => point.x)) - x;
+              const height = Math.max(...points.map((point) => point.y)) - y;
+              const padding = Math.max(width, height) * 0.04;
+
+              for (const sticker of stickers)
+                if (!face.includes(sticker)) sticker.style.visibility = 'hidden';
+              preview.svgElement
+                .querySelectorAll('.hint-facelet')
+                .forEach((element) => element.remove());
+              root.setAttribute(
+                'viewBox',
+                `${x - padding} ${y - padding} ${width + 2 * padding} ${height + 2 * padding}`,
+              );
+            }
+          }
+
           setStatus('ready');
         })
         .catch(() => {
@@ -37,12 +105,12 @@ export function Preview({ scramble, event }: { scramble: string; event: PuzzleEv
       alive = false;
       container.replaceChildren();
     };
-  }, [scramble, puzzle.puzzleId]);
+  }, [scramble, puzzle.puzzleId, faceOnly, event]);
 
   return (
     <>
       <div
-        className="cube-preview"
+        className={faceOnly ? 'puzzle-face-preview' : 'cube-preview'}
         ref={ref}
         aria-label={`${puzzle.label} state for ${scramble}`}
         data-puzzle={event}
@@ -52,7 +120,9 @@ export function Preview({ scramble, event }: { scramble: string; event: PuzzleEv
         {status === 'error'
           ? 'Preview unavailable'
           : status === 'ready'
-            ? `${puzzle.label} state preview`
+            ? faceOnly
+              ? 'One face of your scramble'
+              : `${puzzle.label} state preview`
             : 'Preparing your preview…'}
       </p>
     </>
