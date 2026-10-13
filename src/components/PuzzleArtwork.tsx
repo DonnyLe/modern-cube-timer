@@ -22,7 +22,6 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
   useEffect(() => {
     let alive = true;
     let timeout: ReturnType<typeof setTimeout> | undefined;
-    let resize: ResizeObserver | undefined;
     const host = container.current!;
     const probe = document.createElement('canvas');
     const context = probe.getContext('webgl2');
@@ -48,7 +47,7 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
           hintFacelets: 'none',
           backView: 'none',
           viewerLink: 'none',
-          cameraDistance: 4.2,
+          cameraDistance: puzzle === 'minx' ? 7 : puzzle === '333' ? 6.3 : 6.6,
           cameraLatitude: 25,
           cameraLongitude: 30,
         });
@@ -57,10 +56,6 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
         next.style.width = '100%';
         next.style.height = '100%';
         host.replaceChildren(next);
-        resize = new ResizeObserver(([entry]) => {
-          next.cameraDistance = entry.contentRect.width > entry.contentRect.height ? 5.5 : 4.2;
-        });
-        resize.observe(host);
         await Promise.race([
           next.experimentalCurrentCanvases(),
           new Promise((_, reject) => {
@@ -72,7 +67,6 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
       })
       .catch(() => {
         clearTimeout(timeout);
-        resize?.disconnect();
 
         if (alive) {
           player.current?.pause();
@@ -84,7 +78,6 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
     return () => {
       alive = false;
       clearTimeout(timeout);
-      resize?.disconnect();
       player.current?.pause();
       player.current = null;
       host.replaceChildren();
