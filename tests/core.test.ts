@@ -4,6 +4,7 @@ import { average, formatTime, parseTime } from '../src/core/statistics';
 import { defaultWorkspace } from '../src/layout/defaults';
 import { validLayout, anchoredWidgets } from '../src/layout/geometry';
 import type { Solve } from '../src/core/types';
+
 const solves = (v: number[]) =>
   v.map(
     (duration, i) =>
@@ -17,9 +18,11 @@ const solves = (v: number[]) =>
         note: '',
       }) as Solve,
   );
+
 describe('timer', () => {
   it('requires a complete hold, ignores repeat press and consumes stop release', () => {
     const t = new TimerEngine();
+
     t.press(0);
     t.release(299);
     expect(t.phase).toBe('idle');
@@ -38,6 +41,7 @@ describe('timer', () => {
     [17000, 'DNF'],
   ])('inspection at %i ms gives %s', (time, penalty) => {
     const t = new TimerEngine(true);
+
     t.press(0);
     t.release(10);
     t.press(Number(time) - 300);
@@ -46,6 +50,7 @@ describe('timer', () => {
   });
   it('uses the clock even without rendering', () => {
     const t = new TimerEngine();
+
     t.press(0);
     t.release(300);
     expect(t.press(50000)?.duration).toBe(49700);
@@ -68,12 +73,14 @@ describe('statistics', () => {
 describe('geometry', () => {
   it('rejects collisions, bounds and undersized cards', () => {
     const w = defaultWorkspace();
+
     expect(validLayout(w.widgets, w.width)).toBe(true);
     w.widgets[3].x = 500;
     expect(validLayout(w.widgets, w.width)).toBe(false);
   });
   it('preserves centered anchors without changing saved geometry', () => {
     const w = defaultWorkspace();
+
     expect(anchoredWidgets(w, 1420)[1].x).toBe(w.widgets[1].x + 50);
     expect(w.widgets[1].x).toBe(240);
   });

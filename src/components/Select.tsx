@@ -19,12 +19,14 @@ export function Select<Value extends string>({
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+
   useEffect(() => {
     if (!disabled && restoreFocus.current) {
       trigger.current?.focus();
       restoreFocus.current = false;
     }
   }, [disabled]);
+
   return (
     <SelectPrimitive.Root
       value={value}

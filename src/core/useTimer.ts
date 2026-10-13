@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { TimerEngine, type Phase, type Result } from './timer';
+
 export function useTimer(
   inspection: boolean,
   holdMs: number,
@@ -9,12 +10,14 @@ export function useTimer(
   const engine = useRef(new TimerEngine(inspection, holdMs));
   const spaceHeld = useRef(false);
   const callback = useRef(onSolve);
+
   callback.current = onSolve;
   const [display, setDisplay] = useState({
     phase: 'idle' as Phase,
     elapsed: 0,
     inspectionPenalty: 'none',
   });
+
   useEffect(() => {
     engine.current.inspection = inspection;
     engine.current.holdMs = holdMs;
@@ -22,12 +25,14 @@ export function useTimer(
   const update = useCallback(() => {
     const now = performance.now();
     const elapsed = engine.current.tick(now);
+
     setDisplay((previous) => {
       const next = {
         phase: engine.current.phase,
         elapsed,
         inspectionPenalty: engine.current.inspectionPenalty(now),
       };
+
       return previous.phase === next.phase &&
         previous.elapsed === next.elapsed &&
         previous.inspectionPenalty === next.inspectionPenalty
@@ -38,6 +43,7 @@ export function useTimer(
   const press = useCallback(() => {
     if (disabled) return;
     const result = engine.current.press(performance.now());
+
     if (result) callback.current(result);
     update();
   }, [disabled, update]);
@@ -45,13 +51,17 @@ export function useTimer(
     engine.current.release(performance.now());
     update();
   }, [update]);
+
   useEffect(() => {
     let frame: number;
+
     const loop = () => {
       update();
       frame = requestAnimationFrame(loop);
     };
+
     frame = requestAnimationFrame(loop);
+
     return () => cancelAnimationFrame(frame);
   }, [update]);
   useEffect(() => {
@@ -61,11 +71,13 @@ export function useTimer(
         'input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="combobox"],[role="listbox"],[role="option"]',
       ) &&
       !(target instanceof HTMLElement && target.closest('[data-timer]'));
+
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Escape' && engine.current.phase !== 'running') {
         engine.current.cancel();
         update();
       }
+
       if (
         e.code !== 'Space' ||
         ignored(e.target) ||
@@ -83,29 +95,37 @@ export function useTimer(
       spaceHeld.current = true;
       press();
     };
+
     const up = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || !spaceHeld.current) return;
       spaceHeld.current = false;
+
       if (ignored(e.target) || disabled || e.defaultPrevented) {
         if (engine.current.phase !== 'running') {
           engine.current.cancel();
           update();
         }
+
         return;
       }
+
       e.preventDefault();
       release();
     };
+
     const blur = () => {
       spaceHeld.current = false;
+
       if (engine.current.phase !== 'running') {
         engine.current.cancel();
         update();
       }
     };
+
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
+
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
@@ -115,6 +135,7 @@ export function useTimer(
   useEffect(() => {
     if (disabled && engine.current.phase !== 'running') engine.current.cancel();
   }, [disabled]);
+
   return {
     ...display,
     press,

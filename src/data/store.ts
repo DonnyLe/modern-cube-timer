@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Preferences, Workspace } from '../core/types';
 import { defaultWorkspace } from '../layout/defaults';
 import { initialize, saveSetting } from './db';
+
 interface Store {
   ready: boolean;
   error: string;
@@ -18,7 +19,9 @@ interface Store {
   undo: () => void;
   redo: () => void;
 }
+
 let writes = Promise.resolve();
+
 function persist(key: string, value: unknown) {
   writes = writes
     .then(() => saveSetting(key, value))
@@ -28,6 +31,7 @@ function persist(key: string, value: unknown) {
         .setError(`Could not save locally: ${e.message}. Keep this tab open and export a backup.`),
     );
 }
+
 export const useStore = create<Store>((set, get) => ({
   ready: false,
   error: '',
@@ -41,6 +45,7 @@ export const useStore = create<Store>((set, get) => ({
   boot: async () => {
     try {
       const data = await initialize();
+
       set({
         workspace: data.workspace,
         preferences: data.preferences,
@@ -61,12 +66,14 @@ export const useStore = create<Store>((set, get) => ({
   },
   setPreferences: (p) => {
     const preferences = { ...get().preferences, ...p };
+
     set({ preferences });
     persist('preferences', preferences);
   },
   undo: () => {
     const s = get(),
       w = s.past.at(-1);
+
     if (w) {
       set({ workspace: w, past: s.past.slice(0, -1), future: [s.workspace, ...s.future] });
       persist('workspace', w);
@@ -75,20 +82,24 @@ export const useStore = create<Store>((set, get) => ({
   redo: () => {
     const s = get(),
       w = s.future[0];
+
     if (w) {
       set({ workspace: w, past: [...s.past, s.workspace], future: s.future.slice(1) });
       persist('workspace', w);
     }
   },
 }));
+
 export async function safeWrite(action: () => Promise<unknown>) {
   try {
     await action();
+
     return true;
   } catch (e) {
     useStore
       .getState()
       .setError(`Could not save locally: ${(e as Error).message}. Export a backup before closing.`);
+
     return false;
   }
 }

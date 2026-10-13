@@ -11,10 +11,12 @@ export function useFocusMode(exitBlocked: boolean) {
   const changeFocus = useCallback(
     async (next: boolean) => {
       const request = ++latestRequest.current;
+
       if (reducedMotion) {
         focusFade.stop();
         focusFade.set({ opacity: 1 });
         setFocused(next);
+
         return;
       }
 
@@ -30,10 +32,13 @@ export function useFocusMode(exitBlocked: boolean) {
 
   useEffect(() => {
     if (!focused || exitBlocked) return;
+
     const exitOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) void changeFocus(false);
     };
+
     window.addEventListener('keydown', exitOnEscape);
+
     return () => window.removeEventListener('keydown', exitOnEscape);
   }, [focused, exitBlocked, changeFocus]);
 
