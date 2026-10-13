@@ -88,8 +88,9 @@ test('automatic sessions use the saved break setting and retain previous history
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await sessions.click();
   await expect(page.getByLabel('Break before a new session (hours)')).toHaveCount(0);
-  await expect(page.locator('.session-list button')).toHaveCount(2);
-  await page.locator('.session-list button').last().click();
+  await expect(page.locator('.manager-session-row')).toHaveCount(2);
+  await page.locator('.manager-session-row').last().click();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
   await expect(page.locator('.recent-list .solve-row strong')).toHaveText('12.00');
 });
 
@@ -105,13 +106,15 @@ test('sessions can be started without a name and custom names stay available', a
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
-  await expect(page.locator('.session-list button')).toHaveCount(2);
-  await page.getByText('Manage current session', { exact: true }).click();
+  await expect(page.locator('.manager-session-row')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Rename', exact: true }).click();
   await page.getByLabel('Session name', { exact: true }).fill('Competition practice');
   await page.getByRole('button', { name: 'Rename current' }).click();
+  await expect(page.getByRole('heading', { name: 'Competition practice' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page.locator('.recent footer')).toContainText('Competition practice');
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
-  await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-status', 'ready', {
+  await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', /3d|face/, {
     timeout: 30000,
   });
   await page.screenshot({

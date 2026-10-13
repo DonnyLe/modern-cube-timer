@@ -27,11 +27,11 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   await page.keyboard.press('Enter');
   await expect(picker).toHaveText(puzzles[event].label);
   await expect(picker).toBeEnabled();
-  await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-puzzle', event);
-  await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-status', 'ready', {
-    timeout: 60000,
+  await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-puzzle', event);
+  await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', /3d|face/, {
+    timeout: 30000,
   });
-  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
@@ -238,7 +238,7 @@ for (const viewport of [
     await clock.click();
     await expect(picker).toHaveText('Clock');
     await expect(picker).toBeEnabled();
-    await page.getByRole('button', { name: 'Close dialog' }).click();
+    await page.getByRole('button', { name: 'Continue session', exact: true }).click();
     await expect(page.locator('.recent footer')).toContainText('Clock');
   });
 }

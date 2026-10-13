@@ -582,91 +582,6 @@ textarea {
   font-family: monospace;
   line-height: 1.8;
 }
-.session-browser-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 20px 0 12px;
-}
-.session-browser-heading h3 {
-  margin: 0;
-  font-size: 16px;
-}
-.session-browser-heading p {
-  margin: 4px 0 0;
-  font-size: 13px;
-}
-.session-browser-heading button {
-  flex-shrink: 0;
-  padding: 9px 12px;
-  font-size: 13px;
-}
-.session-list {
-  display: grid;
-  gap: 8px;
-  max-height: 280px;
-  overflow-y: auto;
-  margin-bottom: 16px;
-}
-.session-list button {
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  text-align: left;
-  min-width: 0;
-}
-.session-list button:active,
-.session-browser-heading button:active {
-  transform: scale(0.98);
-}
-.session-row-copy {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.session-row-copy strong {
-  font-weight: 500;
-}
-.session-row-copy small {
-  opacity: 0.65;
-  font-size: 12px;
-}
-.session-current {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  color: var(--accent);
-  font-size: 11px;
-}
-.session-management {
-  border-top: 1px solid var(--outline);
-  padding-top: 16px;
-}
-.session-management summary {
-  cursor: pointer;
-  font-size: 13px;
-}
-.session-management form {
-  margin-top: 16px;
-}
-.session-delete {
-  margin-top: 16px;
-}
-.session-settings-link {
-  margin-top: 16px;
-  font-size: 12px;
-}
-@media (max-width: 480px) {
-  .session-browser-heading {
-    flex-wrap: wrap;
-  }
-  .session-browser-heading button {
-    width: 100%;
-  }
-}
 .chosen {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
@@ -1168,26 +1083,6 @@ input[type='range'] {
   }
 }
 
-.session-panel-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
-  gap: 28px;
-}
-.session-panel-controls {
-  min-width: 0;
-}
-.session-puzzle-art {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 20px;
-  border-left: 1px solid var(--outline);
-}
-.session-puzzle-art .eyebrow {
-  margin: 0;
-}
 .puzzle-face-preview {
   width: 100%;
   height: 190px;
@@ -1195,24 +1090,317 @@ input[type='range'] {
 .puzzle-face-preview svg {
   display: block;
 }
-.session-puzzle-art .preview-caption {
-  margin: 0;
-  font-size: 12px;
-  text-align: center;
+
+.dialog.session-manager-dialog {
+  max-height: 90svh;
+  width: min(1160px, calc(100% - 32px));
 }
-@media (max-width: 600px) {
-  .session-panel-layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+.session-manager-dialog .dialog-content {
+  padding: 28px;
+  max-height: 90svh;
+}
+.session-manager-body {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(270px, 1.15fr) minmax(260px, 1fr);
+  grid-template-areas: 'art details sidebar' 'footer footer sidebar';
+  min-height: min(650px, 76svh);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius);
+}
+.manager-art {
+  grid-area: art;
+  padding: 32px 26px;
+  min-width: 0;
+}
+.manager-details {
+  grid-area: details;
+  padding: 32px 26px;
+  border-left: 1px solid var(--outline);
+  min-width: 0;
+}
+.manager-sidebar {
+  grid-area: sidebar;
+  padding: 32px 26px;
+  border-left: 1px solid var(--outline);
+  min-width: 0;
+}
+.manager-column-header {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  gap: 12px;
+}
+.manager-column-header h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 550;
+  letter-spacing: -0.3px;
+  overflow-wrap: anywhere;
+}
+.manager-column-header .custom-select-trigger {
+  min-width: 0;
+  flex: 1;
+  width: auto;
+}
+.manager-column-header.puzzle-selector {
+  font-size: 13px;
+}
+.manager-sidebar-heading {
+  justify-content: space-between;
+}
+.manager-sidebar-heading .primary {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.manager-metadata {
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.65;
+  margin-top: 8px;
+}
+.manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+}
+.manager-actions button {
+  font-size: 12px;
+}
+.manager-statistics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 28px 0;
+  gap: 12px;
+}
+.manager-statistics div + div {
+  border-left: 1px solid var(--outline);
+  padding-left: 12px;
+}
+.manager-statistics span {
+  display: block;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.manager-statistics strong {
+  display: block;
+  font-size: clamp(18px, 2vw, 25px);
+  font-weight: 550;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.manager-solves-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.manager-solves-heading h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.manager-solves-heading button {
+  font-size: 12px;
+}
+.manager-solves .solve-row {
+  grid-template-columns: 24px auto 1fr 14px;
+  padding: 12px 0;
+  gap: 10px;
+}
+.manager-solves .solve-row small {
+  text-align: right;
+  font-size: 11px;
+}
+.manager-solves .solve-row strong {
+  font-size: 14px;
+}
+.manager-solves .solve-row svg {
+  color: var(--accent);
+}
+.manager-empty {
+  padding: 24px 0;
+  font-size: 13px;
+}
+.manager-search {
+  position: relative;
+  margin: 16px 0;
+}
+.manager-search > svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  opacity: 0.65;
+}
+.manager-search input {
+  width: 100%;
+  padding-left: 36px;
+  font-size: 13px;
+}
+.manager-session-list {
+  display: grid;
+  gap: 8px;
+  max-height: 430px;
+  overflow-y: auto;
+}
+.manager-session-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  min-width: 0;
+  text-align: left;
+  border-color: transparent;
+}
+.manager-session-row:active {
+  transform: scale(0.98);
+}
+.manager-session-row.chosen {
+  border-color: var(--outline);
+}
+.manager-puzzle-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--outline);
+  border-radius: var(--control-radius);
+  font-size: 10px;
+}
+.manager-session-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.manager-session-copy strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.manager-session-copy small {
+  font-size: 11px;
+  opacity: 0.65;
+  line-height: 1.5;
+}
+.manager-current {
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.manager-footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  border-top: 1px solid var(--outline);
+  padding: 20px 24px;
+}
+.manager-footer .text-button {
+  font-size: 12px;
+}
+.manager-footer .primary {
+  font-size: 13px;
+  padding: 12px 18px;
+}
+.manager-rename {
+  margin-top: 16px;
+}
+.manager-management {
+  font-size: 12px;
+  margin-top: 20px;
+}
+.manager-management summary {
+  cursor: pointer;
+}
+.manager-management > button {
+  margin-top: 12px;
+}
+.manager-delete-confirmation {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+.puzzle-artwork {
+  margin-top: 28px;
+}
+.puzzle-artwork-stage {
+  width: 100%;
+  height: 280px;
+}
+.puzzle-artwork[data-mode='face'] .puzzle-artwork-stage {
+  display: none;
+}
+.puzzle-artwork .puzzle-face-preview {
+  width: 100%;
+  height: 240px;
+}
+.puzzle-artwork-caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.puzzle-artwork-caption small {
+  font-size: 12px;
+  opacity: 0.65;
+}
+@media (max-width: 1050px) {
+  .session-manager-body {
+    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+    grid-template-areas: 'art details' 'footer footer' 'sidebar sidebar';
   }
-  .session-puzzle-art {
+  .manager-sidebar {
     border-left: 0;
     border-top: 1px solid var(--outline);
-    padding: 20px 0 0;
-    gap: 12px;
   }
-  .puzzle-face-preview {
-    width: 140px;
-    height: 140px;
+  .manager-session-list {
+    max-height: 240px;
+  }
+  .manager-column-header h3 {
+    font-size: 18px;
+  }
+}
+@media (max-width: 600px) {
+  .session-manager-dialog .dialog-content {
+    padding: 18px;
+  }
+  .session-manager-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'art' 'details' 'footer' 'sidebar';
+    min-height: 0;
+  }
+  .manager-art,
+  .manager-details,
+  .manager-sidebar {
+    padding: 20px;
+  }
+  .manager-details {
+    border-left: 0;
+    border-top: 1px solid var(--outline);
+  }
+  .manager-footer {
+    padding: 20px;
+  }
+  .manager-footer .primary {
+    width: 100%;
+  }
+  .puzzle-artwork-stage {
+    height: 180px;
+  }
+  .puzzle-artwork .puzzle-face-preview {
+    height: 160px;
+  }
+  .puzzle-artwork {
+    margin-top: 12px;
+  }
+  .manager-statistics strong {
+    font-size: 24px;
   }
 }
