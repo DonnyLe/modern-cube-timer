@@ -62,6 +62,18 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
           <section className="settings-card glass">
             <h2>Timing</h2>
             <label className="toggle-row">
+              Hide clock while solving
+              <input
+                type="checkbox"
+                checked={preferences.hideClockWhileSolving}
+                onChange={(e) => setPreferences({ hideClockWhileSolving: e.target.checked })}
+                aria-describedby="hide-clock-description"
+              />
+            </label>
+            <p className="subtle" id="hide-clock-description">
+              Show “Solving...” until you stop. Inspection and your final time stay visible.
+            </p>
+            <label className="toggle-row">
               15-second inspection
               <input
                 type="checkbox"

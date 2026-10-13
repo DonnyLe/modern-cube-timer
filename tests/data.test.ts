@@ -120,6 +120,29 @@ describe('Zod boundaries', () => {
     expect(recovered.warning).toContain('preferences');
     expect(await db.sessions.count()).toBe(1);
   });
+  it('keeps older timing preferences when the hidden-clock setting is missing', async () => {
+    const initial = await initialize();
+
+    await db.settings.put({
+      key: 'preferences',
+      value: {
+        inspection: true,
+        holdMs: 500,
+        activeSessionId: initial.preferences.activeSessionId,
+        hideWidgetsInFocus: false,
+      },
+    });
+    const restored = await initialize();
+
+    expect(restored.preferences).toEqual({
+      inspection: true,
+      holdMs: 500,
+      activeSessionId: initial.preferences.activeSessionId,
+      hideWidgetsInFocus: false,
+      hideClockWhileSolving: false,
+    });
+    expect(restored.warning).toBe('');
+  });
   it('previews invalid native rows and orphaned solves alongside a valid row', () => {
     const row = { sessionId: 's', duration: 12000, penalty: 'none', scramble: 'R', timestamp: 0 };
     const p = parseImport({
