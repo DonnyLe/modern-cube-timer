@@ -585,6 +585,14 @@ textarea {
   font-family: monospace;
   line-height: 1.8;
 }
+.session-controls {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+.session-delete {
+  margin-top: 20px;
+}
 .session-list {
   display: grid;
   gap: 8px;

@@ -13,7 +13,7 @@ import {
   Scan,
 } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
-import { db, id, sessionForPuzzle } from './data/db';
+import { db, id, sessionForPuzzle, newSession, saveSessionSolve } from './data/db';
 import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
 import type { Solve, Penalty } from './core/types';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
@@ -53,6 +53,7 @@ export default function App() {
     [switchingPuzzle, setSwitchingPuzzle] = useState(false),
     [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
+  const pendingStartedAt = useRef(0);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || puzzlePickerOpen);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
@@ -83,7 +84,12 @@ export default function App() {
   const persistSolve = async (solve: Solve) => {
     setSaving(true);
     setPendingSolve(solve);
-    const ok = await safeWrite(() => db.solves.put(solve));
+    const ok = await safeWrite(async () => {
+      const saved = await saveSessionSolve(solve, preferences, pendingStartedAt.current);
+
+      if (saved.sessionId !== preferences.activeSessionId)
+        store.setPreferences({ activeSessionId: saved.sessionId });
+    });
 
     setSaving(false);
 
@@ -95,7 +101,7 @@ export default function App() {
     return ok;
   };
 
-  const saveSolve = async (duration: number, penalty: Penalty = 'none') => {
+  const saveSolve = async (duration: number, penalty: Penalty = 'none', manualEntry = false) => {
     const solve: Solve = {
       id: id(),
       duration: Math.round(duration),
@@ -105,6 +111,8 @@ export default function App() {
       timestamp: Date.now(),
       note: '',
     };
+
+    pendingStartedAt.current = manualEntry ? solve.timestamp : solve.timestamp - solve.duration;
 
     return persistSolve(solve);
   };
@@ -331,7 +339,7 @@ export default function App() {
           <section className="timer-area">
             <button
               className="session-label"
-              disabled={busy}
+              disabled={busy || saving || !!pendingSolve}
               onClick={() => {
                 setName(session?.name || '');
                 setDialog('sessions');
@@ -499,7 +507,7 @@ export default function App() {
                     if (ok) close();
                   });
                 } else {
-                  void saveSolve(duration).then((ok) => {
+                  void saveSolve(duration, 'none', true).then((ok) => {
                     if (ok) close();
                   });
                 }
@@ -635,19 +643,53 @@ export default function App() {
           )}
           {dialog === 'sessions' && (
             <>
-              <button
-                className="danger session-delete"
-                disabled={sessions.length < 2}
-                onClick={() => setDialog('delete-session')}
-              >
-                Delete current session
-              </button>
               <p className="subtle">
-                New sessions use {puzzles[puzzle].label}. Choose another puzzle from the scramble
-                bar. Keep at least one session.
+                Sessions group continuous solves for each puzzle. Automatic sessions start with your
+                first solve after a break. Your previous solves stay in history.
               </p>
+              <div className="session-controls">
+                <label className="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={preferences.automaticSessions}
+                    onChange={(e) => store.setPreferences({ automaticSessions: e.target.checked })}
+                  />
+                  Start sessions automatically after a break
+                </label>
+                <label>
+                  Break before a new session (hours)
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    step="1"
+                    value={preferences.sessionBreakHours}
+                    disabled={!preferences.automaticSessions}
+                    onChange={(e) => {
+                      const hours = Number(e.target.value);
+
+                      if (hours >= 1 && hours <= 24)
+                        store.setPreferences({ sessionBreakHours: hours });
+                    }}
+                  />
+                </label>
+                <button
+                  className="primary"
+                  onClick={() => {
+                    void safeWrite(async () => {
+                      const next = await newSession(puzzle);
+
+                      store.setPreferences({ activeSessionId: next.id });
+                    }).then((ok) => {
+                      if (ok) close();
+                    });
+                  }}
+                >
+                  Start new session
+                </button>
+              </div>
               <div className="session-list">
-                {sessions.map((s) => (
+                {[...sessions].reverse().map((s) => (
                   <button
                     key={s.id}
                     className={s.id === session?.id ? 'chosen' : ''}
@@ -657,7 +699,13 @@ export default function App() {
                     }}
                   >
                     {s.name}
-                    <small>{puzzles[s.puzzle].label}</small>
+                    <small>
+                      {puzzles[s.puzzle].label} ·{' '}
+                      {new Date(s.createdAt).toLocaleString(undefined, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </small>
                     {s.id === session?.id && <Check size={16} />}
                   </button>
                 ))}
@@ -665,15 +713,12 @@ export default function App() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!name.trim()) return;
-                  const s = { id: id(), name: name.trim(), createdAt: Date.now(), puzzle };
-
-                  void safeWrite(() => db.sessions.add(s)).then((ok) => {
-                    if (ok) {
-                      store.setPreferences({ activeSessionId: s.id });
-                      close();
-                    }
-                  });
+                  if (session && name.trim())
+                    void safeWrite(() =>
+                      db.sessions.update(session.id, { name: name.trim(), automaticName: false }),
+                    ).then((ok) => {
+                      if (ok) close();
+                    });
                 }}
               >
                 <label>
@@ -681,29 +726,22 @@ export default function App() {
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Evening practice"
+                    placeholder="Optional custom name"
                   />
                 </label>
                 <div className="button-row">
-                  <button
-                    type="button"
-                    disabled={!name.trim() || !session}
-                    onClick={() => {
-                      if (session)
-                        void safeWrite(() =>
-                          db.sessions.update(session.id, { name: name.trim() }),
-                        ).then((ok) => {
-                          if (ok) close();
-                        });
-                    }}
-                  >
+                  <button type="submit" disabled={!name.trim() || !session}>
                     Rename current
-                  </button>
-                  <button className="primary" type="submit">
-                    New session
                   </button>
                 </div>
               </form>
+              <button
+                className="danger session-delete"
+                disabled={sessions.length < 2}
+                onClick={() => setDialog('delete-session')}
+              >
+                Delete current session
+              </button>
             </>
           )}
         </Dialog>

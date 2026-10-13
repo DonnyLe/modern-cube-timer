@@ -11,6 +11,7 @@ export interface Solve {
   note: string;
 }
 export interface Session {
+  automaticName?: boolean;
   puzzle: PuzzleEvent;
   id: string;
   name: string;
@@ -84,6 +85,8 @@ export interface Workspace {
   snap: boolean;
 }
 export interface Preferences {
+  automaticSessions: boolean;
+  sessionBreakHours: number;
   hideWidgetsInFocus: boolean;
   inspection: boolean;
   holdMs: number;

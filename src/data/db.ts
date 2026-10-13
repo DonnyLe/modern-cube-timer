@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Session, Solve, Workspace, Preset } from '../core/types';
+import type { Session, Solve, Workspace, Preset, Preferences } from '../core/types';
 import { defaultWorkspace } from '../layout/defaults';
 import { validateWorkspace } from './validate';
 import { preferencesSchema } from './schemas';
@@ -29,12 +29,99 @@ class TurnDB extends Dexie {
 export const db = new TurnDB();
 export const id = () => crypto.randomUUID();
 
+export function sessionName(puzzle: PuzzleEvent, timestamp = Date.now()) {
+  const hour = new Date(timestamp).getHours();
+  const period =
+    hour < 5
+      ? 'Night'
+      : hour < 12
+        ? 'Morning'
+        : hour < 17
+          ? 'Afternoon'
+          : hour < 22
+            ? 'Evening'
+            : 'Night';
+  const label = /^[2-7]{3}$/.test(puzzle) ? `${puzzle[0]}x${puzzle[0]}` : puzzles[puzzle].label;
+
+  return `${period} ${label} session`;
+}
+
+export async function newSession(puzzle: PuzzleEvent, timestamp = Date.now()): Promise<Session> {
+  const session: Session = {
+    id: id(),
+    name: sessionName(puzzle, timestamp),
+    automaticName: true,
+    puzzle,
+    createdAt: timestamp,
+  };
+
+  await db.sessions.add(session);
+
+  return session;
+}
+
+// Save the rollover and solve together. IndexedDB serializes competing tabs' writes.
+export async function saveSessionSolve(
+  solve: Solve,
+  preferences: Preferences,
+  startedAt = solve.timestamp,
+) {
+  return db.transaction('rw', db.sessions, db.solves, async () => {
+    const saved = await db.solves.get(solve.id);
+
+    if (saved) return saved; // Retrying a successful write must not create another session.
+    let session = await db.sessions.get(solve.sessionId);
+
+    if (!session) throw new Error('This session no longer exists. Choose another session.');
+    const previous = await db.solves
+      .where('[sessionId+timestamp]')
+      .between([session.id, 0], [session.id, Infinity])
+      .last();
+    const breakMs = preferences.sessionBreakHours * 60 * 60 * 1000;
+
+    if (preferences.automaticSessions && previous && startedAt - previous.timestamp > breakMs) {
+      const sessions = await db.sessions.where('puzzle').equals(session.puzzle).sortBy('createdAt');
+      const latest = sessions.at(-1);
+      const recent =
+        latest && latest.id !== session.id
+          ? await db.solves
+              .where('[sessionId+timestamp]')
+              .between([latest.id, 0], [latest.id, Infinity])
+              .last()
+          : undefined;
+
+      // Reuse a rollover already made in another tab, including an empty manual session.
+      session =
+        latest &&
+        latest.id !== session.id &&
+        latest.createdAt >= previous.timestamp &&
+        (!recent || startedAt - recent.timestamp <= breakMs)
+          ? latest
+          : await newSession(session.puzzle, startedAt);
+    }
+
+    if (session.automaticName && !(await db.solves.where('sessionId').equals(session.id).count())) {
+      await db.sessions.update(session.id, {
+        name: sessionName(session.puzzle, startedAt),
+        createdAt: startedAt,
+      });
+    }
+
+    const result = { ...solve, sessionId: session.id };
+
+    await db.solves.add(result);
+
+    return result;
+  });
+}
+
 export async function initialize() {
   await db.transaction('rw', db.sessions, db.settings, async () => {
     if (!(await db.sessions.count())) {
       const session: Session = {
         id: id(),
-        name: 'Afternoon practice',
+        name: sessionName('333'),
+        automaticName: true,
         createdAt: Date.now(),
         puzzle: '333',
       };
@@ -51,7 +138,7 @@ export async function initialize() {
   const parsedPreferences = preferencesSchema.safeParse(storedPreferences);
   const preferences = parsedPreferences.success
     ? parsedPreferences.data
-    : { inspection: false, holdMs: 300, activeSessionId: first!.id, hideWidgetsInFocus: true };
+    : preferencesSchema.parse({ activeSessionId: first!.id });
 
   if (!(await db.sessions.get(preferences.activeSessionId)))
     preferences.activeSessionId = first!.id;
@@ -96,7 +183,8 @@ export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
     if (existing.length) return existing[existing.length - 1];
     const session: Session = {
       id: id(),
-      name: `${puzzles[puzzle].label} practice`,
+      name: sessionName(puzzle),
+      automaticName: true,
       puzzle,
       createdAt: Date.now(),
     };

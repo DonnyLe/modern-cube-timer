@@ -131,6 +131,33 @@ describe('Zod boundaries', () => {
     expect(recovered.warning).toContain('preferences');
     expect(await db.sessions.count()).toBe(1);
   });
+  it('defaults automatic sessions for older preferences without changing custom names or timing settings', async () => {
+    const initial = await initialize();
+
+    await db.sessions.update(initial.preferences.activeSessionId, { name: 'My practice' });
+    await db.settings.put({
+      key: 'preferences',
+      value: {
+        inspection: true,
+        holdMs: 500,
+        hideWidgetsInFocus: false,
+        activeSessionId: initial.preferences.activeSessionId,
+      },
+    });
+    const restored = await initialize();
+
+    expect(restored.preferences).toEqual({
+      ...initial.preferences,
+      inspection: true,
+      holdMs: 500,
+      hideWidgetsInFocus: false,
+      automaticSessions: true,
+      sessionBreakHours: 4,
+    });
+    expect((await db.sessions.get(initial.preferences.activeSessionId))?.name).toBe('My practice');
+    expect(restored.warning).toBe('');
+    expect(await db.sessions.count()).toBe(1);
+  });
   it('previews invalid native rows and orphaned solves alongside a valid row', () => {
     const row = { sessionId: 's', duration: 12000, penalty: 'none', scramble: 'R', timestamp: 0 };
     const p = parseImport({
