@@ -122,6 +122,18 @@ button svg {
 .topbar .segmented {
   width: 100%;
 }
+.workspace-controls {
+  display: flex;
+  margin-bottom: 16px;
+}
+.is-focused .workspace-controls {
+  display: none;
+}
+.puzzle-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .topbar-controls {
   display: flex;
   align-items: center;
@@ -292,18 +304,13 @@ button svg {
   font-size: clamp(16px, 1.6vw, 22px);
 }
 .session-label {
+  margin: 0;
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 2.4px;
   border: 0;
   padding: 0;
   color: color-mix(in srgb, var(--ink) 65%, var(--accent));
-}
-.session-label svg {
-  opacity: 0;
-}
-.session-label:hover svg {
-  opacity: 1;
 }
 .timer-number {
   display: block;
@@ -1016,11 +1023,6 @@ input[type='range'] {
   }
   .segmented {
     margin-top: 8px;
-  }
-  .puzzle-selector {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    justify-self: end;
   }
   .scramble-bar {
     gap: 10px;

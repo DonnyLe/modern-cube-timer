@@ -122,16 +122,19 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   await page.goto('/');
   const actions = page.locator('.scramble-actions');
   const text = page.locator('.scramble-text');
-  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
   const navBox = (await page.locator('.segmented').boundingBox())!;
   const topbarBox = (await page.locator('.topbar').boundingBox())!;
 
   expect(navBox.x + navBox.width / 2).toBeCloseTo(topbarBox.x + topbarBox.width / 2, 0);
-  const selectorBox = (await selector.boundingBox())!;
-  const headerActionsBox = (await page.locator('.header-actions').boundingBox())!;
-
-  expect(selectorBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width);
-  expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(headerActionsBox.x);
+  await expect(
+    page.locator('.workspace-controls').getByRole('combobox', { name: 'Puzzle', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.workspace-controls').getByRole('button', { name: 'Sessions', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.topbar').getByRole('combobox', { name: 'Puzzle', exact: true }),
+  ).toHaveCount(0);
 
   for (const event of ['333', '666', '222'] as const) {
     await selectPuzzle(page, event);

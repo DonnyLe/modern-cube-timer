@@ -50,10 +50,12 @@ test('automatic sessions use the saved break setting and retain previous history
   page,
 }) => {
   await page.goto('/');
-  const sessions = page.locator('.session-label');
+  const sessions = page.getByRole('button', { name: 'Sessions', exact: true });
 
-  await expect(sessions).toContainText(/(Morning|Afternoon|Evening|Night) 3x3 session/);
-  await sessions.click();
+  await expect(page.locator('.session-label')).toContainText(
+    /(Morning|Afternoon|Evening|Night) 3x3 session/,
+  );
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByLabel('Start sessions automatically after a break')).toBeChecked();
   await expect(page.getByLabel('Break before a new session (hours)')).toHaveValue('4');
   await page.getByLabel('Break before a new session (hours)').fill('1');
@@ -83,8 +85,11 @@ test('automatic sessions use the saved break setting and retain previous history
   await addSolve(page);
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await expect(page.locator('.recent-list .solve-row strong')).toHaveText('15.25');
-  await sessions.click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByLabel('Break before a new session (hours)')).toHaveValue('1');
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await sessions.click();
+  await expect(page.getByLabel('Break before a new session (hours)')).toHaveCount(0);
   await expect(page.locator('.session-list button')).toHaveCount(2);
   await page.locator('.session-list button').last().click();
   await expect(page.locator('.recent-list .solve-row strong')).toHaveText('12.00');
@@ -95,16 +100,18 @@ test('sessions can be started without a name and custom names stay available', a
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.locator('.session-label').click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Start sessions automatically after a break').uncheck();
   await expect(page.getByLabel('Break before a new session (hours)')).toBeDisabled();
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
-  await page.locator('.session-label').click();
+  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
   await expect(page.locator('.session-list button')).toHaveCount(2);
   await page.getByLabel('Session name', { exact: true }).fill('Competition practice');
   await page.getByRole('button', { name: 'Rename current' }).click();
   await expect(page.locator('.session-label')).toHaveText('Competition practice');
-  await page.locator('.session-label').click();
+  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
   await page.screenshot({
     path: testInfo.outputPath('sessions-mobile.png'),
     fullPage: true,

@@ -94,6 +94,37 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
             </label>
           </section>
           <section className="settings-card glass">
+            <h2>Sessions</h2>
+            <label className="toggle-row">
+              Start sessions automatically after a break
+              <input
+                type="checkbox"
+                checked={preferences.automaticSessions}
+                onChange={(e) => setPreferences({ automaticSessions: e.target.checked })}
+              />
+            </label>
+            <label>
+              Break before a new session (hours)
+              <input
+                type="number"
+                min="1"
+                max="24"
+                step="1"
+                value={preferences.sessionBreakHours}
+                disabled={!preferences.automaticSessions}
+                onChange={(e) => {
+                  const hours = Number(e.target.value);
+
+                  if (hours >= 1 && hours <= 24) setPreferences({ sessionBreakHours: hours });
+                }}
+              />
+            </label>
+            <p className="subtle">
+              Your first solve after a break starts a new session for the same puzzle. Previous
+              sessions and solves stay in your history.
+            </p>
+          </section>
+          <section className="settings-card glass">
             <h2>Focus mode</h2>
             <label className="toggle-row">
               Hide widgets in focus mode

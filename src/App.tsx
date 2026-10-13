@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
-import {
-  Copy,
-  RefreshCw,
-  Plus,
-  ArrowUpRight,
-  ChevronDown,
-  Trash2,
-  Pencil,
-  Check,
-  Scan,
-} from 'lucide-react';
+import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
 import { db, id, sessionForPuzzle, newSession, saveSessionSolve } from './data/db';
 import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
@@ -242,19 +232,6 @@ export default function App() {
           </nav>
         </MotionConfig>
         <div className="topbar-controls">
-          <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
-            <Select
-              label="Puzzle"
-              value={puzzle}
-              options={puzzleEvents.map((event) => ({
-                value: event,
-                label: puzzles[event].label,
-              }))}
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-              onOpenChange={setPuzzlePickerOpen}
-            />
-          </div>
           <div className="header-actions" inert={focused} aria-hidden={focused}>
             <button
               className="icon-button glass"
@@ -337,17 +314,7 @@ export default function App() {
             </p>
           )}
           <section className="timer-area">
-            <button
-              className="session-label"
-              disabled={busy || saving || !!pendingSolve}
-              onClick={() => {
-                setName(session?.name || '');
-                setDialog('sessions');
-              }}
-            >
-              {session?.name || 'Practice'}
-              <ChevronDown size={13} />
-            </button>
+            <p className="session-label">{session?.name || 'Practice'}</p>
             <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
@@ -386,6 +353,32 @@ export default function App() {
               ))}
             </section>
           )}
+          <div className="workspace-controls">
+            <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
+              <Select
+                label="Puzzle"
+                value={puzzle}
+                options={puzzleEvents.map((event) => ({
+                  value: event,
+                  label: puzzles[event].label,
+                }))}
+                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+                onOpenChange={setPuzzlePickerOpen}
+              />
+              <button
+                aria-label="Sessions"
+                aria-haspopup="dialog"
+                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                onClick={() => {
+                  setName(session?.name || '');
+                  setDialog('sessions');
+                }}
+              >
+                Sessions
+              </button>
+            </div>
+          </div>
           <div
             className={`focus-widgets ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
             inert={busy || (focused && preferences.hideWidgetsInFocus)}
@@ -422,7 +415,13 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={() => setDialog('sessions')}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setName(session?.name || '');
+                      setDialog('sessions');
+                    }}
+                  >
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
@@ -648,31 +647,6 @@ export default function App() {
                 first solve after a break. Your previous solves stay in history.
               </p>
               <div className="session-controls">
-                <label className="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={preferences.automaticSessions}
-                    onChange={(e) => store.setPreferences({ automaticSessions: e.target.checked })}
-                  />
-                  Start sessions automatically after a break
-                </label>
-                <label>
-                  Break before a new session (hours)
-                  <input
-                    type="number"
-                    min="1"
-                    max="24"
-                    step="1"
-                    value={preferences.sessionBreakHours}
-                    disabled={!preferences.automaticSessions}
-                    onChange={(e) => {
-                      const hours = Number(e.target.value);
-
-                      if (hours >= 1 && hours <= 24)
-                        store.setPreferences({ sessionBreakHours: hours });
-                    }}
-                  />
-                </label>
                 <button
                   className="primary"
                   onClick={() => {
