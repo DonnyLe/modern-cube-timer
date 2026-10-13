@@ -1,6 +1,7 @@
 import { useStore } from '../data/store';
 import type { Appearance, Palette } from '../core/types';
 import { appearance } from '../layout/defaults';
+
 export function Range({
   label,
   value,
@@ -38,6 +39,7 @@ export function Range({
     </label>
   );
 }
+
 export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
   const { workspace, setWorkspace, preferences, setPreferences } = useStore(),
     a = workspace.appearance,
@@ -45,6 +47,7 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
   const update = (patch: Partial<Appearance>) =>
     setWorkspace({ ...workspace, appearance: { ...a, ...patch } });
   const color = (key: keyof Palette, v: string) => update({ [a.theme]: { ...p, [key]: v } });
+
   return (
     <main className="settings-page">
       <div className="page-heading">

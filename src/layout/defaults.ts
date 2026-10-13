@@ -1,4 +1,5 @@
 import type { Appearance, Workspace, WidgetType } from '../core/types';
+
 export const appearance: Appearance = {
   theme: 'light',
   font: 'system',
@@ -48,6 +49,7 @@ export const definitions: Record<WidgetType, { title: string; minW: number; minH
   trend: { title: 'Session trend', minW: 280, minH: 200 },
   preview: { title: 'Scramble preview', minW: 240, minH: 200 },
 };
+
 export function defaultWorkspace(): Workspace {
   const rects = {
     scramble: [0, 0, 1320, 96],
@@ -57,6 +59,7 @@ export function defaultWorkspace(): Workspace {
     trend: [408, 492, 504, 270],
     preview: [924, 492, 396, 270],
   };
+
   return {
     version: 1,
     width: 1320,
@@ -78,8 +81,10 @@ export function defaultWorkspace(): Workspace {
     snap: true,
   };
 }
+
 export function presetWorkspace(name: string): Workspace {
   const w = defaultWorkspace();
+
   if (name === 'Editorial')
     Object.assign(w.appearance, {
       font: 'editorial',
@@ -104,5 +109,6 @@ export function presetWorkspace(name: string): Workspace {
       timerFont: 'mono',
       timerWeight: 400,
     });
+
   return w;
 }

@@ -1,4 +1,5 @@
 import type { PuzzleEvent } from './puzzles';
+
 export type Penalty = 'none' | '+2' | 'DNF';
 export interface Solve {
   id: string;

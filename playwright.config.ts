@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 import { firefoxLaunchOptions } from './scripts/playwright-firefox';
+
 const production = process.env.PLAYWRIGHT_PRODUCTION === '1';
 const port = production ? 4173 : 5173;
+
 export default defineConfig({
   testDir: './tests/browser',
   fullyParallel: true,

@@ -10,12 +10,14 @@ import {
   type ImportPreview,
 } from '../data/transfer';
 import { Dialog } from './Dialog';
+
 export function DataControls() {
   const { workspace, setWorkspace, setError } = useStore(),
     [preview, setPreview] = useState<ImportPreview | null>(null),
     [restore, setRestore] = useState(false),
     [working, setWorking] = useState(false),
     [notice, setNotice] = useState('');
+
   return (
     <>
       <p className="subtle">
@@ -54,12 +56,16 @@ export function DataControls() {
           accept=".json,application/json"
           onChange={(e) => {
             const file = e.target.files?.[0];
+
             e.target.value = '';
             if (!file) return;
+
             if (file.size > 25 * 1024 * 1024) {
               setError('Choose a backup smaller than 25 MB.');
+
               return;
             }
+
             void file
               .text()
               .then((s) => {
@@ -117,6 +123,7 @@ export function DataControls() {
                     setNotice(`${preview.solves.length} solves imported.`);
                     setPreview(null);
                   }
+
                   setWorking(false);
                 });
               }}

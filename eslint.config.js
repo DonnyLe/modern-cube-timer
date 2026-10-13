@@ -4,6 +4,8 @@ import hooks from 'eslint-plugin-react-hooks';
 import refresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import prettier from 'eslint-config-prettier';
+import stylistic from '@stylistic/eslint-plugin';
+
 export default tseslint.config(
   {
     ignores: [
@@ -30,4 +32,34 @@ export default tseslint.config(
   },
   { files: ['*.js', 'scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
   prettier,
+  {
+    files: ['**/*.{js,mjs,ts,tsx}'],
+    plugins: { '@stylistic': stylistic },
+    rules: {
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: 'import', next: '*' },
+        { blankLine: 'any', prev: 'import', next: 'import' },
+        { blankLine: 'always', prev: ['const', 'let', 'var'], next: '*' },
+        { blankLine: 'any', prev: ['const', 'let', 'var'], next: ['const', 'let', 'var'] },
+        { blankLine: 'always', prev: '*', next: 'return' },
+        {
+          blankLine: 'always',
+          prev: '*',
+          next: ['block-like', 'function', 'class', 'interface', 'type'],
+        },
+        {
+          blankLine: 'always',
+          prev: ['block-like', 'function', 'class', 'interface', 'type'],
+          next: '*',
+        },
+      ],
+      '@stylistic/no-multiple-empty-lines': ['error', { max: 1, maxBOF: 0, maxEOF: 0 }],
+      '@stylistic/lines-between-class-members': [
+        'error',
+        'always',
+        { exceptAfterSingleLine: true },
+      ],
+    },
+  },
 );

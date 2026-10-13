@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+
 async function openTimer(page: Page) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
@@ -14,12 +15,15 @@ for (const focus of ['background', 'timer'] as const) {
     else await page.locator('body').click({ position: { x: 5, y: 5 } });
     expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(400);
     const scrollY = await page.evaluate(() => window.scrollY);
+
     await page.keyboard.down('Space');
     await expect(page.locator('.timer-hint')).toHaveText('Release to start');
+
     for (let i = 0; i < 5; i++) {
       await page.keyboard.down('Space');
       await page.waitForTimeout(50);
     }
+
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
     await page.keyboard.up('Space');
     await expect(page.locator('.app')).toHaveClass(/is-running/);
@@ -40,12 +44,15 @@ for (const focus of ['background', 'timer'] as const) {
 
 test('scrambles load and refresh without worker errors', async ({ page }) => {
   const errors: string[] = [];
+
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   const scramble = page.locator('.scramble-text');
   const validScramble = /^[URFDLB]2?'?(?: [URFDLB]2?'?)+$/;
+
   await expect(scramble).toHaveText(validScramble, { timeout: 30000 });
   const first = await scramble.innerText();
+
   await page.getByRole('button', { name: 'New scramble', exact: true }).click();
   await expect(scramble).not.toHaveText(first, { timeout: 30000 });
   await expect(scramble).toHaveText(validScramble);
