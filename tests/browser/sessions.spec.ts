@@ -108,6 +108,7 @@ test('sessions can be started without a name and custom names stay available', a
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await expect(page.locator('.session-list button')).toHaveCount(2);
+  await page.getByText('Manage current session', { exact: true }).click();
   await page.getByLabel('Session name', { exact: true }).fill('Competition practice');
   await page.getByRole('button', { name: 'Rename current' }).click();
   await expect(page.locator('.session-label')).toHaveText('Competition practice');
@@ -138,4 +139,9 @@ test('practice label and scramble edit button open the same modal in regular and
   await expect(page.locator('.app')).toHaveClass(/is-focused/);
   await expect(edit).toBeFocused();
   await expect(page.locator('.app')).not.toHaveClass(/is-running/);
+  await edit.click();
+  await page.getByRole('button', { name: 'Automatic session settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Sessions', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Timer', exact: true })).toBeVisible();
+  await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
 });

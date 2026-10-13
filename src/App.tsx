@@ -650,13 +650,14 @@ export default function App() {
                   onOpenChange={setPuzzlePickerOpen}
                 />
               </div>
-              <p className="subtle">
-                Sessions group continuous solves for each puzzle. Automatic sessions start with your
-                first solve after a break. Your previous solves stay in history.
-              </p>
-              <div className="session-controls">
+              <div className="session-browser-heading">
+                <div>
+                  <h3>Sessions</h3>
+                  <p className="subtle">Pick up where you left off.</p>
+                </div>
                 <button
                   className="primary"
+                  disabled={switchingPuzzle}
                   onClick={() => {
                     void safeWrite(async () => {
                       const next = await newSession(puzzle);
@@ -667,62 +668,86 @@ export default function App() {
                     });
                   }}
                 >
+                  <Plus size={16} />
                   Start new session
                 </button>
               </div>
               <div className="session-list">
-                {[...sessions].reverse().map((s) => (
-                  <button
-                    key={s.id}
-                    className={s.id === session?.id ? 'chosen' : ''}
-                    onClick={() => {
-                      store.setPreferences({ activeSessionId: s.id });
-                      close();
-                    }}
-                  >
-                    {s.name}
-                    <small>
-                      {puzzles[s.puzzle].label} ·{' '}
-                      {new Date(s.createdAt).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </small>
-                    {s.id === session?.id && <Check size={16} />}
-                  </button>
-                ))}
+                {sessions
+                  .filter((s) => s.puzzle === puzzle)
+                  .reverse()
+                  .map((s) => (
+                    <button
+                      key={s.id}
+                      className={s.id === session?.id ? 'chosen' : ''}
+                      aria-pressed={s.id === session?.id}
+                      disabled={switchingPuzzle}
+                      onClick={() => {
+                        store.setPreferences({ activeSessionId: s.id });
+                        close();
+                      }}
+                    >
+                      <span className="session-row-copy">
+                        <strong>{s.name}</strong>
+                        <small>
+                          {new Date(s.createdAt).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </small>
+                      </span>
+                      {s.id === session?.id && (
+                        <span className="session-current">
+                          <Check size={14} /> Current
+                        </span>
+                      )}
+                    </button>
+                  ))}
               </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (session && name.trim())
-                    void safeWrite(() =>
-                      db.sessions.update(session.id, { name: name.trim(), automaticName: false }),
-                    ).then((ok) => {
-                      if (ok) close();
-                    });
+              <details className="session-management">
+                <summary>Manage current session</summary>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (session && name.trim())
+                      void safeWrite(() =>
+                        db.sessions.update(session.id, { name: name.trim(), automaticName: false }),
+                      ).then((ok) => {
+                        if (ok) close();
+                      });
+                  }}
+                >
+                  <label>
+                    Session name
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Optional custom name"
+                    />
+                  </label>
+                  <div className="button-row">
+                    <button type="submit" disabled={!name.trim() || !session}>
+                      Rename current
+                    </button>
+                  </div>
+                </form>
+                <button
+                  className="danger session-delete"
+                  disabled={sessions.length < 2}
+                  onClick={() => setDialog('delete-session')}
+                >
+                  Delete current session
+                </button>
+              </details>
+              <button
+                className="text-button session-settings-link"
+                onClick={async () => {
+                  if (focused) await changeFocus(false);
+                  close();
+                  setView('Settings');
                 }}
               >
-                <label>
-                  Session name
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Optional custom name"
-                  />
-                </label>
-                <div className="button-row">
-                  <button type="submit" disabled={!name.trim() || !session}>
-                    Rename current
-                  </button>
-                </div>
-              </form>
-              <button
-                className="danger session-delete"
-                disabled={sessions.length < 2}
-                onClick={() => setDialog('delete-session')}
-              >
-                Delete current session
+                Automatic session settings <ArrowUpRight size={14} />
               </button>
             </>
           )}

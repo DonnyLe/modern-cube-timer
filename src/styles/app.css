@@ -584,22 +584,89 @@ textarea {
   font-family: monospace;
   line-height: 1.8;
 }
-.session-controls {
-  display: grid;
+.session-browser-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  margin: 20px 0;
+  margin: 26px 0 16px;
 }
-.session-delete {
-  margin-top: 20px;
+.session-browser-heading h3 {
+  font-size: 16px;
+}
+.session-browser-heading p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.session-browser-heading button {
+  flex-shrink: 0;
+  padding: 9px 12px;
+  font-size: 13px;
 }
 .session-list {
   display: grid;
   gap: 8px;
-  margin-bottom: 24px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 20px;
 }
 .session-list button {
   justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
   text-align: left;
+  min-width: 0;
+}
+.session-list button:active,
+.session-browser-heading button:active {
+  transform: scale(0.98);
+}
+.session-row-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.session-row-copy strong {
+  font-weight: 500;
+}
+.session-row-copy small {
+  opacity: 0.65;
+  font-size: 12px;
+}
+.session-current {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 11px;
+}
+.session-management {
+  border-top: 1px solid var(--outline);
+  padding-top: 16px;
+}
+.session-management summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.session-management form {
+  margin-top: 16px;
+}
+.session-delete {
+  margin-top: 16px;
+}
+.session-settings-link {
+  margin-top: 20px;
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .session-browser-heading {
+    flex-wrap: wrap;
+  }
+  .session-browser-heading button {
+    width: 100%;
+  }
 }
 .chosen {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
