@@ -1,5 +1,79 @@
 import { test, expect } from '@playwright/test';
 
+test('puzzle changes create a session with a notice or resume recent activity', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+
+  await expect(page.locator('.timer-session-name')).toContainText('3x3 session');
+  await edit.click();
+  const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+
+  const chooseTwo = async () => {
+    await picker.click();
+    await page.keyboard.press('Home');
+    await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+  };
+
+  await chooseTwo();
+  await expect(page.locator('.manager-notice')).toContainText('Made a new 2x2 session titled');
+  const title = await page.locator('.manager-details h3').textContent();
+
+  await expect(page.locator('.manager-notice')).toContainText(title!);
+  await expect(picker).toHaveText('2×2×2');
+  await expect(page.locator('.timer-session-name')).toContainText('3x3 session');
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(page.locator('.timer-session-name')).toContainText('2x2 session');
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('turn-timer');
+
+        request.onsuccess = () => {
+          const database = request.result;
+          const tx = database.transaction(['sessions', 'solves'], 'readwrite');
+          const sessions = tx.objectStore('sessions').getAll();
+
+          sessions.onsuccess = () => {
+            const session = sessions.result.find((entry) => entry.puzzle === '222');
+
+            tx.objectStore('sessions').put({ ...session, createdAt: Date.now() - 24 * 3_600_000 });
+            tx.objectStore('solves').put({
+              id: 'recent-two',
+              sessionId: session.id,
+              timestamp: Date.now() - 3 * 3_600_000,
+              duration: 12000,
+              penalty: 'none',
+              scramble: 'R U',
+              note: '',
+            });
+          };
+
+          tx.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+
+          tx.onabort = () => reject(tx.error);
+        };
+      }),
+  );
+  await edit.click();
+  await picker.click();
+  await page.keyboard.press('Home');
+  await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('option', { name: '3×3×3', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(picker).toHaveText('3×3×3');
+  await chooseTwo();
+  await expect(picker).toHaveText('2×2×2');
+  await expect(page.locator('.manager-notice')).toHaveCount(0);
+  await expect(page.locator('.manager-session-row')).toHaveCount(2);
+});
+
 test('browsing applies selection only when the manager closes and history follows the preview', async ({
   page,
 }, testInfo) => {

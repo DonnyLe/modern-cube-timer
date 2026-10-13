@@ -358,6 +358,7 @@ export default function App() {
             </p>
           )}
           <section className="timer-area">
+            <p className="timer-session-name">{session?.name}</p>
             <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}

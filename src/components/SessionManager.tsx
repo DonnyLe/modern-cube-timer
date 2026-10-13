@@ -16,7 +16,7 @@ import type { Session, Solve } from '../core/types';
 import { puzzles, puzzleEvents, type PuzzleEvent } from '../core/puzzles';
 import { formatTime, statistics, value } from '../core/statistics';
 import { useScramble } from '../core/useScramble';
-import { db, newSession } from '../data/db';
+import { db, newSession, recentSessionForPuzzle } from '../data/db';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';
 import { PuzzleArtwork } from './PuzzleArtwork';
@@ -42,6 +42,15 @@ export function SessionManager({
   precision: number;
 }) {
   const appearance = useStore((state) => state.workspace.appearance);
+  const breakHours = useStore((state) => state.preferences.sessionBreakHours);
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = setTimeout(() => setNotice(''), 5000);
+
+    return () => clearTimeout(timeout);
+  }, [notice]);
   const accent = appearance[appearance.theme].accent;
   const channels = [1, 3, 5].map((offset) => {
     const channel = parseInt(accent.slice(offset, offset + 2), 16) / 255;
@@ -122,6 +131,7 @@ export function SessionManager({
     setCheckedIds((ids) => (ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]));
 
   const select = (session: Session) => {
+    setNotice('');
     onSelect(session.id);
     setPuzzle(session.puzzle);
     onPuzzleChange(session.puzzle);
@@ -172,13 +182,22 @@ export function SessionManager({
             disabled={working}
             options={puzzleEvents.map((event) => ({ value: event, label: puzzles[event].label }))}
             onValueChange={(event) => {
-              setPuzzle(event);
-              onPuzzleChange(event);
-              const latest = sessions.filter((session) => session.puzzle === event).at(-1);
+              if (event === puzzle) return;
+              void mutate(async () => {
+                const recent = await recentSessionForPuzzle(event, breakHours);
 
-              onSelect(latest?.id || '');
-              setRenaming(false);
-              setDeleteIds([]);
+                const next = recent || (await newSession(event));
+
+                select(next);
+
+                if (!recent) {
+                  const label = /^[2-7]{3}$/.test(event)
+                    ? `${event[0]}x${event[0]}`
+                    : puzzles[event].label;
+
+                  setNotice(`Made a new ${label} session titled “${next.name}”.`);
+                }
+              });
             }}
           />
         </div>
@@ -188,6 +207,11 @@ export function SessionManager({
           scramble={solves.at(-1)?.scramble || preview.scramble}
         />
       </section>
+      {notice && (
+        <div className="manager-notice" role="status">
+          {notice}
+        </div>
+      )}
       <section className="manager-details" aria-label="Selected session">
         <div className="manager-column-header">
           <h3>{selected?.name || `New ${puzzles[puzzle].label} session`}</h3>

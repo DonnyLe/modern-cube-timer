@@ -1,6 +1,13 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { db, initialize, newSession, saveSessionSolve, sessionName } from '../src/data/db';
+import {
+  db,
+  initialize,
+  newSession,
+  recentSessionForPuzzle,
+  saveSessionSolve,
+  sessionName,
+} from '../src/data/db';
 import type { Solve } from '../src/core/types';
 
 const hour = 3_600_000;
@@ -21,6 +28,21 @@ beforeEach(async () => {
 });
 
 describe('automatic sessions', () => {
+  it('resumes the most recently used puzzle session only within the configured break', async () => {
+    const older = await newSession('222', base);
+
+    await newSession('222', base + hour);
+
+    await db.solves.add(solve(older.id, base + 2 * hour));
+    expect((await recentSessionForPuzzle('222', 4, base + 5 * hour))?.id).toBe(older.id);
+    expect((await recentSessionForPuzzle('222', 4, base + 6 * hour))?.id).toBe(older.id);
+    expect(await recentSessionForPuzzle('222', 4, base + 6 * hour + 1)).toBeUndefined();
+    expect(await recentSessionForPuzzle('222', 2, base + 5 * hour)).toBeUndefined();
+    expect(await recentSessionForPuzzle('444', 4, base)).toBeUndefined();
+    const empty = await newSession('333', base);
+
+    expect((await recentSessionForPuzzle('333', 4, base + 3 * hour))?.id).toBe(empty.id);
+  });
   it.each([
     [0, 'Night'],
     [5, 'Morning'],

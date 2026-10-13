@@ -302,6 +302,28 @@ button svg {
   touch-action: none;
   user-select: none;
 }
+.timer-session-name {
+  margin: 0 20px 8px;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+  font-size: 14px;
+}
+.manager-notice {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+  padding: 14px 18px;
+  background: var(--tint);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  font-size: 14px;
+}
 .timer-number,
 .timer-number:hover:not(:disabled),
 .text-button,

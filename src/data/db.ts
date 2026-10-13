@@ -194,3 +194,26 @@ export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
     return session;
   });
 }
+
+export async function recentSessionForPuzzle(
+  puzzle: PuzzleEvent,
+  breakHours: number,
+  now = Date.now(),
+): Promise<Session | undefined> {
+  return db.transaction('r', db.sessions, db.solves, async () => {
+    const sessions = await db.sessions.where('puzzle').equals(puzzle).toArray();
+    const activity = await Promise.all(
+      sessions.map(async (session) => {
+        const last = await db.solves
+          .where('[sessionId+timestamp]')
+          .between([session.id, 0], [session.id, Infinity])
+          .last();
+
+        return { session, timestamp: last?.timestamp ?? session.createdAt };
+      }),
+    );
+    const latest = activity.sort((a, b) => b.timestamp - a.timestamp)[0];
+
+    return latest && now - latest.timestamp <= breakHours * 3_600_000 ? latest.session : undefined;
+  });
+}
