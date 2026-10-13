@@ -50,7 +50,7 @@ test('automatic sessions use the saved break setting and retain previous history
   page,
 }) => {
   await page.goto('/');
-  const sessions = page.getByRole('button', { name: 'Sessions', exact: true });
+  const sessions = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
 
   await expect(page.locator('.session-label')).toContainText(
     /(Morning|Afternoon|Evening|Night) 3x3 session/,
@@ -104,16 +104,38 @@ test('sessions can be started without a name and custom names stay available', a
   await page.getByLabel('Start sessions automatically after a break').uncheck();
   await expect(page.getByLabel('Break before a new session (hours)')).toBeDisabled();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
-  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
-  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await expect(page.locator('.session-list button')).toHaveCount(2);
   await page.getByLabel('Session name', { exact: true }).fill('Competition practice');
   await page.getByRole('button', { name: 'Rename current' }).click();
   await expect(page.locator('.session-label')).toHaveText('Competition practice');
-  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await page.screenshot({
     path: testInfo.outputPath('sessions-mobile.png'),
     fullPage: true,
   });
+});
+
+test('practice label and scramble edit button open the same modal in regular and focus mode', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
+
+  await page.locator('.session-label').click();
+  await expect(modal.getByRole('combobox', { name: 'Puzzle', exact: true })).toBeEnabled();
+  await expect(modal.getByRole('button', { name: 'Start new session' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(page.locator('.session-label')).toBeFocused();
+  await page.getByRole('button', { name: 'Enter focus mode' }).click();
+  await edit.click();
+  await expect(modal).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+  await expect(page.locator('.app')).toHaveClass(/is-focused/);
+  await expect(edit).toBeFocused();
+  await expect(page.locator('.app')).not.toHaveClass(/is-running/);
 });

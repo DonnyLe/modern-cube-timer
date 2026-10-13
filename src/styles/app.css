@@ -122,13 +122,6 @@ button svg {
 .topbar .segmented {
   width: 100%;
 }
-.workspace-controls {
-  display: flex;
-  margin-bottom: 16px;
-}
-.is-focused .workspace-controls {
-  display: none;
-}
 .puzzle-selector {
   display: flex;
   align-items: center;
@@ -164,8 +157,7 @@ button svg {
   opacity: 0.65;
 }
 .is-focused .topbar .segmented,
-.is-focused .topbar .header-actions,
-.is-focused .puzzle-selector {
+.is-focused .topbar .header-actions {
   opacity: 0;
   transform: translateY(-8px);
   visibility: hidden;

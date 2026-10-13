@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
 import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
@@ -63,6 +63,7 @@ export default function App() {
       const next = await sessionForPuzzle(event);
 
       store.setPreferences({ activeSessionId: next.id });
+      setName(next.name);
     });
     setSwitchingPuzzle(false);
   };
@@ -146,8 +147,15 @@ export default function App() {
     setInputError('');
   };
 
+  const openSessions = (event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus();
+    setName(session?.name || '');
+    setDialog('sessions');
+  };
+
   const close = () => {
     setDialog('');
+    setPuzzlePickerOpen(false);
     setInputError('');
   };
 
@@ -304,6 +312,16 @@ export default function App() {
               >
                 <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
               </button>
+              <button
+                aria-label="Edit puzzle and session"
+                title="Edit puzzle and session"
+                aria-haspopup="dialog"
+                className="icon-button"
+                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+                onClick={openSessions}
+              >
+                <Pencil size={18} />
+              </button>
             </div>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
           </section>
@@ -314,7 +332,15 @@ export default function App() {
             </p>
           )}
           <section className="timer-area">
-            <p className="session-label">{session?.name || 'Practice'}</p>
+            <button
+              className="session-label"
+              title="Change puzzle or session"
+              aria-haspopup="dialog"
+              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
+              onClick={openSessions}
+            >
+              {session?.name || 'Practice'}
+            </button>
             <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
@@ -353,32 +379,6 @@ export default function App() {
               ))}
             </section>
           )}
-          <div className="workspace-controls">
-            <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
-              <Select
-                label="Puzzle"
-                value={puzzle}
-                options={puzzleEvents.map((event) => ({
-                  value: event,
-                  label: puzzles[event].label,
-                }))}
-                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-                onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-                onOpenChange={setPuzzlePickerOpen}
-              />
-              <button
-                aria-label="Sessions"
-                aria-haspopup="dialog"
-                disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-                onClick={() => {
-                  setName(session?.name || '');
-                  setDialog('sessions');
-                }}
-              >
-                Sessions
-              </button>
-            </div>
-          </div>
           <div
             className={`focus-widgets ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
             inert={busy || (focused && preferences.hideWidgetsInFocus)}
@@ -415,13 +415,7 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setName(session?.name || '');
-                      setDialog('sessions');
-                    }}
-                  >
+                  <button className="text-button" onClick={openSessions}>
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
@@ -484,7 +478,7 @@ export default function App() {
                   ? 'Solve details'
                   : dialog === 'history'
                     ? 'Recent solves'
-                    : 'Sessions'
+                    : 'Puzzle and sessions'
           }
           onClose={close}
           wide={dialog === 'history'}
@@ -642,6 +636,20 @@ export default function App() {
           )}
           {dialog === 'sessions' && (
             <>
+              <div className="puzzle-selector">
+                <span>Puzzle</span>
+                <Select
+                  label="Puzzle"
+                  value={puzzle}
+                  options={puzzleEvents.map((event) => ({
+                    value: event,
+                    label: puzzles[event].label,
+                  }))}
+                  disabled={switchingPuzzle || saving || !!pendingSolve || !session}
+                  onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
+                  onOpenChange={setPuzzlePickerOpen}
+                />
+              </div>
               <p className="subtle">
                 Sessions group continuous solves for each puzzle. Automatic sessions start with your
                 first solve after a break. Your previous solves stay in history.
