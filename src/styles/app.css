@@ -306,8 +306,13 @@ button svg {
   margin: 0 20px 8px;
   text-align: center;
   overflow-wrap: anywhere;
-  color: color-mix(in srgb, var(--ink) 65%, transparent);
-  font-size: 14px;
+  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2.4px;
+}
+.is-focused .timer-session-name {
+  font-size: clamp(13px, 1.15vw, 16px);
 }
 .manager-notice {
   position: fixed;
