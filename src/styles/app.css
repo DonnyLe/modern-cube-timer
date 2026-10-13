@@ -1126,6 +1126,11 @@ input[type='range'] {
 }
 .manager-sidebar {
   grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  height: min(588px, 74svh);
+  max-height: min(588px, 74svh);
+  min-height: 0;
   padding: 24px 20px;
   border-left: 1px solid var(--outline);
   min-width: 0;
@@ -1152,6 +1157,7 @@ input[type='range'] {
   font-size: 15px;
 }
 .manager-sidebar-heading {
+  flex-shrink: 0;
   justify-content: space-between;
 }
 .manager-sidebar-heading .primary {
@@ -1253,7 +1259,8 @@ input[type='range'] {
   display: grid;
   align-content: start;
   gap: 0;
-  max-height: 460px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 .manager-session-row {
@@ -1343,11 +1350,10 @@ input[type='range'] {
     grid-template-rows: auto auto;
   }
   .manager-sidebar {
+    height: min(380px, 74svh);
+    max-height: min(380px, 74svh);
     border-left: 0;
     border-top: 1px solid var(--outline);
-  }
-  .manager-session-list {
-    max-height: 240px;
   }
   .manager-column-header h3 {
     font-size: 18px;
@@ -1460,6 +1466,7 @@ input[type='range'] {
 }
 
 .manager-session-toolbar {
+  flex-shrink: 0;
   margin: 16px 0;
 }
 .manager-session-toolbar .manager-search {
@@ -1539,6 +1546,7 @@ input[type='range'] {
 }
 
 .manager-delete-confirmation {
+  flex-shrink: 0;
   display: grid;
   gap: 12px;
   padding: 14px;
