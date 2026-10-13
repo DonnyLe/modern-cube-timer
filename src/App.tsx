@@ -32,6 +32,7 @@ import { UpdateNotice } from './components/UpdateNotice';
 import { download } from './data/transfer';
 
 const NAVIGATION_VIEWS = ['Timer', 'Settings', 'Gallery'] as const;
+
 type NavigationView = (typeof NAVIGATION_VIEWS)[number];
 
 export default function App() {
@@ -64,28 +65,36 @@ export default function App() {
     last = solves.at(-1);
   const puzzle = session?.puzzle || '333';
   const scramble = useScramble(session?.puzzle || null);
+
   const changePuzzle = async (event: PuzzleEvent) => {
     setSwitchingPuzzle(true);
     await safeWrite(async () => {
       const next = await sessionForPuzzle(event);
+
       store.setPreferences({ activeSessionId: next.id });
     });
     setSwitchingPuzzle(false);
   };
+
   useEffect(() => {
     void useStore.getState().boot();
   }, []);
+
   const persistSolve = async (solve: Solve) => {
     setSaving(true);
     setPendingSolve(solve);
     const ok = await safeWrite(() => db.solves.put(solve));
+
     setSaving(false);
+
     if (ok) {
       setPendingSolve(null);
       void scramble.next();
     }
+
     return ok;
   };
+
   const saveSolve = async (duration: number, penalty: Penalty = 'none') => {
     const solve: Solve = {
       id: id(),
@@ -96,8 +105,10 @@ export default function App() {
       timestamp: Date.now(),
       note: '',
     };
+
     return persistSolve(solve);
   };
+
   const timer = useTimer(
     preferences.inspection,
     preferences.holdMs,
@@ -129,16 +140,19 @@ export default function App() {
     '--glass': a.glass,
     '--shadow': `0 ${a.shadow * 12}px ${a.shadow * 32}px color-mix(in srgb, ${palette.text} 8%, transparent)`,
   } as CSSProperties;
+
   const openSolve = (s: Solve) => {
     setSelectedSolve({ ...s });
     setManual(String(s.duration / 1000));
     setDialog('solve');
     setInputError('');
   };
+
   const close = () => {
     setDialog('');
     setInputError('');
   };
+
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
     : busy
@@ -166,6 +180,7 @@ export default function App() {
               : preferences.inspection
                 ? 'Press space to inspect'
                 : 'Hold space to start';
+
   return (
     <div
       className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
@@ -474,10 +489,13 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const duration = parseTime(manual);
+
                 if (duration === null) {
                   setInputError('Enter a time such as 12.84 or 1:02.34.');
+
                   return;
                 }
+
                 if (selectedSolve && dialog === 'solve') {
                   void safeWrite(() => db.solves.put({ ...selectedSolve, duration })).then((ok) => {
                     if (ok) close();
@@ -596,6 +614,7 @@ export default function App() {
                   onClick={() => {
                     if (!session) return;
                     const sid = session.id;
+
                     void safeWrite(() =>
                       db.transaction('rw', db.sessions, db.solves, async () => {
                         await db.solves.where('sessionId').equals(sid).delete();
@@ -604,6 +623,7 @@ export default function App() {
                     ).then((ok) => {
                       if (ok) {
                         const next = sessions.find((s) => s.id !== sid);
+
                         if (next) store.setPreferences({ activeSessionId: next.id });
                         close();
                       }
@@ -649,6 +669,7 @@ export default function App() {
                   e.preventDefault();
                   if (!name.trim()) return;
                   const s = { id: id(), name: name.trim(), createdAt: Date.now(), puzzle };
+
                   void safeWrite(() => db.sessions.add(s)).then((ok) => {
                     if (ok) {
                       store.setPreferences({ activeSessionId: s.id });

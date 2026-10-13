@@ -9,6 +9,7 @@ test('focus mode hides header controls, puzzle selector and widgets, and exits o
   });
   const nav = page.locator('.segmented');
   const widgets = page.locator('.focus-widgets');
+
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
   await expect(nav).toBeHidden();
   await expect(page.locator('.header-actions')).toBeHidden();
@@ -41,6 +42,7 @@ test('the widget focus preference persists and leaves widgets visible when disab
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const setting = page.getByLabel('Hide widgets in focus mode');
+
   await expect(setting).toBeChecked();
   await setting.uncheck();
   // The checkbox updates immediately; reload only after the IndexedDB write commits.
@@ -50,15 +52,19 @@ test('the widget focus preference persists and leaves widgets visible when disab
         () =>
           new Promise<boolean | undefined>((resolve, reject) => {
             const request = indexedDB.open('turn-timer');
+
             request.onerror = () => reject(request.error);
+
             request.onsuccess = () => {
               const database = request.result;
               const transaction = database.transaction('settings', 'readonly');
               const setting = transaction.objectStore('settings').get('preferences');
+
               transaction.oncomplete = () => {
                 database.close();
                 resolve(setting.result?.value.hideWidgetsInFocus);
               };
+
               transaction.onabort = () => {
                 database.close();
                 reject(transaction.error);

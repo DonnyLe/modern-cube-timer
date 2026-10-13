@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db, initialize, migrateWorkspace } from '../src/data/db';
 import { parseImport, backup, commitImport, csv } from '../src/data/transfer';
 import { defaultWorkspace } from '../src/layout/defaults';
+
 beforeEach(async () => {
   await db.delete();
   await db.open();
@@ -14,6 +15,7 @@ describe('local records', () => {
   });
   it('backs up and imports solves without changing existing data', async () => {
     const { preferences } = await initialize();
+
     await db.solves.put({
       id: 'test',
       sessionId: preferences.activeSessionId,
@@ -25,6 +27,7 @@ describe('local records', () => {
     });
     const file = await backup(defaultWorkspace());
     const preview = parseImport(file);
+
     expect(preview.issues).toEqual([]);
     await commitImport(preview);
     expect(await db.solves.count()).toBe(2);
@@ -41,6 +44,7 @@ describe('local records', () => {
         [[0, -2], 'R', '', 1],
       ],
     });
+
     expect(p.sessions[0].name).toBe('Practice');
     expect(p.solves.map((s) => s.penalty)).toEqual(['+2', 'DNF']);
     expect(p.solves[0].timestamp).toBe(1700000000000);
@@ -54,12 +58,14 @@ describe('local records', () => {
       solves: [],
       workspace: { version: 1, appearance: { theme: 'wrong' } },
     });
+
     expect(p.workspace).toBeUndefined();
     expect(p.issues).toHaveLength(1);
     expect(() => migrateWorkspace({ version: 2 })).toThrow();
   });
   it('does not accept arbitrary CSS in restored appearance', () => {
     const w = defaultWorkspace();
+
     w.appearance.light.text = 'url(https://example.com)';
     expect(() => migrateWorkspace(w)).toThrow();
   });
@@ -83,12 +89,14 @@ describe('local records', () => {
 describe('Zod boundaries', () => {
   it('keeps saved card rounding and defaults the new control radius for older settings', () => {
     const w = migrateWorkspace({ version: 1, appearance: { radius: 32 } });
+
     expect(w.appearance.radius).toBe(32);
     expect(w.appearance.controlRadius).toBe(10);
     const restored = migrateWorkspace({
       version: 1,
       appearance: { radius: 32, controlRadius: 4 },
     });
+
     expect(restored.appearance.radius).toBe(32);
     expect(restored.appearance.controlRadius).toBe(4);
   });
@@ -97,6 +105,7 @@ describe('Zod boundaries', () => {
       version: 1,
       appearance: { theme: 'dark', light: { accent: '#123456' }, unsafe: 'ignored' },
     });
+
     expect(w.appearance.theme).toBe('dark');
     expect(w.appearance.light.accent).toBe('#123456');
     expect(w.appearance.blur).toBe(defaultWorkspace().appearance.blur);
@@ -107,6 +116,7 @@ describe('Zod boundaries', () => {
   });
   it('recovers invalid saved preferences while preserving the existing session', async () => {
     const initial = await initialize();
+
     await db.settings.put({
       key: 'preferences',
       value: {
@@ -116,6 +126,7 @@ describe('Zod boundaries', () => {
       },
     });
     const recovered = await initialize();
+
     expect(recovered.preferences).toEqual(initial.preferences);
     expect(recovered.warning).toContain('preferences');
     expect(await db.sessions.count()).toBe(1);
@@ -156,6 +167,7 @@ describe('Zod boundaries', () => {
         { ...row, sessionId: 'missing' },
       ],
     });
+
     expect(p.solves).toHaveLength(1);
     expect(p.solves[0].note).toBe('');
     expect(p.issues).toHaveLength(3);

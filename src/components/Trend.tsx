@@ -1,9 +1,11 @@
 import { formatTime, value } from '../core/statistics';
 import type { Solve } from '../core/types';
+
 export function Trend({ solves }: { solves: Solve[] }) {
   const shown = solves.slice(-50),
     values = shown.map(value),
     finite = values.filter(Number.isFinite);
+
   if (!shown.length)
     return (
       <div className="empty">
@@ -18,6 +20,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
     y = (v: number) => 166 - ((v / 1000 - min) / (max - min)) * 132;
   const segments: string[] = [];
   let segment = '';
+
   values.forEach((v, i) => {
     if (!Number.isFinite(v)) {
       if (segment) segments.push(segment);
@@ -25,6 +28,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
     } else segment += `${segment ? ' L' : 'M'}${x(i)},${y(v)}`;
   });
   if (segment) segments.push(segment);
+
   return (
     <>
       <svg
@@ -35,6 +39,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
       >
         {[0, 1, 2, 3].map((i) => {
           const yy = 166 - i * 44;
+
           return (
             <g key={i}>
               <line x1="42" x2="458" y1={yy} y2={yy} className="gridline" />

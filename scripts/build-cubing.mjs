@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const outdir = fileURLToPath(new URL('../public/cubing/', import.meta.url));
+
 await rm(outdir, { recursive: true, force: true });
 await build({
   absWorkingDir: root,

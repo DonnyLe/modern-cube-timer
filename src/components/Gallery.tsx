@@ -5,20 +5,25 @@ import { db, id, migrateWorkspace } from '../data/db';
 import { safeWrite, useStore } from '../data/store';
 import { presetWorkspace } from '../layout/defaults';
 import type { Workspace } from '../core/types';
+
 export function Gallery() {
   const { workspace, setWorkspace } = useStore(),
     presets = useLiveQuery(() => db.presets.toArray(), []) || [],
     [name, setName] = useState(''),
     [notice, setNotice] = useState('');
+
   const apply = (w: Workspace, label: string) => {
     try {
       setWorkspace(migrateWorkspace(w));
     } catch {
       setNotice('This preset could not be read.');
+
       return;
     }
+
     setNotice(`${label} applied. Your solves are unchanged.`);
   };
+
   return (
     <main className="settings-page">
       <div className="page-heading">
@@ -35,6 +40,7 @@ export function Gallery() {
             className={`preset-card preset-${i}`}
             onClick={() => {
               const w = presetWorkspace(label);
+
               w.appearance.theme = workspace.appearance.theme;
               apply(w, label);
             }}

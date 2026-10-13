@@ -12,44 +12,58 @@ import {
   csTimerMetadataSchema,
   csTimerRowSchema,
 } from './schemas';
+
 export interface ImportPreview {
   sessions: Session[];
   solves: Solve[];
   issues: string[];
   workspace?: Workspace;
 }
+
 export function parseImport(raw: unknown): ImportPreview {
   const envelope = objectSchema.safeParse(raw);
+
   if (!envelope.success) throw new Error('Choose a turn backup or a standard csTimer JSON export.');
   const input = envelope.data;
   const result: ImportPreview = { sessions: [], solves: [], issues: [] };
+
   if (input.app === 'turn') {
     const parsed = backupEnvelopeSchema.safeParse(input);
+
     if (!parsed.success) throw new Error('Unsupported or incomplete turn backup.');
     const native = parsed.data;
     const map = new Map<string, string>();
+
     for (const row of native.sessions) {
       const schema =
         native.version === 2 ? sessionSchema.extend({ puzzle: puzzleEventSchema }) : sessionSchema;
       const parsedSession = schema.safeParse(row);
+
       if (!parsedSession.success || map.has(parsedSession.data.id)) {
         result.issues.push('Skipped an invalid or duplicate session.');
         continue;
       }
+
       const session = parsedSession.data;
       const next = id();
+
       map.set(session.id, next);
       result.sessions.push({ ...session, id: next });
     }
+
     for (const [i, row] of native.solves.entries()) {
       const parsedSolve = importedSolveSchema.safeParse(row);
+
       if (!parsedSolve.success || !map.has(parsedSolve.data.sessionId)) {
         result.issues.push(`Skipped invalid solve ${i + 1}.`);
         continue;
       }
+
       const solve = parsedSolve.data;
+
       result.solves.push({ ...solve, id: id(), sessionId: map.get(solve.sessionId)! });
     }
+
     if (native.workspace !== undefined) {
       try {
         result.workspace = validateWorkspace(native.workspace);
@@ -59,11 +73,13 @@ export function parseImport(raw: unknown): ImportPreview {
     }
   } else {
     let names: Record<string, unknown> = {};
+
     try {
       if (input.properties !== undefined) {
         const properties = objectSchema.parse(
           typeof input.properties === 'string' ? JSON.parse(input.properties) : input.properties,
         );
+
         if (properties.sessionData !== undefined) {
           names = objectSchema.parse(
             typeof properties.sessionData === 'string'
@@ -75,15 +91,20 @@ export function parseImport(raw: unknown): ImportPreview {
     } catch {
       result.issues.push('Session labels could not be read.');
     }
+
     const entries = Object.entries(input).filter(([key]) => /^session\d+$/.test(key));
+
     if (!entries.length) throw new Error('No supported csTimer sessions were found.');
+
     for (const [key, rawRows] of entries) {
       const sid = id();
       const meta = csTimerMetadataSchema.safeParse(names[key.slice(7)]);
+
       if (!meta.success && names[key.slice(7)] !== undefined) {
         result.issues.push(`${key}: invalid puzzle metadata; session skipped.`);
         continue;
       }
+
       const scrType = meta.success ? meta.data.opt?.scrType : undefined;
       const puzzle =
         scrType === undefined
@@ -91,10 +112,12 @@ export function parseImport(raw: unknown): ImportPreview {
           : Object.hasOwn(csTimerPuzzles, scrType)
             ? csTimerPuzzles[scrType]
             : undefined;
+
       if (!puzzle) {
         result.issues.push(`${key}: unsupported puzzle type “${scrType}”; session skipped.`);
         continue;
       }
+
       result.sessions.push({
         id: sid,
         name: (meta.success ? meta.data.name : undefined) || `Imported ${key}`,
@@ -102,19 +125,25 @@ export function parseImport(raw: unknown): ImportPreview {
         puzzle,
       });
       const rows = rowsSchema.safeParse(rawRows);
+
       if (!rows.success) {
         result.issues.push(`${key}: invalid session data.`);
         continue;
       }
+
       rows.data.forEach((rawRow, index) => {
         const parsed = csTimerRowSchema.safeParse(rawRow);
+
         if (!parsed.success) {
           result.issues.push(
             `${key}, solve ${index + 1}: invalid or unsupported multi-phase record.`,
           );
+
           return;
         }
+
         const [time, scramble, note, seconds] = parsed.data;
+
         result.solves.push({
           id: id(),
           sessionId: sid,
@@ -127,8 +156,10 @@ export function parseImport(raw: unknown): ImportPreview {
       });
     }
   }
+
   return result;
 }
+
 export async function backup(workspace: Workspace) {
   return db.transaction('r', db.sessions, db.solves, async () => ({
     app: 'turn',
@@ -139,18 +170,23 @@ export async function backup(workspace: Workspace) {
     workspace,
   }));
 }
+
 export async function commitImport(preview: ImportPreview) {
   await db.transaction('rw', db.sessions, db.solves, async () => {
     await db.sessions.bulkAdd(preview.sessions);
     await db.solves.bulkAdd(preview.solves);
   });
 }
+
 export function csv(solves: Solve[], sessions: Session[] = []) {
   const byId = new Map(sessions.map((s) => [s.id, s]));
+
   const cell = (s: unknown) => {
     const text = String(s);
+
     return `"${(/^[=+@\-\t\r]/.test(text) ? "'" + text : text).replaceAll('"', '""')}"`;
   };
+
   return [
     'time_ms,penalty,scramble,timestamp,note,puzzle,session',
     ...solves.map((s) =>
@@ -168,9 +204,11 @@ export function csv(solves: Solve[], sessions: Session[] = []) {
     ),
   ].join('\r\n');
 }
+
 export function download(text: string, name: string, type: string) {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a');
+
   a.href = url;
   a.download = name;
   a.click();

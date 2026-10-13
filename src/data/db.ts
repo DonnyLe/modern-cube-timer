@@ -4,6 +4,7 @@ import { defaultWorkspace } from '../layout/defaults';
 import { validateWorkspace } from './validate';
 import { preferencesSchema } from './schemas';
 import { puzzles, type PuzzleEvent } from '../core/puzzles';
+
 class TurnDB extends Dexie {
   solves!: Table<Solve, string>;
   sessions!: Table<Session, string>;
@@ -24,8 +25,10 @@ class TurnDB extends Dexie {
       });
   }
 }
+
 export const db = new TurnDB();
 export const id = () => crypto.randomUUID();
+
 export async function initialize() {
   await db.transaction('rw', db.sessions, db.settings, async () => {
     if (!(await db.sessions.count())) {
@@ -35,6 +38,7 @@ export async function initialize() {
         createdAt: Date.now(),
         puzzle: '333',
       };
+
       await db.sessions.add(session);
       await db.settings.put({
         key: 'preferences',
@@ -54,6 +58,7 @@ export async function initialize() {
         hideWidgetsInFocus: true,
         hideClockWhileSolving: false,
       };
+
   if (!(await db.sessions.get(preferences.activeSessionId)))
     preferences.activeSessionId = first!.id;
   let workspace: Workspace,
@@ -61,6 +66,7 @@ export async function initialize() {
       storedPreferences !== undefined && !parsedPreferences.success
         ? 'Saved timer preferences were invalid; defaults have been restored.'
         : '';
+
   try {
     workspace = migrateWorkspace((await db.settings.get('workspace'))?.value);
   } catch {
@@ -68,12 +74,16 @@ export async function initialize() {
     warning =
       'Saved appearance settings could not be read. Default styling is shown; your solves are safe.';
   }
+
   return { workspace, preferences, warning };
 }
+
 export function migrateWorkspace(raw: unknown): Workspace {
   if (raw === undefined || raw === null) return defaultWorkspace();
+
   return validateWorkspace(raw);
 }
+
 export async function saveSetting(key: string, value: unknown) {
   const validated =
     key === 'workspace'
@@ -81,12 +91,14 @@ export async function saveSetting(key: string, value: unknown) {
       : key === 'preferences'
         ? preferencesSchema.parse(value)
         : value;
+
   await db.settings.put({ key, value: structuredClone(validated) });
 }
 
 export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
   return db.transaction('rw', db.sessions, async () => {
     const existing = await db.sessions.where('puzzle').equals(puzzle).sortBy('createdAt');
+
     if (existing.length) return existing[existing.length - 1];
     const session: Session = {
       id: id(),
@@ -94,7 +106,9 @@ export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
       puzzle,
       createdAt: Date.now(),
     };
+
     await db.sessions.add(session);
+
     return session;
   });
 }
