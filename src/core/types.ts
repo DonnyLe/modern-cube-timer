@@ -84,6 +84,7 @@ export interface Workspace {
   snap: boolean;
 }
 export interface Preferences {
+  hideClockWhileSolving: boolean;
   hideWidgetsInFocus: boolean;
   inspection: boolean;
   holdMs: number;

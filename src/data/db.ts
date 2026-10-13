@@ -51,7 +51,13 @@ export async function initialize() {
   const parsedPreferences = preferencesSchema.safeParse(storedPreferences);
   const preferences = parsedPreferences.success
     ? parsedPreferences.data
-    : { inspection: false, holdMs: 300, activeSessionId: first!.id, hideWidgetsInFocus: true };
+    : {
+        inspection: false,
+        holdMs: 300,
+        activeSessionId: first!.id,
+        hideWidgetsInFocus: true,
+        hideClockWhileSolving: false,
+      };
 
   if (!(await db.sessions.get(preferences.activeSessionId)))
     preferences.activeSessionId = first!.id;
