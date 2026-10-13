@@ -15,6 +15,8 @@ test('focus mode hides header controls, puzzle selector and widgets, and exits o
   await expect(page.locator('.header-actions')).toBeHidden();
   await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
   await expect(widgets).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeHidden();
+  await expect(page.locator('.timer-session-name')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy scramble' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Exit focus mode' }).hover();

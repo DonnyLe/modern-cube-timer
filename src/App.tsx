@@ -340,16 +340,6 @@ export default function App() {
               >
                 <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
               </button>
-              <button
-                aria-label="Edit puzzle and session"
-                title="Edit puzzle and session"
-                aria-haspopup="dialog"
-                className="icon-button"
-                disabled={busy || saving || !!pendingSolve || !session}
-                onClick={openSessions}
-              >
-                <Pencil size={18} />
-              </button>
             </div>
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
           </section>
@@ -360,7 +350,19 @@ export default function App() {
             </p>
           )}
           <section className="timer-area">
-            <p className="timer-session-name">{session?.name}</p>
+            <div className="timer-session-heading">
+              <p className="timer-session-name">{session?.name}</p>
+              <button
+                aria-label="Edit puzzle and session"
+                title="Edit puzzle and session"
+                aria-haspopup="dialog"
+                className="icon-button"
+                disabled={busy || saving || !!pendingSolve || !session}
+                onClick={openSessions}
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
             <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}

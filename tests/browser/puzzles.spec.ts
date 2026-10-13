@@ -134,7 +134,7 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   expect(navBox.x + navBox.width / 2).toBeCloseTo(topbarBox.x + topbarBox.width / 2, 0);
   await expect(
     page
-      .locator('.scramble-actions')
+      .locator('.timer-session-heading')
       .getByRole('button', { name: 'Edit puzzle and session', exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);

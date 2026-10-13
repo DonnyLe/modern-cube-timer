@@ -302,8 +302,37 @@ button svg {
   touch-action: none;
   user-select: none;
 }
-.timer-session-name {
+.timer-session-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 0 20px 8px;
+  max-width: calc(100% - 40px);
+}
+.timer-session-heading .icon-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
+}
+.timer-session-heading .icon-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--accent);
+}
+.timer-session-heading .icon-button svg {
+  width: 14px;
+  height: 14px;
+}
+.is-focused .timer-session-heading .icon-button {
+  display: none;
+}
+.timer-session-name {
+  margin: 0;
+  min-width: 0;
   text-align: center;
   overflow-wrap: anywhere;
   color: color-mix(in srgb, var(--ink) 65%, var(--accent));

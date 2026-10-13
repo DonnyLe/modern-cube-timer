@@ -124,7 +124,7 @@ test('sessions can be started without a name and custom names stay available', a
   });
 });
 
-test('scramble edit opens the preview panel in regular and focus mode', async ({ page }) => {
+test('session edit opens the panel and hides while focus mode is active', async ({ page }) => {
   await page.goto('/');
   const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
   const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
@@ -136,18 +136,17 @@ test('scramble edit opens the preview panel in regular and focus mode', async ({
   await expect(edit).toBeFocused();
   await expect(page.locator('.session-label')).toHaveCount(0);
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
-  await edit.click();
-  await expect(modal).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(edit).toBeHidden();
+  await expect(page.locator('.timer-session-name')).toBeVisible();
   await expect(modal).toHaveCount(0);
   await expect(page.locator('.app')).toHaveClass(/is-focused/);
-  await expect(edit).toBeFocused();
   await expect(page.locator('.app')).not.toHaveClass(/is-running/);
+  await page.keyboard.press('Escape');
+  await expect(edit).toBeVisible();
   await edit.click();
   await expect(page.getByRole('button', { name: 'Automatic session settings' })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
-  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Sessions', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Timer', exact: true })).toBeVisible();
