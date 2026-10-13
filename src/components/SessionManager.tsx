@@ -1,42 +1,87 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowUpRight, Check, Maximize2, Pencil, Plus, Search, Star, Trash2 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  CheckSquare,
+  SlidersHorizontal,
+  Maximize2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import type { Session, Solve } from '../core/types';
 import { puzzles, puzzleEvents, type PuzzleEvent } from '../core/puzzles';
 import { formatTime, statistics, value } from '../core/statistics';
 import { useScramble } from '../core/useScramble';
-import { db, newSession, sessionForPuzzle } from '../data/db';
+import { db, newSession } from '../data/db';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';
 import { PuzzleArtwork } from './PuzzleArtwork';
+import { PuzzleIcon } from './PuzzleIcon';
 
 export function SessionManager({
   sessions,
   activeId,
   selectedId,
   onSelect,
-  onContinue,
+  onPuzzleChange,
   onViewAll,
   onOpenSolve,
-  onSettings,
   precision,
 }: {
   sessions: Session[];
   activeId: string;
   selectedId: string;
   onSelect: (id: string) => void;
-  onContinue: (id: string) => void;
+  onPuzzleChange: (puzzle: PuzzleEvent) => void;
   onViewAll: (id: string) => void;
   onOpenSolve: (solve: Solve) => void;
-  onSettings: () => void;
   precision: number;
 }) {
+  const appearance = useStore((state) => state.workspace.appearance);
+  const accent = appearance[appearance.theme].accent;
+  const channels = [1, 3, 5].map((offset) => {
+    const channel = parseInt(accent.slice(offset, offset + 2), 16) / 255;
+
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  const buttonColor = luminance > 0.179 ? '#000000' : '#ffffff';
   const selected = sessions.find((session) => session.id === selectedId);
   const [puzzle, setPuzzle] = useState<PuzzleEvent>(selected?.puzzle || '333');
   const [search, setSearch] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [puzzleFilter, setPuzzleFilter] = useState<PuzzleEvent | 'all'>('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [selecting, setSelecting] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
-  const [deleting, setDeleting] = useState(false);
+  const [deleteIds, setDeleteIds] = useState<string[]>([]);
+  const [menuId, setMenuId] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!menuId) return;
+    menuRef.current?.querySelector('button')?.focus();
+
+    const dismiss = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !menuRef.current?.contains(event.target) &&
+        !menuButtonRef.current?.contains(event.target)
+      )
+        setMenuId('');
+    };
+
+    document.addEventListener('pointerdown', dismiss);
+
+    return () => document.removeEventListener('pointerdown', dismiss);
+  }, [menuId]);
   const [working, setWorking] = useState(false);
   const preview = useScramble(puzzle);
   const storedSolves =
@@ -62,19 +107,27 @@ export function SessionManager({
       [sessions],
     ) || new Map<string, number>();
   const stats = statistics(solves);
+  const cutoff = dateFilter === 'all' ? 0 : Date.now() - Number(dateFilter) * 86400000;
   const shown = [...sessions]
     .reverse()
     .filter((session) =>
       `${session.name} ${puzzles[session.puzzle].label}`
         .toLowerCase()
         .includes(search.toLowerCase().trim()),
-    );
+    )
+    .filter((session) => puzzleFilter === 'all' || session.puzzle === puzzleFilter)
+    .filter((session) => session.createdAt >= cutoff);
+  const allChecked = shown.length > 0 && shown.every((session) => checkedIds.includes(session.id));
+  const toggleChecked = (id: string) =>
+    setCheckedIds((ids) => (ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]));
 
   const select = (session: Session) => {
     onSelect(session.id);
     setPuzzle(session.puzzle);
+    onPuzzleChange(session.puzzle);
     setRenaming(false);
-    setDeleting(false);
+    setDeleteIds([]);
+    setMenuId('');
   };
 
   const mutate = async (action: () => Promise<void>) => {
@@ -86,11 +139,30 @@ export function SessionManager({
     return ok;
   };
 
-  const date = (timestamp: number) =>
-    new Date(timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const date = (timestamp: number) => {
+    const then = new Date(timestamp);
+    const time = then.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+    return then.toDateString() === new Date().toDateString()
+      ? `Today, ${time}`
+      : then.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  };
+
+  const elapsed = (timestamp: number) => {
+    const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+    const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+    return minutes < 60
+      ? formatter.format(-minutes, 'minute')
+      : formatter.format(-Math.round(minutes / 60), 'hour');
+  };
 
   return (
-    <div className="session-manager-body" aria-busy={working}>
+    <div
+      className="session-manager-body"
+      aria-busy={working}
+      style={{ '--manager-on-accent': buttonColor } as CSSProperties}
+    >
       <section className="manager-art">
         <div className="manager-column-header puzzle-selector">
           <span>Puzzle</span>
@@ -101,16 +173,17 @@ export function SessionManager({
             options={puzzleEvents.map((event) => ({ value: event, label: puzzles[event].label }))}
             onValueChange={(event) => {
               setPuzzle(event);
+              onPuzzleChange(event);
               const latest = sessions.filter((session) => session.puzzle === event).at(-1);
 
               onSelect(latest?.id || '');
               setRenaming(false);
-              setDeleting(false);
+              setDeleteIds([]);
             }}
           />
         </div>
         <PuzzleArtwork
-          key={`${puzzle}:${solves.at(-1)?.scramble || preview.scramble}`}
+          key={puzzle}
           puzzle={puzzle}
           scramble={solves.at(-1)?.scramble || preview.scramble}
         />
@@ -121,7 +194,7 @@ export function SessionManager({
         </div>
         <p className="manager-metadata">
           {selected
-            ? `${date(selected.createdAt)} · ${solves.length} solves`
+            ? `${date(selected.createdAt)} · ${solves.length} ${solves.length === 1 ? 'solve' : 'solves'}`
             : 'No sessions for this puzzle yet.'}
         </p>
         {selected && (
@@ -132,7 +205,7 @@ export function SessionManager({
               onClick={() => {
                 setName(selected.name);
                 setRenaming(!renaming);
-                setDeleting(false);
+                setDeleteIds([]);
               }}
             >
               <Pencil size={14} /> Rename
@@ -205,11 +278,8 @@ export function SessionManager({
                 >
                   <span>{solves.length - index}</span>
                   <strong>{formatTime(value(solve), precision)}</strong>
-                  <small>
-                    {new Date(solve.timestamp).toLocaleTimeString(undefined, {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
+                  <small title={new Date(solve.timestamp).toLocaleString()}>
+                    {elapsed(solve.timestamp)}
                   </small>
                   {Number.isFinite(stats.best) && value(solve) === stats.best && (
                     <Star size={13} aria-label="Session best" />
@@ -219,49 +289,6 @@ export function SessionManager({
           </div>
         ) : (
           <p className="manager-empty subtle">Your solves will appear here.</p>
-        )}
-        {selected && (
-          <details className="manager-management">
-            <summary>Manage session</summary>
-            {!deleting ? (
-              <button
-                className="text-button danger"
-                disabled={working || sessions.length < 2}
-                onClick={() => setDeleting(true)}
-              >
-                <Trash2 size={14} /> Delete session
-              </button>
-            ) : (
-              <div className="manager-delete-confirmation" role="alert">
-                <p>
-                  Delete “{selected.name}” and its {solves.length} solves?
-                </p>
-                <div className="button-row">
-                  <button onClick={() => setDeleting(false)}>Keep session</button>
-                  <button
-                    className="danger"
-                    disabled={working}
-                    onClick={() => {
-                      const fallback = sessions.find((session) => session.id !== selected.id);
-
-                      if (!fallback) return;
-                      void mutate(async () => {
-                        await db.transaction('rw', db.sessions, db.solves, async () => {
-                          await db.solves.where('sessionId').equals(selected.id).delete();
-                          await db.sessions.delete(selected.id);
-                        });
-                        if (selected.id === activeId)
-                          useStore.getState().setPreferences({ activeSessionId: fallback.id });
-                        select(fallback);
-                      });
-                    }}
-                  >
-                    Delete session
-                  </button>
-                </div>
-              </div>
-            )}
-          </details>
         )}
       </section>
       <aside className="manager-sidebar" aria-label="All sessions">
@@ -275,68 +302,262 @@ export function SessionManager({
               void mutate(async () => {
                 const next = await newSession(puzzle);
 
-                onContinue(next.id);
+                select(next);
               })
             }
           >
             <Plus size={16} /> New
           </button>
         </div>
-        <label className="manager-search">
-          <Search size={16} aria-hidden="true" />
-          <input
-            aria-label="Search sessions"
-            placeholder="Search sessions…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
+        <div className="manager-session-toolbar">
+          <div className="manager-search">
+            <Search size={16} aria-hidden="true" />
+            <input
+              aria-label="Search sessions"
+              placeholder="Search sessions…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <div className="manager-search-actions">
+              <button
+                className="icon-button small"
+                aria-label="Filter sessions"
+                aria-expanded={filtersOpen}
+                aria-pressed={puzzleFilter !== 'all' || dateFilter !== 'all'}
+                onClick={() => setFiltersOpen(!filtersOpen)}
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+              <button
+                className="icon-button small"
+                aria-label="Select sessions"
+                aria-pressed={selecting}
+                onClick={() => {
+                  setSelecting(!selecting);
+                  setCheckedIds([]);
+                }}
+              >
+                <CheckSquare size={16} />
+              </button>
+            </div>
+          </div>
+          {filtersOpen && (
+            <div className="manager-filters" aria-label="Session filters">
+              <label>
+                Puzzle
+                <Select
+                  label="Filter by puzzle"
+                  value={puzzleFilter}
+                  options={[
+                    { value: 'all', label: 'All puzzles' },
+                    ...puzzleEvents.map((event) => ({ value: event, label: puzzles[event].label })),
+                  ]}
+                  onValueChange={setPuzzleFilter}
+                />
+              </label>
+              <label>
+                Created
+                <Select
+                  label="Filter by date"
+                  value={dateFilter}
+                  options={[
+                    { value: 'all', label: 'Any time' },
+                    { value: '1', label: 'Past 24 hours' },
+                    { value: '7', label: 'Past week' },
+                    { value: '30', label: 'Past month' },
+                  ]}
+                  onValueChange={setDateFilter}
+                />
+              </label>
+              <button
+                className="text-button"
+                onClick={() => {
+                  setPuzzleFilter('all');
+                  setDateFilter('all');
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+          {selecting && (
+            <div className="manager-selection-controls">
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label="Select all visible sessions"
+                  checked={allChecked}
+                  disabled={!shown.length || working}
+                  ref={(element) => {
+                    if (element)
+                      element.indeterminate =
+                        !allChecked && shown.some((session) => checkedIds.includes(session.id));
+                  }}
+                  onChange={(event) =>
+                    setCheckedIds((ids) =>
+                      event.target.checked
+                        ? [...new Set([...ids, ...shown.map((session) => session.id)])]
+                        : ids.filter((id) => !shown.some((session) => session.id === id)),
+                    )
+                  }
+                />
+                Select all
+              </label>
+              <small>{checkedIds.length} selected</small>
+              <button
+                className="icon-button small danger"
+                aria-label="Delete selected sessions"
+                disabled={!checkedIds.length || working}
+                onClick={() => setDeleteIds(checkedIds)}
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                className="text-button"
+                disabled={!checkedIds.length}
+                onClick={() => setCheckedIds([])}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+        {deleteIds.length > 0 && (
+          <div className="manager-delete-confirmation" role="alert">
+            <p>
+              {deleteIds.length === 1
+                ? `Delete “${sessions.find((session) => session.id === deleteIds[0])?.name}” and all its solves?`
+                : `Delete ${deleteIds.length} selected sessions and all their solves?`}
+            </p>
+            <div className="button-row">
+              <button disabled={working} onClick={() => setDeleteIds([])}>
+                Cancel
+              </button>
+              <button
+                className="danger"
+                disabled={working}
+                onClick={() =>
+                  void mutate(async () => {
+                    const currentId = useStore.getState().preferences.activeSessionId;
+                    const fallback = await db.transaction(
+                      'rw',
+                      db.sessions,
+                      db.solves,
+                      async () => {
+                        const existing = await db.sessions.orderBy('createdAt').toArray();
+                        const remaining = existing.filter(
+                          (session) => !deleteIds.includes(session.id),
+                        );
+                        const next =
+                          remaining.find((session) => session.id === selectedId) ||
+                          remaining.find((session) => session.id === currentId) ||
+                          remaining.at(-1) ||
+                          (await newSession(
+                            existing.find((session) => session.id === currentId)?.puzzle || puzzle,
+                          ));
+
+                        await db.solves.where('sessionId').anyOf(deleteIds).delete();
+                        await db.sessions.bulkDelete(deleteIds);
+
+                        return next;
+                      },
+                    );
+
+                    if (deleteIds.includes(currentId))
+                      useStore.getState().setPreferences({ activeSessionId: fallback.id });
+                    if (deleteIds.includes(selectedId)) select(fallback);
+                    setCheckedIds((ids) => ids.filter((id) => !deleteIds.includes(id)));
+                    setDeleteIds([]);
+                  })
+                }
+              >
+                Delete {deleteIds.length === 1 ? 'session' : 'sessions'}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="manager-session-list">
           {shown.map((session) => (
-            <button
+            <div
+              className={`manager-session-entry ${selecting ? 'is-selecting' : ''}`}
               key={session.id}
-              className={`manager-session-row ${session.id === selectedId ? 'chosen' : ''}`}
-              aria-pressed={session.id === selectedId}
-              disabled={working}
-              onClick={() => select(session)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && menuId === session.id) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setMenuId('');
+                  event.currentTarget
+                    .querySelector<HTMLButtonElement>('.manager-session-menu')
+                    ?.focus();
+                }
+              }}
             >
-              <span className="manager-puzzle-icon" aria-hidden="true">
-                {puzzles[session.puzzle].label}
-              </span>
-              <span className="manager-session-copy">
-                <strong>{session.name}</strong>
-                <small>
-                  {date(session.createdAt)} · {counts.get(session.id) ?? 0} solves
-                </small>
-                {session.id === activeId && (
-                  <span className="manager-current">
-                    <Check size={12} /> Current
+              {selecting && (
+                <input
+                  className="manager-session-checkbox"
+                  type="checkbox"
+                  aria-label={`Select ${session.name}`}
+                  checked={checkedIds.includes(session.id)}
+                  disabled={working}
+                  onChange={() => toggleChecked(session.id)}
+                />
+              )}
+              <button
+                className={`manager-session-row ${(selecting ? checkedIds.includes(session.id) : session.id === selectedId) ? 'chosen' : ''}`}
+                aria-pressed={
+                  selecting ? checkedIds.includes(session.id) : session.id === selectedId
+                }
+                disabled={working}
+                onClick={() => (selecting ? toggleChecked(session.id) : select(session))}
+              >
+                <PuzzleIcon puzzle={session.puzzle} />
+                <span className="manager-session-copy">
+                  <strong>{session.name}</strong>
+                  <span className="manager-session-meta">
+                    <small>
+                      {date(session.createdAt)} · {counts.get(session.id) ?? 0} solves
+                    </small>
+                    {session.id === activeId && <span className="manager-current">Current</span>}
                   </span>
-                )}
-              </span>
-            </button>
+                </span>
+              </button>
+              <button
+                className="icon-button small manager-session-menu"
+                aria-label={`Session actions for ${session.name}`}
+                aria-haspopup="menu"
+                aria-expanded={menuId === session.id}
+                disabled={working}
+                onClick={(event) => {
+                  menuButtonRef.current = event.currentTarget;
+                  setMenuId(menuId === session.id ? '' : session.id);
+                }}
+              >
+                <MoreHorizontal size={16} />
+              </button>
+              {menuId === session.id && (
+                <div
+                  className="manager-row-menu"
+                  ref={menuRef}
+                  role="menu"
+                  aria-label={`Actions for ${session.name}`}
+                >
+                  <button
+                    role="menuitem"
+                    className="danger"
+                    onClick={() => {
+                      setDeleteIds([session.id]);
+                      setMenuId('');
+                    }}
+                  >
+                    <Trash2 size={16} /> Delete session
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
           {!shown.length && <p className="subtle manager-empty">No matching sessions.</p>}
         </div>
       </aside>
-      <footer className="manager-footer">
-        <button className="text-button" onClick={onSettings} disabled={working}>
-          Automatic session settings <ArrowUpRight size={14} />
-        </button>
-        <button
-          className="primary"
-          disabled={working}
-          onClick={() =>
-            void mutate(async () => {
-              const next = selected || (await sessionForPuzzle(puzzle));
-
-              onContinue(next.id);
-            })
-          }
-        >
-          Continue session <ArrowUpRight size={16} />
-        </button>
-      </footer>
     </div>
   );
 }

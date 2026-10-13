@@ -9,13 +9,20 @@ import { Preview } from './Preview';
 export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scramble: string }) {
   const container = useRef<HTMLDivElement>(null);
   const player = useRef<TwistyPlayer | null>(null);
+  const scrambleRef = useRef(scramble);
   const reducedMotion = useReducedMotion();
   const [mode, setMode] = useState<'loading' | '3d' | 'face'>('loading');
   const [spinning, setSpinning] = useState(true);
 
   useEffect(() => {
+    scrambleRef.current = scramble;
+    if (player.current) player.current.experimentalSetupAlg = scramble;
+  }, [scramble]);
+
+  useEffect(() => {
     let alive = true;
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    let resize: ResizeObserver | undefined;
     const host = container.current!;
     const probe = document.createElement('canvas');
     const context = probe.getContext('webgl2');
@@ -34,13 +41,14 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
         if (!alive) return;
         const next = new Player({
           puzzle: puzzles[puzzle].puzzleId as TwistyPlayerConfig['puzzle'],
-          experimentalSetupAlg: scramble,
+          experimentalSetupAlg: scrambleRef.current,
           visualization: '3D',
           background: 'none',
           controlPanel: 'none',
           hintFacelets: 'none',
           backView: 'none',
           viewerLink: 'none',
+          cameraDistance: 4.2,
           cameraLatitude: 25,
           cameraLongitude: 30,
         });
@@ -49,6 +57,10 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
         next.style.width = '100%';
         next.style.height = '100%';
         host.replaceChildren(next);
+        resize = new ResizeObserver(([entry]) => {
+          next.cameraDistance = entry.contentRect.width > entry.contentRect.height ? 5.5 : 4.2;
+        });
+        resize.observe(host);
         await Promise.race([
           next.experimentalCurrentCanvases(),
           new Promise((_, reject) => {
@@ -60,6 +72,7 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
       })
       .catch(() => {
         clearTimeout(timeout);
+        resize?.disconnect();
 
         if (alive) {
           player.current?.pause();
@@ -71,11 +84,12 @@ export function PuzzleArtwork({ puzzle, scramble }: { puzzle: PuzzleEvent; scram
     return () => {
       alive = false;
       clearTimeout(timeout);
+      resize?.disconnect();
       player.current?.pause();
       player.current = null;
       host.replaceChildren();
     };
-  }, [puzzle, scramble]);
+  }, [puzzle]);
 
   useEffect(() => {
     if (mode !== '3d' || !spinning || reducedMotion) return;

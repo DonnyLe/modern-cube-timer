@@ -90,7 +90,7 @@ test('automatic sessions use the saved break setting and retain previous history
   await expect(page.getByLabel('Break before a new session (hours)')).toHaveCount(0);
   await expect(page.locator('.manager-session-row')).toHaveCount(2);
   await page.locator('.manager-session-row').last().click();
-  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await expect(page.locator('.recent-list .solve-row strong')).toHaveText('12.00');
 });
 
@@ -105,6 +105,7 @@ test('sessions can be started without a name and custom names stay available', a
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(2);
   await page.getByRole('button', { name: 'Rename', exact: true }).click();
@@ -143,7 +144,11 @@ test('scramble edit opens the preview panel in regular and focus mode', async ({
   await expect(edit).toBeFocused();
   await expect(page.locator('.app')).not.toHaveClass(/is-running/);
   await edit.click();
-  await page.getByRole('button', { name: 'Automatic session settings' }).click();
+  await expect(page.getByRole('button', { name: 'Automatic session settings' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(modal).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Sessions', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Timer', exact: true })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-focused/);

@@ -3,8 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
 import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
-import { db, id, saveSessionSolve } from './data/db';
+import { db, id, saveSessionSolve, sessionForPuzzle } from './data/db';
 import type { Solve, Penalty } from './core/types';
+import type { PuzzleEvent } from './core/puzzles';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
 import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
@@ -35,6 +36,8 @@ export default function App() {
     [manual, setManual] = useState(''),
     [inputError, setInputError] = useState(''),
     [managerSessionId, setManagerSessionId] = useState(''),
+    [managerPuzzle, setManagerPuzzle] = useState<PuzzleEvent>('333'),
+    [historyFromManager, setHistoryFromManager] = useState(false),
     [historySessionId, setHistorySessionId] = useState(''),
     [returnDialog, setReturnDialog] = useState(''),
     [deleted, setDeleted] = useState<Solve | null>(null),
@@ -43,6 +46,7 @@ export default function App() {
     [saving, setSaving] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
   const pendingStartedAt = useRef(0);
+  const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
@@ -137,11 +141,33 @@ export default function App() {
   const openSessions = (event: MouseEvent<HTMLButtonElement>) => {
     event.currentTarget.focus();
     setManagerSessionId(preferences.activeSessionId);
+    setManagerPuzzle(session?.puzzle || '333');
     setDialog('sessions');
   };
 
   const close = () => {
-    setDialog(dialog === 'solve' ? returnDialog : '');
+    if (dialog === 'sessions') {
+      if (closingManager.current) return;
+      closingManager.current = true;
+      void safeWrite(async () => {
+        const next =
+          (await db.sessions.get(managerSessionId)) || (await sessionForPuzzle(managerPuzzle));
+
+        store.setPreferences({ activeSessionId: next.id });
+      }).then((ok) => {
+        closingManager.current = false;
+        if (ok) setDialog('');
+      });
+    } else {
+      setDialog(
+        dialog === 'solve'
+          ? returnDialog
+          : dialog === 'history' && historyFromManager
+            ? 'sessions'
+            : '',
+      );
+    }
+
     setReturnDialog('');
     setInputError('');
   };
@@ -382,6 +408,7 @@ export default function App() {
                   <button
                     className="text-button"
                     onClick={() => {
+                      setHistoryFromManager(false);
                       setHistorySessionId(preferences.activeSessionId);
                       setDialog('history');
                     }}
@@ -604,22 +631,13 @@ export default function App() {
               activeId={preferences.activeSessionId}
               selectedId={managerSessionId}
               onSelect={setManagerSessionId}
-              onContinue={(activeSessionId) => {
-                store.setPreferences({ activeSessionId });
-                close();
-              }}
+              onPuzzleChange={setManagerPuzzle}
               onViewAll={(id) => {
+                setHistoryFromManager(true);
                 setHistorySessionId(id);
                 setDialog('history');
               }}
               onOpenSolve={(solve) => openSolve(solve, 'sessions')}
-              onSettings={() => {
-                void (async () => {
-                  if (focused) await changeFocus(false);
-                  close();
-                  setView('Settings');
-                })();
-              }}
               precision={a.precision}
             />
           )}
