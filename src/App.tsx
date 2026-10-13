@@ -189,7 +189,9 @@ export default function App() {
     ? formatTime(value(pendingSolve), a.precision)
     : busy
       ? timer.phase === 'running'
-        ? formatTime(timer.elapsed, a.precision)
+        ? preferences.hideClockWhileSolving
+          ? 'Solving...'
+          : formatTime(timer.elapsed, a.precision)
         : timer.inspectionPenalty !== 'none'
           ? timer.inspectionPenalty
           : preferences.inspection

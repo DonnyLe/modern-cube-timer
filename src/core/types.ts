@@ -87,6 +87,7 @@ export interface Workspace {
 export interface Preferences {
   automaticSessions: boolean;
   sessionBreakHours: number;
+  hideClockWhileSolving: boolean;
   hideWidgetsInFocus: boolean;
   inspection: boolean;
   holdMs: number;
