@@ -589,9 +589,10 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 26px 0 16px;
+  margin: 20px 0 12px;
 }
 .session-browser-heading h3 {
+  margin: 0;
   font-size: 16px;
 }
 .session-browser-heading p {
@@ -608,7 +609,7 @@ textarea {
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .session-list button {
   justify-content: space-between;
@@ -657,7 +658,7 @@ textarea {
   margin-top: 16px;
 }
 .session-settings-link {
-  margin-top: 20px;
+  margin-top: 16px;
   font-size: 12px;
 }
 @media (max-width: 480px) {
