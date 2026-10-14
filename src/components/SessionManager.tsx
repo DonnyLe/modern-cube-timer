@@ -25,7 +25,7 @@ import {
 } from '../data/actions/session';
 import { formatSessionDate, formatElapsedTime } from '../utils/date';
 import { safeWrite, useStore } from '../data/store';
-import { Select } from './Select';
+import { Select } from './ui/Select';
 import { PuzzleView } from './PuzzleView';
 
 export function SessionManager({

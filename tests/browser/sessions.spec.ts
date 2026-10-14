@@ -190,6 +190,7 @@ test('disabling automatic sessions resumes older sessions when switching puzzles
   await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(2);
   await page.getByRole('combobox', { name: 'Puzzle', exact: true }).click();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('Home');
   await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
