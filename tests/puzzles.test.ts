@@ -6,6 +6,8 @@ import { sessionForPuzzle } from '../src/data/actions/session';
 import { backup, csv, parseImport } from '../src/data/transfer';
 import { defaultWorkspace } from '../src/layout/defaults';
 import { ScrambleQueue } from '../src/core/scrambleQueue';
+import { puzzleEvents, puzzles } from '../src/core/puzzles';
+import { puzzleFaces } from '../src/core/puzzleFaces';
 
 beforeEach(async () => {
   await db.delete();
@@ -106,5 +108,17 @@ describe('scramble prefetch', () => {
 
     await expect(queue.next('333')).rejects.toThrow('offline');
     expect(await queue.next('333')).toBe('R U');
+  });
+});
+describe('puzzle face previews', () => {
+  it('only shows stickers that exist in the current cubing.js nets', async () => {
+    const { puzzles: loaders } = await import('cubing/puzzles');
+
+    for (const event of puzzleEvents) {
+      const svg = await loaders[puzzles[event].puzzleId].svg();
+
+      expect(puzzleFaces[event].viewBox).toMatch(/^(-?[\d.]+ ){3}-?[\d.]+$/);
+      for (const id of puzzleFaces[event].stickers ?? []) expect(svg).toContain(`id="${id}"`);
+    }
   });
 });
