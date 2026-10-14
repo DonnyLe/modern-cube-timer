@@ -122,11 +122,6 @@ button svg {
 .topbar .segmented {
   width: 100%;
 }
-.puzzle-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 .topbar-controls {
   display: flex;
   align-items: center;
@@ -1177,7 +1172,6 @@ input[type='range'] {
 .manager-details {
   grid-area: details;
   padding: 24px 20px;
-  border-left: 1px solid var(--outline);
   min-width: 0;
 }
 .manager-sidebar {
@@ -1188,7 +1182,6 @@ input[type='range'] {
   max-height: min(588px, 74svh);
   min-height: 0;
   padding: 24px 20px;
-  border-left: 1px solid var(--outline);
   min-width: 0;
 }
 .manager-column-header {
@@ -1298,7 +1291,6 @@ input[type='range'] {
 }
 .manager-search {
   position: relative;
-  margin: 16px 0;
 }
 .manager-search > svg {
   position: absolute;
@@ -1309,6 +1301,7 @@ input[type='range'] {
 .manager-search input {
   width: 100%;
   padding-left: 36px;
+  padding-right: 78px;
   font-size: 15px;
 }
 .manager-session-list {
@@ -1403,54 +1396,6 @@ input[type='range'] {
   font-size: 15px;
   opacity: 1;
 }
-@media (max-width: 1050px) {
-  .session-manager-body {
-    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
-    grid-template-areas: 'art details' 'sidebar sidebar';
-    grid-template-rows: auto auto;
-  }
-  .manager-sidebar {
-    height: min(380px, 74svh);
-    max-height: min(380px, 74svh);
-    border-left: 0;
-    border-top: 1px solid var(--outline);
-  }
-  .manager-column-header h3 {
-    font-size: 18px;
-  }
-}
-@media (max-width: 600px) {
-  .session-manager-dialog .dialog-content {
-    padding: 18px;
-  }
-  .session-manager-body {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'art' 'details' 'sidebar';
-    grid-template-rows: auto auto auto;
-    min-height: 0;
-  }
-  .manager-art,
-  .manager-details,
-  .manager-sidebar {
-    padding: 20px;
-  }
-  .manager-details {
-    border-left: 0;
-    border-top: 1px solid var(--outline);
-  }
-  .puzzle-artwork-stage {
-    height: 180px;
-  }
-  .puzzle-artwork .puzzle-face-preview {
-    height: 160px;
-  }
-  .puzzle-artwork {
-    margin-top: 12px;
-  }
-  .manager-statistics strong {
-    font-size: 24px;
-  }
-}
 
 .session-manager-dialog header {
   margin: 4px 12px 16px;
@@ -1508,32 +1453,10 @@ input[type='range'] {
   width: 1px;
   background: var(--outline);
 }
-@media (max-width: 1050px) {
-  .manager-sidebar::before {
-    display: none;
-  }
-}
-@media (max-width: 600px) {
-  .manager-details::before {
-    display: none;
-  }
-  .session-manager-dialog header {
-    margin: 0 0 16px;
-  }
-  .session-manager-dialog header h2 {
-    font-size: 22px;
-  }
-}
 
 .manager-session-toolbar {
   flex-shrink: 0;
   margin: 16px 0;
-}
-.manager-session-toolbar .manager-search {
-  margin: 0;
-}
-.manager-search input {
-  padding-right: 78px;
 }
 .manager-search-actions {
   position: absolute;
@@ -1633,4 +1556,63 @@ input[type='range'] {
   font-size: 13px;
   padding: 10px;
   border: 0;
+}
+
+@media (max-width: 1050px) {
+  .session-manager-body {
+    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+    grid-template-areas: 'art details' 'sidebar sidebar';
+    grid-template-rows: auto auto;
+  }
+  .manager-sidebar {
+    height: min(380px, 74svh);
+    max-height: min(380px, 74svh);
+    border-top: 1px solid var(--outline);
+  }
+  .manager-column-header h3 {
+    font-size: 18px;
+  }
+  .manager-sidebar::before {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .session-manager-dialog .dialog-content {
+    padding: 18px;
+  }
+  .session-manager-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'art' 'details' 'sidebar';
+    grid-template-rows: auto auto auto;
+    min-height: 0;
+  }
+  .manager-art,
+  .manager-details,
+  .manager-sidebar {
+    padding: 20px;
+  }
+  .manager-details {
+    border-top: 1px solid var(--outline);
+  }
+  .puzzle-artwork-stage {
+    height: 180px;
+  }
+  .puzzle-artwork .puzzle-face-preview {
+    height: 160px;
+  }
+  .puzzle-artwork {
+    margin-top: 12px;
+  }
+  .manager-statistics strong {
+    font-size: 24px;
+  }
+  .manager-details::before {
+    display: none;
+  }
+  .session-manager-dialog header {
+    margin: 0 0 16px;
+  }
+  .session-manager-dialog header h2 {
+    font-size: 22px;
+  }
 }

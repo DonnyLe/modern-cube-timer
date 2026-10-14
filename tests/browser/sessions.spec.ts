@@ -152,3 +152,50 @@ test('session edit opens the panel and hides while focus mode is active', async 
   await expect(page.getByRole('button', { name: 'Timer', exact: true })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
 });
+
+test('disabling automatic sessions resumes older sessions when switching puzzles', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeEnabled();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('turn-timer');
+
+        request.onsuccess = () => {
+          const database = request.result;
+          const tx = database.transaction('sessions', 'readwrite');
+
+          tx.objectStore('sessions').put({
+            id: 'older-two',
+            puzzle: '222',
+            name: 'Two practice',
+            createdAt: Date.now() - 86400000,
+          });
+
+          tx.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+
+          tx.onabort = () => reject(tx.error);
+        };
+      }),
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByLabel('Start sessions automatically after a break').uncheck();
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+  await expect(page.locator('.manager-session-row')).toHaveCount(2);
+  await page.getByRole('combobox', { name: 'Puzzle', exact: true }).click();
+  await page.keyboard.press('Home');
+  await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.manager-details h3')).toHaveText('Two practice');
+  await expect(page.locator('.manager-session-row')).toHaveCount(2);
+  await expect(page.locator('.manager-notice')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(page.locator('.timer-session-name')).toHaveText('Two practice');
+});

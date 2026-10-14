@@ -77,18 +77,7 @@ export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
   return db.transaction('rw', db.sessions, async () => {
     const existing = await db.sessions.where('puzzle').equals(puzzle).sortBy('createdAt');
 
-    if (existing.length) return existing[existing.length - 1];
-    const session: Session = {
-      id: id(),
-      name: sessionName(puzzle),
-      automaticName: true,
-      puzzle,
-      createdAt: Date.now(),
-    };
-
-    await db.sessions.add(session);
-
-    return session;
+    return existing.at(-1) || newSession(puzzle);
   });
 }
 
@@ -119,8 +108,14 @@ export async function renameSession(sessionId: string, name: string) {
   await db.sessions.update(sessionId, { name: name.trim(), automaticName: false });
 }
 
-export async function selectPuzzleSession(puzzle: PuzzleEvent, breakHours: number) {
-  const recent = await recentSessionForPuzzle(puzzle, breakHours);
+export async function selectPuzzleSession(
+  puzzle: PuzzleEvent,
+  preferences: Pick<Preferences, 'automaticSessions' | 'sessionBreakHours'>,
+) {
+  const recent = await recentSessionForPuzzle(
+    puzzle,
+    preferences.automaticSessions ? preferences.sessionBreakHours : Infinity,
+  );
 
   return { session: recent || (await newSession(puzzle)), created: !recent };
 }

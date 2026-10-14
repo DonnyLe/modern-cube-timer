@@ -49,7 +49,7 @@ export function SessionManager({
   precision: number;
 }) {
   const appearance = useStore((state) => state.workspace.appearance);
-  const breakHours = useStore((state) => state.preferences.sessionBreakHours);
+  const preferences = useStore((state) => state.preferences);
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export function SessionManager({
             onValueChange={(event) => {
               if (event === puzzle) return;
               void mutate(async () => {
-                const { session: next, created } = await selectPuzzleSession(event, breakHours);
+                const { session: next, created } = await selectPuzzleSession(event, preferences);
 
                 select(next);
 

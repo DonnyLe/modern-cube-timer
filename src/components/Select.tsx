@@ -8,14 +8,12 @@ export function Select<Value extends string>({
   options,
   disabled,
   onValueChange,
-  onOpenChange,
 }: {
   label: string;
   value: Value;
   options: readonly { value: Value; label: string }[];
   disabled?: boolean;
   onValueChange: (value: Value) => void;
-  onOpenChange?: (open: boolean) => void;
 }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
@@ -37,7 +35,6 @@ export function Select<Value extends string>({
       value={value}
       disabled={disabled}
       onValueChange={(next) => onValueChange(next as Value)}
-      onOpenChange={onOpenChange}
     >
       <SelectPrimitive.Trigger
         ref={attachTrigger}
