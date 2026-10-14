@@ -131,28 +131,33 @@ describe('Zod boundaries', () => {
     expect(recovered.warning).toContain('preferences');
     expect(await db.sessions.count()).toBe(1);
   });
-  it('keeps older timing preferences when the hidden-clock setting is missing', async () => {
+  it('defaults automatic sessions for older preferences without changing custom names or timing settings', async () => {
     const initial = await initialize();
 
+    await db.sessions.update(initial.preferences.activeSessionId, { name: 'My practice' });
     await db.settings.put({
       key: 'preferences',
       value: {
         inspection: true,
         holdMs: 500,
-        activeSessionId: initial.preferences.activeSessionId,
         hideWidgetsInFocus: false,
+        activeSessionId: initial.preferences.activeSessionId,
       },
     });
     const restored = await initialize();
 
     expect(restored.preferences).toEqual({
+      ...initial.preferences,
       inspection: true,
       holdMs: 500,
-      activeSessionId: initial.preferences.activeSessionId,
       hideWidgetsInFocus: false,
+      automaticSessions: true,
+      sessionBreakHours: 4,
       hideClockWhileSolving: false,
     });
+    expect((await db.sessions.get(initial.preferences.activeSessionId))?.name).toBe('My practice');
     expect(restored.warning).toBe('');
+    expect(await db.sessions.count()).toBe(1);
   });
   it('previews invalid native rows and orphaned solves alongside a valid row', () => {
     const row = { sessionId: 's', duration: 12000, penalty: 'none', scramble: 'R', timestamp: 0 };

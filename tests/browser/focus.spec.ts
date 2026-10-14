@@ -13,15 +13,18 @@ test('focus mode hides header controls, puzzle selector and widgets, and exits o
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
   await expect(nav).toBeHidden();
   await expect(page.locator('.header-actions')).toBeHidden();
-  await expect(page.locator('.puzzle-selector')).toBeHidden();
   await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
   await expect(widgets).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeHidden();
+  await expect(page.locator('.timer-session-name')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy scramble' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Exit focus mode' }).hover();
   await expect(nav).toBeVisible();
   await expect(widgets).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Edit puzzle and session', exact: true }),
+  ).toBeVisible();
   await page.mouse.move(5, 5);
   await page.getByRole('button', { name: 'Enter focus mode' }).focus();
   await page.keyboard.press('Enter');

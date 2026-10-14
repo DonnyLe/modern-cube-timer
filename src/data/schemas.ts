@@ -53,6 +53,8 @@ export const workspaceInputSchema = z.object({
 });
 
 export const preferencesSchema = z.object({
+  automaticSessions: z.boolean().default(true),
+  sessionBreakHours: z.number().min(1).max(24).default(4),
   hideClockWhileSolving: z.boolean().default(false),
   hideWidgetsInFocus: z.boolean().default(true),
   inspection: z.boolean().default(false),
@@ -62,6 +64,7 @@ export const preferencesSchema = z.object({
 
 export const puzzleEventSchema = z.enum(puzzleEvents);
 export const sessionSchema = z.object({
+  automaticName: z.boolean().optional(),
   puzzle: puzzleEventSchema.default('333'),
   id: z.string().min(1),
   name: z.string().trim().min(1),

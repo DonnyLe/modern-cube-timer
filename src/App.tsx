@@ -1,29 +1,20 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
-import {
-  Copy,
-  RefreshCw,
-  Plus,
-  ArrowUpRight,
-  ChevronDown,
-  Trash2,
-  Pencil,
-  Check,
-  Scan,
-} from 'lucide-react';
+import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
-import { db, id, sessionForPuzzle } from './data/db';
-import { puzzles, puzzleEvents, type PuzzleEvent } from './core/puzzles';
+import { db, id } from './data/db';
+import { activateSession, saveSessionSolve } from './data/actions/session';
 import type { Solve, Penalty } from './core/types';
+import type { PuzzleEvent } from './core/puzzles';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
 import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
 import { Background } from './components/Background';
 import { Trend } from './components/Trend';
-import { Preview } from './components/Preview';
-import { Select } from './components/Select';
+import { PuzzleView } from './components/PuzzleView';
+import { SessionManager } from './components/SessionManager';
 import { Dialog } from './components/Dialog';
 import { Settings } from './components/Settings';
 import { Gallery } from './components/Gallery';
@@ -45,15 +36,19 @@ export default function App() {
     [selectedSolve, setSelectedSolve] = useState<Solve | null>(null),
     [manual, setManual] = useState(''),
     [inputError, setInputError] = useState(''),
-    [name, setName] = useState(''),
+    [managerSessionId, setManagerSessionId] = useState(''),
+    [managerPuzzle, setManagerPuzzle] = useState<PuzzleEvent>('333'),
+    [historyFromManager, setHistoryFromManager] = useState(false),
+    [historySessionId, setHistorySessionId] = useState(''),
+    [returnDialog, setReturnDialog] = useState(''),
     [deleted, setDeleted] = useState<Solve | null>(null),
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
-    [saving, setSaving] = useState(false),
-    [switchingPuzzle, setSwitchingPuzzle] = useState(false),
-    [puzzlePickerOpen, setPuzzlePickerOpen] = useState(false);
+    [saving, setSaving] = useState(false);
   const brandRef = useRef<HTMLAnchorElement>(null);
-  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || puzzlePickerOpen);
+  const pendingStartedAt = useRef(0);
+  const closingManager = useRef(false);
+  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -66,16 +61,6 @@ export default function App() {
   const puzzle = session?.puzzle || '333';
   const scramble = useScramble(session?.puzzle || null);
 
-  const changePuzzle = async (event: PuzzleEvent) => {
-    setSwitchingPuzzle(true);
-    await safeWrite(async () => {
-      const next = await sessionForPuzzle(event);
-
-      store.setPreferences({ activeSessionId: next.id });
-    });
-    setSwitchingPuzzle(false);
-  };
-
   useEffect(() => {
     void useStore.getState().boot();
   }, []);
@@ -83,7 +68,12 @@ export default function App() {
   const persistSolve = async (solve: Solve) => {
     setSaving(true);
     setPendingSolve(solve);
-    const ok = await safeWrite(() => db.solves.put(solve));
+    const ok = await safeWrite(async () => {
+      const saved = await saveSessionSolve(solve, preferences, pendingStartedAt.current);
+
+      if (saved.sessionId !== preferences.activeSessionId)
+        store.setPreferences({ activeSessionId: saved.sessionId });
+    });
 
     setSaving(false);
 
@@ -95,7 +85,7 @@ export default function App() {
     return ok;
   };
 
-  const saveSolve = async (duration: number, penalty: Penalty = 'none') => {
+  const saveSolve = async (duration: number, penalty: Penalty = 'none', manualEntry = false) => {
     const solve: Solve = {
       id: id(),
       duration: Math.round(duration),
@@ -105,6 +95,8 @@ export default function App() {
       timestamp: Date.now(),
       note: '',
     };
+
+    pendingStartedAt.current = manualEntry ? solve.timestamp : solve.timestamp - solve.duration;
 
     return persistSolve(solve);
   };
@@ -116,8 +108,6 @@ export default function App() {
       view !== 'Timer' ||
       !!pendingSolve ||
       saving ||
-      switchingPuzzle ||
-      puzzlePickerOpen ||
       !session ||
       !scramble.scramble ||
       scramble.loading ||
@@ -141,17 +131,55 @@ export default function App() {
     '--shadow': `0 ${a.shadow * 12}px ${a.shadow * 32}px color-mix(in srgb, ${palette.text} 8%, transparent)`,
   } as CSSProperties;
 
-  const openSolve = (s: Solve) => {
+  const openSolve = (s: Solve, returnTo = '') => {
+    setReturnDialog(returnTo);
     setSelectedSolve({ ...s });
     setManual(String(s.duration / 1000));
     setDialog('solve');
     setInputError('');
   };
 
+  const openSessions = (event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus();
+    setManagerSessionId(preferences.activeSessionId);
+    setManagerPuzzle(session?.puzzle || '333');
+    setDialog('sessions');
+  };
+
   const close = () => {
-    setDialog('');
+    if (dialog === 'sessions') {
+      if (closingManager.current) return;
+      closingManager.current = true;
+      void safeWrite(() => activateSession(managerSessionId, managerPuzzle)).then((ok) => {
+        closingManager.current = false;
+        if (ok) setDialog('');
+      });
+    } else {
+      setDialog(
+        dialog === 'solve'
+          ? returnDialog
+          : dialog === 'history' && historyFromManager
+            ? 'sessions'
+            : '',
+      );
+    }
+
+    setReturnDialog('');
     setInputError('');
   };
+
+  const historySolves =
+    useLiveQuery(
+      () =>
+        dialog === 'history'
+          ? db.solves
+              .where('sessionId')
+              .equals(historySessionId || preferences.activeSessionId)
+              .sortBy('timestamp')
+          : [],
+      [dialog, historySessionId, preferences.activeSessionId],
+    ) || [];
+  const historyStats = statistics(historySolves);
 
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
@@ -236,19 +264,6 @@ export default function App() {
           </nav>
         </MotionConfig>
         <div className="topbar-controls">
-          <div className="puzzle-selector" inert={focused} aria-hidden={focused}>
-            <Select
-              label="Puzzle"
-              value={puzzle}
-              options={puzzleEvents.map((event) => ({
-                value: event,
-                label: puzzles[event].label,
-              }))}
-              disabled={busy || saving || !!pendingSolve || switchingPuzzle || !session}
-              onValueChange={(event: PuzzleEvent) => void changePuzzle(event)}
-              onOpenChange={setPuzzlePickerOpen}
-            />
-          </div>
           <div className="header-actions" inert={focused} aria-hidden={focused}>
             <button
               className="icon-button glass"
@@ -331,17 +346,19 @@ export default function App() {
             </p>
           )}
           <section className="timer-area">
-            <button
-              className="session-label"
-              disabled={busy}
-              onClick={() => {
-                setName(session?.name || '');
-                setDialog('sessions');
-              }}
-            >
-              {session?.name || 'Practice'}
-              <ChevronDown size={13} />
-            </button>
+            <div className="timer-session-heading">
+              <p className="timer-session-name">{session?.name}</p>
+              <button
+                aria-label="Edit puzzle and session"
+                title="Edit puzzle and session"
+                aria-haspopup="dialog"
+                className="icon-button"
+                disabled={busy || saving || !!pendingSolve || !session}
+                onClick={openSessions}
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
             <button
               data-timer
               className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
@@ -389,7 +406,14 @@ export default function App() {
               <article className="widget glass recent">
                 <header>
                   <h2>Recent solves</h2>
-                  <button className="text-button" onClick={() => setDialog('history')}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setHistoryFromManager(false);
+                      setHistorySessionId(preferences.activeSessionId);
+                      setDialog('history');
+                    }}
+                  >
                     See all <ArrowUpRight size={16} />
                   </button>
                 </header>
@@ -416,7 +440,7 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={() => setDialog('sessions')}>
+                  <button className="text-button" onClick={openSessions}>
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
@@ -442,7 +466,7 @@ export default function App() {
                 <header>
                   <h2>Scramble preview</h2>
                 </header>
-                <Preview scramble={scramble.scramble} event={puzzle} />
+                <PuzzleView scramble={scramble.scramble} event={puzzle} />
               </article>
             </section>
           </div>
@@ -471,18 +495,18 @@ export default function App() {
       {dialog && (
         <Dialog
           title={
-            dialog === 'delete-session'
-              ? 'Delete this session?'
-              : dialog === 'manual'
-                ? 'Add a solve'
-                : dialog === 'solve'
-                  ? 'Solve details'
-                  : dialog === 'history'
-                    ? 'Recent solves'
-                    : 'Sessions'
+            dialog === 'manual'
+              ? 'Add a solve'
+              : dialog === 'solve'
+                ? 'Solve details'
+                : dialog === 'history'
+                  ? 'Recent solves'
+                  : 'Puzzle and sessions'
           }
           onClose={close}
-          wide={dialog === 'history'}
+          wide={dialog === 'history' || dialog === 'sessions'}
+          allowOverflow={dialog === 'sessions'}
+          className={dialog === 'sessions' ? 'session-manager-dialog' : ''}
         >
           {(dialog === 'manual' || dialog === 'solve') && (
             <form
@@ -501,7 +525,7 @@ export default function App() {
                     if (ok) close();
                   });
                 } else {
-                  void saveSolve(duration).then((ok) => {
+                  void saveSolve(duration, 'none', true).then((ok) => {
                     if (ok) close();
                   });
                 }
@@ -575,7 +599,7 @@ export default function App() {
           {dialog === 'history' && (
             <>
               <div className="summary-grid">
-                {Object.entries(stats).map(([k, v]) => (
+                {Object.entries(historyStats).map(([k, v]) => (
                   <div key={k}>
                     <span>{k}</span>
                     <strong>{k === 'count' ? v : formatTime(v)}</strong>
@@ -583,15 +607,16 @@ export default function App() {
                 ))}
               </div>
               <div className="history-list">
-                {[...solves].reverse().map((s, i) => (
-                  <button key={s.id} className="solve-row" onClick={() => openSolve(s)}>
-                    <span>{solves.length - i}</span>
+                {[...historySolves].reverse().map((s, i) => (
+                  <button key={s.id} className="solve-row" onClick={() => openSolve(s, 'history')}>
+                    <span>{historySolves.length - i}</span>
                     <strong>{formatTime(value(s))}</strong>
                     <small>{s.note || new Date(s.timestamp).toLocaleTimeString()}</small>
                   </button>
                 ))}
               </div>
               <button
+                disabled={!!historySessionId && historySessionId !== preferences.activeSessionId}
                 onClick={() => {
                   setManual('');
                   setDialog('manual');
@@ -601,112 +626,21 @@ export default function App() {
               </button>
             </>
           )}
-          {dialog === 'delete-session' && (
-            <>
-              <p>
-                Delete “{session?.name}” and its {solves.length} solves? Export a backup first if
-                you want to keep them.
-              </p>
-              <div className="button-row">
-                <button onClick={() => setDialog('sessions')}>Keep session</button>
-                <button
-                  className="danger"
-                  onClick={() => {
-                    if (!session) return;
-                    const sid = session.id;
-
-                    void safeWrite(() =>
-                      db.transaction('rw', db.sessions, db.solves, async () => {
-                        await db.solves.where('sessionId').equals(sid).delete();
-                        await db.sessions.delete(sid);
-                      }),
-                    ).then((ok) => {
-                      if (ok) {
-                        const next = sessions.find((s) => s.id !== sid);
-
-                        if (next) store.setPreferences({ activeSessionId: next.id });
-                        close();
-                      }
-                    });
-                  }}
-                >
-                  Delete session
-                </button>
-              </div>
-            </>
-          )}
           {dialog === 'sessions' && (
-            <>
-              <button
-                className="danger session-delete"
-                disabled={sessions.length < 2}
-                onClick={() => setDialog('delete-session')}
-              >
-                Delete current session
-              </button>
-              <p className="subtle">
-                New sessions use {puzzles[puzzle].label}. Choose another puzzle from the scramble
-                bar. Keep at least one session.
-              </p>
-              <div className="session-list">
-                {sessions.map((s) => (
-                  <button
-                    key={s.id}
-                    className={s.id === session?.id ? 'chosen' : ''}
-                    onClick={() => {
-                      store.setPreferences({ activeSessionId: s.id });
-                      close();
-                    }}
-                  >
-                    {s.name}
-                    <small>{puzzles[s.puzzle].label}</small>
-                    {s.id === session?.id && <Check size={16} />}
-                  </button>
-                ))}
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!name.trim()) return;
-                  const s = { id: id(), name: name.trim(), createdAt: Date.now(), puzzle };
-
-                  void safeWrite(() => db.sessions.add(s)).then((ok) => {
-                    if (ok) {
-                      store.setPreferences({ activeSessionId: s.id });
-                      close();
-                    }
-                  });
-                }}
-              >
-                <label>
-                  Session name
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Evening practice"
-                  />
-                </label>
-                <div className="button-row">
-                  <button
-                    type="button"
-                    disabled={!name.trim() || !session}
-                    onClick={() => {
-                      if (session)
-                        void safeWrite(() =>
-                          db.sessions.update(session.id, { name: name.trim() }),
-                        ).then((ok) => {
-                          if (ok) close();
-                        });
-                    }}
-                  >
-                    Rename current
-                  </button>
-                  <button className="primary" type="submit">
-                    New session
-                  </button>
-                </div>
-              </form>
-            </>
+            <SessionManager
+              sessions={sessions}
+              activeId={preferences.activeSessionId}
+              selectedId={managerSessionId}
+              onSelect={setManagerSessionId}
+              onPuzzleChange={setManagerPuzzle}
+              onViewAll={(id) => {
+                setHistoryFromManager(true);
+                setHistorySessionId(id);
+                setDialog('history');
+              }}
+              onOpenSolve={(solve) => openSolve(solve, 'sessions')}
+              precision={a.precision}
+            />
           )}
         </Dialog>
       )}

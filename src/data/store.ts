@@ -37,6 +37,8 @@ export const useStore = create<Store>((set, get) => ({
   error: '',
   workspace: defaultWorkspace(),
   preferences: {
+    automaticSessions: true,
+    sessionBreakHours: 4,
     inspection: false,
     holdMs: 300,
     activeSessionId: '',

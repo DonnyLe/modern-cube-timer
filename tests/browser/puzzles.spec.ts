@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { puzzleEvents, puzzles } from '../../src/core/puzzles';
 
 async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
+  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
@@ -25,14 +26,24 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   await expect(page.getByRole('option', { name: puzzles[event].label, exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(picker).toHaveText(puzzles[event].label);
+  await expect(picker).toBeEnabled();
+  await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-puzzle', event);
+  await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', /3d|face/, {
+    timeout: 30000,
+  });
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
-  test.setTimeout(180000);
+  test.setTimeout(300000);
   await page.goto('/');
 
   for (const event of puzzleEvents) {
     await selectPuzzle(page, event);
+    // The preview shows the solved state until the scramble arrives, so wait for the scramble first.
+    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+      timeout: 60000,
+    });
     await expect(page.locator('.cube-preview')).toHaveAttribute('data-puzzle', event);
     await expect(page.locator('.cube-preview')).toHaveAttribute('data-status', 'ready', {
       timeout: 60000,
@@ -41,7 +52,6 @@ test('all supported puzzles generate a scramble and a matching SVG preview', asy
     await expect(page.locator('.preview-caption')).toHaveText(
       `${puzzles[event].label} state preview`,
     );
-    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled();
   }
 });
 test('puzzle switching separates solves, persists selection, and is locked during timing', async ({
@@ -63,12 +73,13 @@ test('puzzle switching separates solves, persists selection, and is locked durin
   await page.keyboard.down('Space');
   await page.waitForTimeout(350);
   await page.keyboard.up('Space');
-  await expect(page.getByLabel('Puzzle', { exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeDisabled();
+  await expect(page.locator('.session-label')).toHaveCount(0);
   await page.keyboard.down('Space');
   await page.keyboard.up('Space');
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await page.reload();
-  await expect(page.getByLabel('Puzzle', { exact: true })).toHaveText('2×2×2');
+  await expect(page.locator('.recent footer')).toContainText('2x2');
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await selectPuzzle(page, '333');
   await expect(page.locator('.recent-list')).toContainText('12.84');
@@ -106,10 +117,8 @@ test('Megaminx uses the available width without an inner scrollbar and navigatio
   for (const width of [850, 390]) {
     await page.setViewportSize({ width, height: 900 });
     const navBox = (await page.locator('.segmented').boundingBox())!;
-    const selectorBox = (await page.locator('.puzzle-selector').boundingBox())!;
     const actionsBox = (await page.locator('.header-actions').boundingBox())!;
 
-    expect(navBox.y + navBox.height).toBeLessThanOrEqual(selectorBox.y);
     expect(navBox.y + navBox.height).toBeLessThanOrEqual(actionsBox.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect(await text.evaluate((element) => element.scrollHeight <= element.clientHeight + 1)).toBe(
@@ -122,16 +131,16 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   await page.goto('/');
   const actions = page.locator('.scramble-actions');
   const text = page.locator('.scramble-text');
-  const selector = page.getByRole('combobox', { name: 'Puzzle', exact: true });
   const navBox = (await page.locator('.segmented').boundingBox())!;
   const topbarBox = (await page.locator('.topbar').boundingBox())!;
 
   expect(navBox.x + navBox.width / 2).toBeCloseTo(topbarBox.x + topbarBox.width / 2, 0);
-  const selectorBox = (await selector.boundingBox())!;
-  const headerActionsBox = (await page.locator('.header-actions').boundingBox())!;
-
-  expect(selectorBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width);
-  expect(selectorBox.x + selectorBox.width).toBeLessThanOrEqual(headerActionsBox.x);
+  await expect(
+    page
+      .locator('.timer-session-heading')
+      .getByRole('button', { name: 'Edit puzzle and session', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
 
   for (const event of ['333', '666', '222'] as const) {
     await selectPuzzle(page, event);
@@ -171,6 +180,7 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
   page,
 }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
@@ -186,11 +196,52 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
   await page.keyboard.down('Space');
   await page.waitForTimeout(350);
   await page.keyboard.up('Space');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await picker.click();
+  await expect(page.getByRole('listbox')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(picker).toBeFocused();
+  await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
+  await expect(page.locator('.app')).not.toHaveClass(/is-running/);
   await expect(page.locator('.recent-list')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Timer. Hold to start, press to stop' }),
   ).toBeVisible();
 });
+
+for (const viewport of [
+  { width: 1440, height: 1000 },
+  { width: 390, height: 600 },
+]) {
+  test(`puzzle dropdown's last option receives pointer input at ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+    const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
+
+    await picker.click();
+    await page.keyboard.press('End');
+    const clock = page.getByRole('option', { name: 'Clock', exact: true });
+
+    await expect(clock).toBeFocused();
+    await expect
+      .poll(() =>
+        clock.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+
+          return hit !== null && element.contains(hit);
+        }),
+      )
+      .toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('puzzle-dropdown.png') });
+    await clock.click();
+    await expect(picker).toHaveText('Clock');
+    await expect(picker).toBeEnabled();
+    await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+    await expect(page.locator('.recent footer')).toContainText('Clock');
+  });
+}

@@ -3,7 +3,7 @@ import type { Session, Solve, Workspace, Preset } from '../core/types';
 import { defaultWorkspace } from '../layout/defaults';
 import { validateWorkspace } from './validate';
 import { preferencesSchema } from './schemas';
-import { puzzles, type PuzzleEvent } from '../core/puzzles';
+import { sessionName } from '../utils/sessionName';
 
 class TurnDB extends Dexie {
   solves!: Table<Solve, string>;
@@ -34,7 +34,8 @@ export async function initialize() {
     if (!(await db.sessions.count())) {
       const session: Session = {
         id: id(),
-        name: 'Afternoon practice',
+        name: sessionName('333'),
+        automaticName: true,
         createdAt: Date.now(),
         puzzle: '333',
       };
@@ -51,13 +52,7 @@ export async function initialize() {
   const parsedPreferences = preferencesSchema.safeParse(storedPreferences);
   const preferences = parsedPreferences.success
     ? parsedPreferences.data
-    : {
-        inspection: false,
-        holdMs: 300,
-        activeSessionId: first!.id,
-        hideWidgetsInFocus: true,
-        hideClockWhileSolving: false,
-      };
+    : preferencesSchema.parse({ activeSessionId: first!.id });
 
   if (!(await db.sessions.get(preferences.activeSessionId)))
     preferences.activeSessionId = first!.id;
@@ -93,22 +88,4 @@ export async function saveSetting(key: string, value: unknown) {
         : value;
 
   await db.settings.put({ key, value: structuredClone(validated) });
-}
-
-export async function sessionForPuzzle(puzzle: PuzzleEvent): Promise<Session> {
-  return db.transaction('rw', db.sessions, async () => {
-    const existing = await db.sessions.where('puzzle').equals(puzzle).sortBy('createdAt');
-
-    if (existing.length) return existing[existing.length - 1];
-    const session: Session = {
-      id: id(),
-      name: `${puzzles[puzzle].label} practice`,
-      puzzle,
-      createdAt: Date.now(),
-    };
-
-    await db.sessions.add(session);
-
-    return session;
-  });
 }

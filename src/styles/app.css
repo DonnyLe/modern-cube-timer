@@ -152,8 +152,7 @@ button svg {
   opacity: 0.65;
 }
 .is-focused .topbar .segmented,
-.is-focused .topbar .header-actions,
-.is-focused .puzzle-selector {
+.is-focused .topbar .header-actions {
   opacity: 0;
   transform: translateY(-8px);
   visibility: hidden;
@@ -285,25 +284,8 @@ button svg {
 .is-focused .scramble-text {
   font-size: clamp(16px, 2cqi, 28px);
 }
-.is-focused .session-label {
-  font-size: clamp(13px, 1.15vw, 16px);
-}
 .is-focused .timer-hint {
   font-size: clamp(16px, 1.6vw, 22px);
-}
-.session-label {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 2.4px;
-  border: 0;
-  padding: 0;
-  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
-}
-.session-label svg {
-  opacity: 0;
-}
-.session-label:hover svg {
-  opacity: 1;
 }
 .timer-number {
   display: block;
@@ -314,6 +296,62 @@ button svg {
   padding: 8px 30px 0;
   touch-action: none;
   user-select: none;
+}
+.timer-session-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 20px 8px;
+  max-width: calc(100% - 40px);
+}
+.timer-session-heading .icon-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
+}
+.timer-session-heading .icon-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--accent);
+}
+.timer-session-heading .icon-button svg {
+  width: 14px;
+  height: 14px;
+}
+.is-focused .timer-session-heading .icon-button {
+  display: none;
+}
+.timer-session-name {
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2.4px;
+}
+.is-focused .timer-session-name {
+  font-size: clamp(13px, 1.15vw, 16px);
+}
+.manager-notice {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+  padding: 14px 18px;
+  background: var(--tint);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  font-size: 14px;
 }
 .timer-number,
 .timer-number:hover:not(:disabled),
@@ -517,6 +555,16 @@ small {
 .dialog.wide {
   width: min(720px, calc(100% - 32px));
 }
+.dialog-overflow {
+  overflow: visible;
+  backdrop-filter: none;
+  background: var(--tint);
+}
+.dialog-overflow .dialog-content {
+  max-height: 85svh;
+  overflow-y: auto;
+  border-radius: inherit;
+}
 .dialog::backdrop {
   background: #0e1b3433;
   backdrop-filter: blur(5px);
@@ -584,15 +632,6 @@ textarea {
 .detail-scramble {
   font-family: monospace;
   line-height: 1.8;
-}
-.session-list {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-.session-list button {
-  justify-content: space-between;
-  text-align: left;
 }
 .chosen {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -1009,11 +1048,6 @@ input[type='range'] {
   .segmented {
     margin-top: 8px;
   }
-  .puzzle-selector {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    justify-self: end;
-  }
   .scramble-bar {
     gap: 10px;
   }
@@ -1097,5 +1131,488 @@ input[type='range'] {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+.puzzle-face-preview {
+  width: 100%;
+  height: 190px;
+}
+.puzzle-face-preview svg {
+  display: block;
+}
+
+.dialog.session-manager-dialog {
+  --radius: 16px;
+  --control-radius: 10px;
+  --border: 1px;
+  --font-scale: 1;
+  font-size: 16px;
+  max-height: 90svh;
+  width: min(1160px, calc(100% - 32px));
+}
+.session-manager-dialog .dialog-content {
+  padding: 20px;
+  max-height: 90svh;
+}
+.session-manager-body {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(270px, 1.15fr) minmax(260px, 1fr);
+  grid-template-areas: 'art details sidebar';
+  grid-template-rows: 1fr;
+  min-height: min(590px, 74svh);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+}
+.manager-art {
+  grid-area: art;
+  padding: 24px 20px;
+  min-width: 0;
+}
+.manager-details {
+  grid-area: details;
+  padding: 24px 20px;
+  min-width: 0;
+}
+.manager-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  height: min(588px, 74svh);
+  max-height: min(588px, 74svh);
+  min-height: 0;
+  padding: 24px 20px;
+  min-width: 0;
+}
+.manager-column-header {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  gap: 12px;
+}
+.manager-column-header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  overflow-wrap: anywhere;
+}
+.manager-column-header .custom-select-trigger {
+  min-width: 0;
+  flex: 1;
+  width: auto;
+}
+.manager-column-header.puzzle-selector {
+  font-size: 15px;
+}
+.manager-sidebar-heading {
+  flex-shrink: 0;
+  justify-content: space-between;
+}
+.manager-sidebar-heading .primary {
+  padding: 8px 12px;
+  font-size: 15px;
+}
+.manager-metadata {
+  color: color-mix(in srgb, var(--ink) 65%, var(--accent));
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 1;
+  margin-top: 8px;
+}
+.manager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+}
+.manager-actions button {
+  font-size: 15px;
+}
+.manager-statistics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 26px 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--outline);
+  gap: 12px;
+}
+.manager-statistics div + div {
+  border-left: 1px solid var(--outline);
+  padding-left: 12px;
+}
+.manager-statistics span {
+  display: block;
+  font-size: 15px;
+  opacity: 0.7;
+}
+.manager-statistics strong {
+  display: block;
+  font-size: clamp(24px, 2vw, 28px);
+  font-weight: 650;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.manager-solves-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.manager-solves-heading h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+.manager-solves-heading button {
+  font-size: 15px;
+}
+.manager-solves .solve-row {
+  grid-template-columns: 24px auto 1fr 14px;
+  padding: 10px 0;
+  gap: 10px;
+}
+.manager-solves .solve-row small {
+  text-align: left;
+  font-size: 14px;
+}
+.manager-solves .solve-row strong {
+  font-size: 16px;
+}
+.manager-solves .solve-row svg {
+  color: var(--accent);
+  opacity: 1;
+  fill: var(--accent);
+}
+.manager-empty {
+  padding: 24px 0;
+  font-size: 15px;
+}
+.manager-search {
+  position: relative;
+}
+.manager-search > svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  opacity: 1;
+}
+.manager-search input {
+  width: 100%;
+  padding-left: 36px;
+  padding-right: 78px;
+  font-size: 15px;
+}
+.manager-session-list {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.manager-session-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 32px 18px 12px;
+  width: 100%;
+  min-height: 94px;
+  background: transparent;
+  min-width: 0;
+  text-align: left;
+  border-color: transparent;
+}
+.manager-session-row:active {
+  transform: scale(0.98);
+}
+.manager-session-row.chosen {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: transparent;
+}
+.manager-puzzle-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: block;
+}
+.manager-puzzle-icon > svg {
+  width: 100%;
+  height: 100%;
+}
+.manager-session-copy {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.manager-session-copy strong {
+  font-size: 16px;
+  font-weight: 550;
+}
+.manager-session-copy small {
+  font-size: 13px;
+  opacity: 1;
+  line-height: 1.5;
+}
+.manager-current {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 4px 8px;
+  border-radius: var(--control-radius);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.manager-rename {
+  margin-top: 16px;
+}
+.puzzle-artwork {
+  margin-top: 28px;
+}
+.puzzle-artwork-stage {
+  width: 100%;
+  height: 340px;
+}
+.puzzle-artwork[data-mode='face'] .puzzle-artwork-stage {
+  display: none;
+}
+.puzzle-artwork .puzzle-face-preview {
+  width: 100%;
+  height: 300px;
+}
+.puzzle-artwork-caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.puzzle-artwork-caption small {
+  font-size: 15px;
+  opacity: 1;
+}
+
+.session-manager-dialog header {
+  margin: 4px 12px 16px;
+}
+.session-manager-dialog header h2 {
+  font-size: 28px;
+  font-weight: 600;
+}
+.session-manager-body .primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--manager-on-accent);
+}
+.session-manager-body .primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 90%, var(--ink));
+}
+.session-manager-body .text-button {
+  color: var(--accent);
+}
+.manager-actions > button + button {
+  padding-left: 16px;
+  border-left: 1px solid var(--outline);
+  border-radius: 0;
+}
+.manager-session-entry {
+  position: relative;
+}
+.manager-session-entry + .manager-session-entry {
+  border-top: 1px solid var(--outline);
+}
+.manager-session-menu {
+  position: absolute;
+  top: 16px;
+  right: 4px;
+  border: 0;
+}
+.manager-session-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.manager-details,
+.manager-sidebar {
+  position: relative;
+  border-left: 0;
+}
+.manager-details::before,
+.manager-sidebar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: var(--outline);
+}
+
+.manager-session-toolbar {
+  flex-shrink: 0;
+  margin: 16px 0;
+}
+.manager-search-actions {
+  position: absolute;
+  right: 5px;
+  top: 4px;
+  display: flex;
+  gap: 2px;
+}
+.manager-search-actions .icon-button {
+  border: 0;
+}
+.manager-search-actions button[aria-pressed='true'] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.manager-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 0;
+}
+.manager-filters label {
+  font-size: 12px;
+  gap: 6px;
+  min-width: 0;
+}
+.manager-filters .custom-select-trigger {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+.manager-filters > button {
+  justify-self: start;
+  font-size: 12px;
+}
+.manager-selection-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 0;
+  flex-wrap: wrap;
+}
+.manager-selection-controls label {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 6px;
+  font-size: 13px;
+}
+.manager-selection-controls small {
+  margin-left: auto;
+  font-size: 12px;
+}
+.manager-selection-controls .text-button {
+  font-size: 12px;
+}
+.manager-session-entry.is-selecting {
+  padding-left: 26px;
+}
+.manager-session-checkbox {
+  position: absolute;
+  left: 0;
+  top: 38px;
+}
+.manager-session-toolbar input[type='checkbox'],
+.manager-session-checkbox {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.manager-delete-confirmation {
+  flex-shrink: 0;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.manager-delete-confirmation button {
+  font-size: 13px;
+}
+.manager-row-menu {
+  position: absolute;
+  right: 4px;
+  top: 40px;
+  z-index: 2;
+  background: var(--tint);
+  padding: 4px;
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px #0002;
+}
+.manager-row-menu button {
+  font-size: 13px;
+  padding: 10px;
+  border: 0;
+}
+
+@media (max-width: 1050px) {
+  .session-manager-body {
+    grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+    grid-template-areas: 'art details' 'sidebar sidebar';
+    grid-template-rows: auto auto;
+  }
+  .manager-sidebar {
+    height: min(380px, 74svh);
+    max-height: min(380px, 74svh);
+    border-top: 1px solid var(--outline);
+  }
+  .manager-column-header h3 {
+    font-size: 18px;
+  }
+  .manager-sidebar::before {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .session-manager-dialog .dialog-content {
+    padding: 18px;
+  }
+  .session-manager-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'art' 'details' 'sidebar';
+    grid-template-rows: auto auto auto;
+    min-height: 0;
+  }
+  .manager-art,
+  .manager-details,
+  .manager-sidebar {
+    padding: 20px;
+  }
+  .manager-details {
+    border-top: 1px solid var(--outline);
+  }
+  .puzzle-artwork-stage {
+    height: 180px;
+  }
+  .puzzle-artwork .puzzle-face-preview {
+    height: 160px;
+  }
+  .puzzle-artwork {
+    margin-top: 12px;
+  }
+  .manager-statistics strong {
+    font-size: 24px;
+  }
+  .manager-details::before {
+    display: none;
+  }
+  .session-manager-dialog header {
+    margin: 0 0 16px;
+  }
+  .session-manager-dialog header h2 {
+    font-size: 22px;
   }
 }
