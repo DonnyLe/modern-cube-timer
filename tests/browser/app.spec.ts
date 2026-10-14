@@ -105,7 +105,7 @@ test('pattern backgrounds can be previewed, selected, and persist', async ({ pag
   await dots.check();
   await expect(page.locator('.background')).toHaveCSS('background-image', /radial-gradient/);
   await spacing.fill('40');
-  await expect(page.getByText('Pointer response')).toBeVisible();
+  await expect(page.getByRole('slider', { name: 'Pointer response', exact: true })).toBeVisible();
   await page.getByRole('radio', { name: 'Grid' }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.reload();

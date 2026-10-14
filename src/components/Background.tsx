@@ -4,7 +4,7 @@ import { backgroundCss, patterns } from '../core/backgrounds';
 
 const vertex = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
 const fragment = `precision mediump float;uniform vec2 resolution;uniform vec2 mouse;uniform float time;uniform float strength;uniform float softness;uniform vec3 base;uniform vec3 a;uniform vec3 b;
-void main(){vec2 uv=gl_FragCoord.xy/resolution;vec2 delta=uv-mouse;float d=length(delta*vec2(resolution.x/resolution.y,1.));uv+=delta*exp(-d*d*9.)*strength*.7;float t=time*.05;uv.x+=sin(uv.y*7.+t)*.045;uv.y+=cos(uv.x*6.-t)*.045;float blue=sin(uv.x*9.+uv.y*6.+sin(uv.y*8.+t))*0.5+0.5;float peach=sin(uv.x*12.-uv.y*8.+t+2.)*.5+.5;blue=smoothstep(.12+softness*.13, .92, blue);peach=smoothstep(.45,.98,peach);vec3 col=mix(base,a,blue*.67);col=mix(col,b,peach*.42);float center=exp(-pow((uv.x-.5)*2.,2.)*3.-pow((uv.y-.55)*2.,2.)*5.);col=mix(col,base,center*.75);gl_FragColor=vec4(col,1.);}`;
+void main(){vec2 uv=gl_FragCoord.xy/resolution;vec2 delta=uv-mouse;float d=length(delta*vec2(resolution.x/resolution.y,1.));uv+=delta*exp(-d*d*9.)*strength*.7;float t=time*.65;uv.x+=sin(uv.y*7.+t)*.045;uv.y+=cos(uv.x*6.-t)*.045;float blue=sin(uv.x*9.+uv.y*6.+sin(uv.y*8.+t))*0.5+0.5;float peach=sin(uv.x*12.-uv.y*8.+t+2.)*.5+.5;blue=smoothstep(.12+softness*.13, .92, blue);peach=smoothstep(.45,.98,peach);vec3 col=mix(base,a,blue*.67);col=mix(col,b,peach*.42);float center=exp(-pow((uv.x-.5)*2.,2.)*3.-pow((uv.y-.55)*2.,2.)*5.);col=mix(col,base,center*.75);gl_FragColor=vec4(col,1.);}`;
 // Patterns are drawn in device pixels, so they need highp to stay crisp on large screens.
 const pattern = `#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
@@ -40,6 +40,8 @@ function covered(target: EventTarget | null) {
 
 export function Background({ appearance: a, paused }: { appearance: Appearance; paused: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const elapsed = useRef(0);
+  const position = useRef([0.5, 0.5]);
 
   useEffect(() => {
     const canvas = ref.current!;
@@ -55,12 +57,11 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
     let frame = 0,
       lost = false,
       stopped = false,
-      time = 0,
-      previous = 0,
+      previous = performance.now(),
       presence = 0,
       active = 0;
-    const mouse = [0.5, 0.5],
-      target = [0.5, 0.5];
+    const mouse = position.current,
+      target = [...mouse];
     const media = matchMedia('(prefers-reduced-motion: reduce)');
 
     const compile = (type: number, source: string) => {
@@ -132,20 +133,34 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
     gl.uniform1f(uniforms.kind, kind);
 
     const render = (now: number) => {
-      if (lost || stopped) return;
-      const animated = a.motion && !paused && !media.matches && !document.hidden;
+      if (lost || stopped || document.hidden) return;
+      const motionEnabled = a.motion && !media.matches;
+      const animated = motionEnabled && !paused;
+      const delta = now - previous;
+
+      // A decorative background needs only 30 draws per second, including on high-refresh phones.
+      if (animated && delta < 1000 / 30 - 0.5) {
+        frame = requestAnimationFrame(render);
+
+        return;
+      }
 
       if (animated) {
-        time += Math.min(50, now - previous) * 0.001 * a.intensity;
-        // Pattern drift repeats every 10 units, so wrapping keeps float precision on long sessions.
-        if (kind >= 0) time %= 10;
-        presence += (active - presence) * 0.06;
-        mouse[0] += (target[0] - mouse[0]) * 0.045;
-        mouse[1] += (target[1] - mouse[1]) * 0.045;
+        elapsed.current +=
+          Math.min(100, delta) * 0.001 * (kind < 0 ? Math.max(0.05, a.intensity) : a.intensity);
+        const smoothing = 1 - Math.pow(1 - 0.045, delta / (1000 / 60));
+
+        presence += (active - presence) * (1 - Math.pow(1 - 0.06, delta / (1000 / 60)));
+        mouse[0] += (target[0] - mouse[0]) * smoothing;
+        mouse[1] += (target[1] - mouse[1]) * smoothing;
       }
 
       previous = now;
-      const ratio = Math.min(devicePixelRatio, 1.5);
+      const ratio = Math.min(
+        devicePixelRatio,
+        1.5,
+        Math.sqrt(2_000_000 / (innerWidth * innerHeight)),
+      );
       const w = Math.round(innerWidth * ratio),
         h = Math.round(innerHeight * ratio);
 
@@ -159,9 +174,8 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
       gl.uniform1f(uniforms.spacing, a.patternSpacing * ratio);
       gl.uniform2f(uniforms.resolution, w, h);
       gl.uniform2fv(uniforms.mouse, mouse);
-      gl.uniform1f(uniforms.time, time);
-      // The effect only shows while a pointer is over open background, so it eases back to rest.
-      gl.uniform1f(uniforms.strength, animated ? a.distortion * presence : 0);
+      gl.uniform1f(uniforms.time, kind >= 0 ? elapsed.current % 10 : elapsed.current);
+      gl.uniform1f(uniforms.strength, motionEnabled ? a.distortion * presence : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       canvas.style.opacity = '1';
       if (animated) frame = requestAnimationFrame(render);
@@ -169,6 +183,7 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
 
     const restart = () => {
       cancelAnimationFrame(frame);
+      previous = performance.now() - 1000 / 30;
       render(performance.now());
     };
 
