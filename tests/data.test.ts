@@ -111,6 +111,24 @@ describe('Zod boundaries', () => {
     expect(w.appearance.blur).toBe(defaultWorkspace().appearance.blur);
     expect(w.appearance).not.toHaveProperty('unsafe');
   });
+  it('restores pattern backgrounds and defaults their controls for older settings', () => {
+    const older = migrateWorkspace({ version: 1, appearance: { background: 'gradient' } });
+
+    expect(older.appearance.patternSpacing).toBe(28);
+    expect(older.appearance.patternContrast).toBe(0.35);
+    const w = migrateWorkspace({
+      version: 1,
+      appearance: { background: 'triangles', patternSpacing: 40, patternContrast: 0.6 },
+    });
+
+    expect(w.appearance).toMatchObject({
+      background: 'triangles',
+      patternSpacing: 40,
+      patternContrast: 0.6,
+    });
+    expect(() => migrateWorkspace({ version: 1, appearance: { background: 'waves' } })).toThrow();
+    expect(() => migrateWorkspace({ version: 1, appearance: { patternSpacing: 8 } })).toThrow();
+  });
   it.each([NaN, Infinity, -1, 41, '12'])('rejects malformed blur %s without coercion', (blur) => {
     expect(() => migrateWorkspace({ version: 1, appearance: { blur } })).toThrow();
   });

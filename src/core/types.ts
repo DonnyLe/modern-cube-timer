@@ -55,14 +55,17 @@ export interface Palette {
   colorA: string;
   colorB: string;
 }
+export type BackgroundStyle = 'gradient' | 'solid' | 'dots' | 'grid' | 'lines' | 'triangles';
 export interface Appearance extends Surface {
   controlRadius: number;
   theme: 'light' | 'dark';
   font: 'system' | 'editorial' | 'mono';
   shadow: number;
   glass: number;
-  background: 'gradient' | 'solid';
+  background: BackgroundStyle;
   softness: number;
+  patternSpacing: number;
+  patternContrast: number;
   intensity: number;
   distortion: number;
   motion: boolean;

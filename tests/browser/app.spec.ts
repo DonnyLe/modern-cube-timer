@@ -93,3 +93,25 @@ test('mobile workspace fits and settings apply', async ({ page }) => {
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await expect(page.locator('.timer-hint')).toHaveText('Press space to inspect');
 });
+test('pattern backgrounds can be previewed, selected, and persist', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  const spacing = page.locator('.range-label', { hasText: 'Pattern spacing' }).locator('input');
+
+  await expect(spacing).toHaveCount(0);
+  const dots = page.getByRole('radio', { name: 'Dots' });
+
+  await dots.check();
+  await expect(page.locator('.background')).toHaveCSS('background-image', /radial-gradient/);
+  await spacing.fill('40');
+  await expect(page.getByText('Pointer response')).toBeVisible();
+  await page.getByRole('radio', { name: 'Grid' }).check();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.reload();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Grid' })).toBeChecked();
+  await expect(spacing).toHaveValue('40');
+  await page.getByRole('radio', { name: 'Solid' }).check();
+  await expect(page.getByLabel('Background motion')).toHaveCount(0);
+});
