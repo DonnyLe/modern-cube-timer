@@ -20,7 +20,7 @@ import { db, newSession, recentSessionForPuzzle } from '../data/db';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';
 import { PuzzleArtwork } from './PuzzleArtwork';
-import { PuzzleIcon } from './PuzzleIcon';
+import { PuzzlePreview } from './PuzzlePreview';
 
 export function SessionManager({
   sessions,
@@ -534,7 +534,7 @@ export function SessionManager({
                 disabled={working}
                 onClick={() => (selecting ? toggleChecked(session.id) : select(session))}
               >
-                <PuzzleIcon puzzle={session.puzzle} />
+                <PuzzlePreview event={session.puzzle} faceOnly className="manager-puzzle-icon" />
                 <span className="manager-session-copy">
                   <strong>{session.name}</strong>
                   <span className="manager-session-meta">

@@ -207,6 +207,7 @@ test('search and filters scope Select all, bulk deletion retains other history, 
   await page.reload();
   await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(4);
+  await expect(page.locator('.manager-puzzle-icon[data-status="ready"]')).toHaveCount(4);
   await page.getByRole('button', { name: 'Filter sessions', exact: true }).click();
   await page.getByRole('combobox', { name: 'Filter by puzzle' }).click();
   await page.keyboard.press('Home');
