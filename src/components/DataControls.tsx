@@ -9,7 +9,7 @@ import {
   commitImport,
   type ImportPreview,
 } from '../data/transfer';
-import { Dialog } from './Dialog';
+import { Dialog } from './ui/Dialog';
 
 export function DataControls() {
   const { workspace, setWorkspace, setError } = useStore(),
@@ -77,62 +77,67 @@ export function DataControls() {
         />
       </label>
       {notice && <p role="status">{notice}</p>}
-      {preview && (
-        <Dialog
-          title="Review import"
-          onClose={() => {
-            if (!working) setPreview(null);
-          }}
-        >
-          <p>
-            {preview.solves.length} solves across {preview.sessions.length} sessions.
-          </p>
-          <p className="subtle">This adds separate sessions. Your existing solves will be kept.</p>
-          {preview.issues.length > 0 && (
-            <details open>
-              <summary>{preview.issues.length} records need attention</summary>
-              <ul>
-                {preview.issues.slice(0, 50).map((issue, i) => (
-                  <li key={i}>{issue}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {preview.workspace && (
-            <label className="toggle-row">
-              Also restore appearance
-              <input
-                type="checkbox"
-                checked={restore}
-                onChange={(e) => setRestore(e.target.checked)}
-              />
-            </label>
-          )}
-          <div className="button-row">
-            <button onClick={() => setPreview(null)} disabled={working}>
-              Cancel
-            </button>
-            <button
-              className="primary"
-              disabled={working || !preview.sessions.length}
-              onClick={() => {
-                setWorking(true);
-                void safeWrite(() => commitImport(preview)).then((ok) => {
-                  if (ok) {
-                    if (restore && preview.workspace) setWorkspace(preview.workspace);
-                    setNotice(`${preview.solves.length} solves imported.`);
-                    setPreview(null);
-                  }
+      <Dialog
+        open={!!preview}
+        title="Review import"
+        onClose={() => {
+          if (!working) setPreview(null);
+        }}
+      >
+        {preview && (
+          <>
+            <p>
+              {preview.solves.length} solves across {preview.sessions.length} sessions.
+            </p>
+            <p className="subtle">
+              This adds separate sessions. Your existing solves will be kept.
+            </p>
+            {preview.issues.length > 0 && (
+              <details open>
+                <summary>{preview.issues.length} records need attention</summary>
+                <ul>
+                  {preview.issues.slice(0, 50).map((issue, i) => (
+                    <li key={i}>{issue}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {preview.workspace && (
+              <label className="toggle-row">
+                Also restore appearance
+                <input
+                  type="checkbox"
+                  checked={restore}
+                  onChange={(e) => setRestore(e.target.checked)}
+                />
+              </label>
+            )}
+            <div className="button-row">
+              <button onClick={() => setPreview(null)} disabled={working}>
+                Cancel
+              </button>
+              <button
+                className="primary"
+                disabled={working || !preview.sessions.length}
+                onClick={() => {
+                  setWorking(true);
+                  void safeWrite(() => commitImport(preview)).then((ok) => {
+                    if (ok) {
+                      if (restore && preview.workspace) setWorkspace(preview.workspace);
+                      setNotice(`${preview.solves.length} solves imported.`);
+                      setPreview(null);
+                    }
 
-                  setWorking(false);
-                });
-              }}
-            >
-              {working ? 'Importing…' : 'Import valid records'}
-            </button>
-          </div>
-        </Dialog>
-      )}
+                    setWorking(false);
+                  });
+                }}
+              >
+                {working ? 'Importing…' : 'Import valid records'}
+              </button>
+            </div>
+          </>
+        )}
+      </Dialog>
     </>
   );
 }

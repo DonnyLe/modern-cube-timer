@@ -6,25 +6,8 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
-  await picker.focus();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('listbox')).toBeVisible();
-  // Use the dropdown's keyboard navigation rather than racing Firefox's
-  // pointer handling while the popup positions and scrolls its current item.
-  await page.keyboard.press('Home');
-  await expect(
-    page.getByRole('option', { name: puzzles[puzzleEvents[0]].label, exact: true }),
-  ).toBeFocused();
-
-  for (let index = 0; index < puzzleEvents.indexOf(event); index++) {
-    await page.keyboard.press('ArrowDown');
-    await expect(
-      page.getByRole('option', { name: puzzles[puzzleEvents[index + 1]].label, exact: true }),
-    ).toBeFocused();
-  }
-
-  await expect(page.getByRole('option', { name: puzzles[event].label, exact: true })).toBeFocused();
-  await page.keyboard.press('Enter');
+  await picker.click();
+  await page.getByRole('option', { name: puzzles[event].label, exact: true }).click();
   await expect(picker).toHaveText(puzzles[event].label);
   await expect(picker).toBeEnabled();
   await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-puzzle', event);
@@ -32,6 +15,7 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
     timeout: 30000,
   });
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
@@ -184,29 +168,30 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
-  await picker.focus();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('listbox')).toBeVisible();
+  await picker.click();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('m');
   await expect(page.getByRole('option', { name: 'Megaminx', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(picker).toHaveText('Megaminx');
   await expect(picker).toBeFocused();
   await picker.click();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.down('Space');
   await page.waitForTimeout(350);
   await page.keyboard.up('Space');
-  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByRole('listbox')).toBeHidden();
   await picker.click();
-  await expect(page.getByRole('listbox')).toBeVisible();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByRole('listbox')).toBeHidden();
   await expect(picker).toBeFocused();
   await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-running/);
   await expect(page.locator('.recent-list')).toHaveCount(0);
+  // The open modal hides the page from assistive tech, so include hidden elements.
   await expect(
-    page.getByRole('button', { name: 'Timer. Hold to start, press to stop' }),
+    page.getByRole('button', { name: 'Timer. Hold to start, press to stop', includeHidden: true }),
   ).toBeVisible();
 });
 
@@ -223,6 +208,7 @@ for (const viewport of [
     const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
     await picker.click();
+    await expect(page.getByRole('option', { selected: true })).toBeFocused();
     await page.keyboard.press('End');
     const clock = page.getByRole('option', { name: 'Clock', exact: true });
 

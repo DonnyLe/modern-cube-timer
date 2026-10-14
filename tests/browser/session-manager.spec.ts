@@ -12,6 +12,7 @@ test('puzzle changes create a session with a notice or resume recent activity', 
 
   const chooseTwo = async () => {
     await picker.click();
+    await expect(page.getByRole('option', { selected: true })).toBeFocused();
     await page.keyboard.press('Home');
     await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
     await page.keyboard.press('Enter');
@@ -62,6 +63,7 @@ test('puzzle changes create a session with a notice or resume recent activity', 
   );
   await edit.click();
   await picker.click();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('Home');
   await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -212,6 +214,7 @@ test('search and filters scope Select all, bulk deletion retains other history, 
   });
   await page.getByRole('button', { name: 'Filter sessions', exact: true }).click();
   await page.getByRole('combobox', { name: 'Filter by puzzle' }).click();
+  await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('Home');
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('option', { name: '2×2×2', exact: true })).toBeFocused();

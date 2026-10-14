@@ -542,6 +542,12 @@ small {
   fill: var(--accent);
 }
 .dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  margin: auto;
+  height: fit-content;
+  overflow: auto;
   border: 1px solid var(--outline);
   color: var(--ink);
   background: color-mix(in srgb, var(--tint) 94%, transparent);
@@ -565,9 +571,15 @@ small {
   overflow-y: auto;
   border-radius: inherit;
 }
-.dialog::backdrop {
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   background: #0e1b3433;
   backdrop-filter: blur(5px);
+}
+.dialog:focus {
+  outline: none;
 }
 .dialog-content {
   padding: 26px;
@@ -912,13 +924,15 @@ input[type='range'] {
   flex-shrink: 0;
   transition: transform 150ms ease;
 }
-.custom-select-trigger[data-state='open'] .custom-select-icon {
+.custom-select-trigger[data-popup-open] .custom-select-icon {
   transform: rotate(180deg);
 }
+.custom-select-positioner {
+  z-index: 110;
+}
 .custom-select-content {
-  z-index: 50;
-  min-width: max(180px, var(--radix-select-trigger-width));
-  max-height: min(420px, var(--radix-select-content-available-height));
+  min-width: max(180px, var(--anchor-width));
+  max-height: min(420px, var(--available-height));
   overflow: hidden;
   color: var(--ink);
   background: color-mix(in srgb, var(--tint) 94%, transparent);
@@ -926,10 +940,11 @@ input[type='range'] {
   border-radius: var(--control-radius);
   box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 12%, transparent);
   backdrop-filter: blur(20px);
-  animation: select-appear 140ms ease-out;
-  transform-origin: var(--radix-select-content-transform-origin);
+  transform-origin: var(--transform-origin);
 }
 .custom-select-viewport {
+  max-height: min(420px, var(--available-height));
+  overflow-y: auto;
   padding: 6px;
 }
 .custom-select-item {
@@ -945,7 +960,7 @@ input[type='range'] {
   cursor: pointer;
   user-select: none;
 }
-.custom-select-item[data-state='checked'] {
+.custom-select-item[data-selected] {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
@@ -961,16 +976,6 @@ input[type='range'] {
 }
 .custom-select-scroll {
   height: 24px;
-}
-@keyframes select-appear {
-  from {
-    opacity: 0;
-    transform: translateY(-3px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @media (min-width: 1600px) {

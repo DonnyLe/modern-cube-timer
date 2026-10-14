@@ -15,7 +15,8 @@ import { Background } from './components/Background';
 import { Trend } from './components/Trend';
 import { PuzzleView } from './components/PuzzleView';
 import { SessionManager } from './components/SessionManager';
-import { Dialog } from './components/Dialog';
+import { Dialog } from './components/ui/Dialog';
+import { portalContainer } from './components/ui/portal';
 import { Settings } from './components/Settings';
 import { Gallery } from './components/Gallery';
 import { DataControls } from './components/DataControls';
@@ -211,6 +212,7 @@ export default function App() {
 
   return (
     <div
+      ref={portalContainer}
       className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
       style={variables}
     >
@@ -492,158 +494,157 @@ export default function App() {
           </button>
         </div>
       )}
-      {dialog && (
-        <Dialog
-          title={
-            dialog === 'manual'
-              ? 'Add a solve'
-              : dialog === 'solve'
-                ? 'Solve details'
-                : dialog === 'history'
-                  ? 'Recent solves'
-                  : 'Puzzle and sessions'
-          }
-          onClose={close}
-          wide={dialog === 'history' || dialog === 'sessions'}
-          allowOverflow={dialog === 'sessions'}
-          className={dialog === 'sessions' ? 'session-manager-dialog' : ''}
-        >
-          {(dialog === 'manual' || dialog === 'solve') && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const duration = parseTime(manual);
+      <Dialog
+        open={!!dialog}
+        title={
+          dialog === 'manual'
+            ? 'Add a solve'
+            : dialog === 'solve'
+              ? 'Solve details'
+              : dialog === 'history'
+                ? 'Recent solves'
+                : 'Puzzle and sessions'
+        }
+        onClose={close}
+        wide={dialog === 'history' || dialog === 'sessions'}
+        allowOverflow={dialog === 'sessions'}
+        className={dialog === 'sessions' ? 'session-manager-dialog' : ''}
+      >
+        {(dialog === 'manual' || dialog === 'solve') && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const duration = parseTime(manual);
 
-                if (duration === null) {
-                  setInputError('Enter a time such as 12.84 or 1:02.34.');
+              if (duration === null) {
+                setInputError('Enter a time such as 12.84 or 1:02.34.');
 
-                  return;
-                }
+                return;
+              }
 
-                if (selectedSolve && dialog === 'solve') {
-                  void safeWrite(() => db.solves.put({ ...selectedSolve, duration })).then((ok) => {
-                    if (ok) close();
-                  });
-                } else {
-                  void saveSolve(duration, 'none', true).then((ok) => {
-                    if (ok) close();
-                  });
-                }
+              if (selectedSolve && dialog === 'solve') {
+                void safeWrite(() => db.solves.put({ ...selectedSolve, duration })).then((ok) => {
+                  if (ok) close();
+                });
+              } else {
+                void saveSolve(duration, 'none', true).then((ok) => {
+                  if (ok) close();
+                });
+              }
+            }}
+          >
+            <label>
+              Time in seconds
+              <input
+                autoFocus
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                placeholder="12.84"
+                inputMode="decimal"
+              />
+            </label>
+            {inputError && (
+              <p role="alert" className="inline-error">
+                {inputError}
+              </p>
+            )}
+            {dialog === 'solve' && selectedSolve && (
+              <>
+                <label>
+                  Penalty
+                  <select
+                    value={selectedSolve.penalty}
+                    onChange={(e) =>
+                      setSelectedSolve({ ...selectedSolve, penalty: e.target.value as Penalty })
+                    }
+                  >
+                    <option value="none">None</option>
+                    <option>+2</option>
+                    <option>DNF</option>
+                  </select>
+                </label>
+                <label>
+                  Notes
+                  <textarea
+                    value={selectedSolve.note}
+                    onChange={(e) => setSelectedSolve({ ...selectedSolve, note: e.target.value })}
+                  />
+                </label>
+                <p className="detail-scramble">{selectedSolve.scramble}</p>
+                <p className="subtle">{new Date(selectedSolve.timestamp).toLocaleString()}</p>
+              </>
+            )}
+            <div className="button-row">
+              {dialog === 'solve' && selectedSolve && (
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => {
+                    void safeWrite(() => db.solves.delete(selectedSolve.id)).then((ok) => {
+                      if (ok) {
+                        setDeleted(selectedSolve);
+                        close();
+                      }
+                    });
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              )}
+              <button className="primary" type="submit">
+                Save solve
+              </button>
+            </div>
+          </form>
+        )}
+        {dialog === 'history' && (
+          <>
+            <div className="summary-grid">
+              {Object.entries(historyStats).map(([k, v]) => (
+                <div key={k}>
+                  <span>{k}</span>
+                  <strong>{k === 'count' ? v : formatTime(v)}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="history-list">
+              {[...historySolves].reverse().map((s, i) => (
+                <button key={s.id} className="solve-row" onClick={() => openSolve(s, 'history')}>
+                  <span>{historySolves.length - i}</span>
+                  <strong>{formatTime(value(s))}</strong>
+                  <small>{s.note || new Date(s.timestamp).toLocaleTimeString()}</small>
+                </button>
+              ))}
+            </div>
+            <button
+              disabled={!!historySessionId && historySessionId !== preferences.activeSessionId}
+              onClick={() => {
+                setManual('');
+                setDialog('manual');
               }}
             >
-              <label>
-                Time in seconds
-                <input
-                  autoFocus
-                  value={manual}
-                  onChange={(e) => setManual(e.target.value)}
-                  placeholder="12.84"
-                  inputMode="decimal"
-                />
-              </label>
-              {inputError && (
-                <p role="alert" className="inline-error">
-                  {inputError}
-                </p>
-              )}
-              {dialog === 'solve' && selectedSolve && (
-                <>
-                  <label>
-                    Penalty
-                    <select
-                      value={selectedSolve.penalty}
-                      onChange={(e) =>
-                        setSelectedSolve({ ...selectedSolve, penalty: e.target.value as Penalty })
-                      }
-                    >
-                      <option value="none">None</option>
-                      <option>+2</option>
-                      <option>DNF</option>
-                    </select>
-                  </label>
-                  <label>
-                    Notes
-                    <textarea
-                      value={selectedSolve.note}
-                      onChange={(e) => setSelectedSolve({ ...selectedSolve, note: e.target.value })}
-                    />
-                  </label>
-                  <p className="detail-scramble">{selectedSolve.scramble}</p>
-                  <p className="subtle">{new Date(selectedSolve.timestamp).toLocaleString()}</p>
-                </>
-              )}
-              <div className="button-row">
-                {dialog === 'solve' && selectedSolve && (
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={() => {
-                      void safeWrite(() => db.solves.delete(selectedSolve.id)).then((ok) => {
-                        if (ok) {
-                          setDeleted(selectedSolve);
-                          close();
-                        }
-                      });
-                    }}
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
-                )}
-                <button className="primary" type="submit">
-                  Save solve
-                </button>
-              </div>
-            </form>
-          )}
-          {dialog === 'history' && (
-            <>
-              <div className="summary-grid">
-                {Object.entries(historyStats).map(([k, v]) => (
-                  <div key={k}>
-                    <span>{k}</span>
-                    <strong>{k === 'count' ? v : formatTime(v)}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className="history-list">
-                {[...historySolves].reverse().map((s, i) => (
-                  <button key={s.id} className="solve-row" onClick={() => openSolve(s, 'history')}>
-                    <span>{historySolves.length - i}</span>
-                    <strong>{formatTime(value(s))}</strong>
-                    <small>{s.note || new Date(s.timestamp).toLocaleTimeString()}</small>
-                  </button>
-                ))}
-              </div>
-              <button
-                disabled={!!historySessionId && historySessionId !== preferences.activeSessionId}
-                onClick={() => {
-                  setManual('');
-                  setDialog('manual');
-                }}
-              >
-                Add manual solve
-              </button>
-            </>
-          )}
-          {dialog === 'sessions' && (
-            <SessionManager
-              sessions={sessions}
-              activeId={preferences.activeSessionId}
-              selectedId={managerSessionId}
-              onSelect={setManagerSessionId}
-              onPuzzleChange={setManagerPuzzle}
-              onViewAll={(id) => {
-                setHistoryFromManager(true);
-                setHistorySessionId(id);
-                setDialog('history');
-              }}
-              onOpenSolve={(solve) => openSolve(solve, 'sessions')}
-              precision={a.precision}
-            />
-          )}
-        </Dialog>
-      )}
+              Add manual solve
+            </button>
+          </>
+        )}
+        {dialog === 'sessions' && (
+          <SessionManager
+            sessions={sessions}
+            activeId={preferences.activeSessionId}
+            selectedId={managerSessionId}
+            onSelect={setManagerSessionId}
+            onPuzzleChange={setManagerPuzzle}
+            onViewAll={(id) => {
+              setHistoryFromManager(true);
+              setHistorySessionId(id);
+              setDialog('history');
+            }}
+            onOpenSolve={(solve) => openSolve(solve, 'sessions')}
+            precision={a.precision}
+          />
+        )}
+      </Dialog>
     </div>
   );
 }
