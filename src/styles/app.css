@@ -785,6 +785,41 @@ input[type='range'] {
   height: 38px;
   padding: 3px;
 }
+.background-picker {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.background-picker legend {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.background-picker label {
+  gap: 6px;
+  cursor: pointer;
+}
+.background-picker input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.background-swatch {
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--outline);
+  border-radius: var(--control-radius);
+}
+.background-picker input:checked + .background-swatch {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.background-picker input:focus-visible + .background-swatch {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
 .appearance-preview {
   position: sticky;
   top: 60px;

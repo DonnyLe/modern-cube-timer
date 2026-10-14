@@ -13,6 +13,8 @@ export const appearance: Appearance = {
   shadow: 0,
   background: 'gradient',
   softness: 0.42,
+  patternSpacing: 28,
+  patternContrast: 0.35,
   intensity: 0.35,
   distortion: 0.35,
   motion: true,

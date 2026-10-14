@@ -12,6 +12,7 @@ import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
 import { Background } from './components/Background';
+import { isPattern } from './core/backgrounds';
 import { Trend } from './components/Trend';
 import { PuzzleView } from './components/PuzzleView';
 import { SessionManager } from './components/SessionManager';
@@ -121,7 +122,8 @@ export default function App() {
     '--accent': palette.accent,
     '--tint': palette.tint,
     '--outline': palette.outline,
-    '--surface': `color-mix(in srgb, ${palette.tint} ${a.opacity * 100}%, transparent)`,
+    // Patterns stop at widget edges: surfaces blend with the page color instead of showing through.
+    '--surface': `color-mix(in srgb, ${palette.tint} ${a.opacity * 100}%, ${isPattern(a.background) ? palette.background : 'transparent'})`,
     '--radius': `${a.radius}px`,
     '--control-radius': `${a.controlRadius}px`,
     '--blur': `${a.blur}px`,

@@ -1,6 +1,7 @@
 import { useStore } from '../data/store';
 import type { Appearance, Palette } from '../core/types';
 import { appearance } from '../layout/defaults';
+import { backgroundCss, backgroundStyles, isPattern } from '../core/backgrounds';
 
 export function Range({
   label,
@@ -46,6 +47,7 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
     p = a[a.theme];
   const update = (patch: Partial<Appearance>) =>
     setWorkspace({ ...workspace, appearance: { ...a, ...patch } });
+  const pattern = isPattern(a.background);
   const color = (key: keyof Palette, v: string) => update({ [a.theme]: { ...p, [key]: v } });
 
   return (
@@ -285,42 +287,87 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
                 </label>
               ))}
             </div>
-            <label>
-              Background style
-              <select
-                value={a.background}
-                onChange={(e) => update({ background: e.target.value as 'gradient' | 'solid' })}
-              >
-                <option value="gradient">Flowing gradient</option>
-                <option value="solid">Solid color</option>
-              </select>
-            </label>
-            <Range
-              label="Background softness"
-              value={a.softness}
-              onChange={(softness) => update({ softness })}
-            />
-            <label className="toggle-row">
-              Background motion
-              <input
-                type="checkbox"
-                checked={a.motion}
-                onChange={(e) => update({ motion: e.target.checked })}
+            <fieldset className="background-picker">
+              <legend>Background style</legend>
+              {backgroundStyles.map(({ value, label }) => (
+                <label key={value}>
+                  <input
+                    type="radio"
+                    name="background"
+                    value={value}
+                    checked={a.background === value}
+                    onChange={() => update({ background: value })}
+                  />
+                  <span
+                    className="background-swatch"
+                    aria-hidden="true"
+                    style={{
+                      background: backgroundCss(
+                        value,
+                        p,
+                        Math.round(a.patternSpacing * 0.6),
+                        Math.max(a.patternContrast, 0.3),
+                      ),
+                    }}
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+            {a.background === 'gradient' && (
+              <Range
+                label="Background softness"
+                value={a.softness}
+                onChange={(softness) => update({ softness })}
               />
-            </label>
-            <Range
-              label="Motion intensity"
-              value={a.intensity}
-              onChange={(intensity) => update({ intensity })}
-            />
-            <Range
-              label="Cursor displacement"
-              value={a.distortion}
-              onChange={(distortion) => update({ distortion })}
-            />
-            <p className="subtle">
-              Motion pauses while solving and follows your reduced-motion preference.
-            </p>
+            )}
+            {pattern && (
+              <>
+                <Range
+                  label="Pattern spacing"
+                  value={a.patternSpacing}
+                  min={16}
+                  max={64}
+                  step={2}
+                  suffix=" px"
+                  onChange={(patternSpacing) => update({ patternSpacing })}
+                />
+                <Range
+                  label="Pattern contrast"
+                  value={a.patternContrast}
+                  onChange={(patternContrast) => update({ patternContrast })}
+                />
+              </>
+            )}
+            {a.background !== 'solid' && (
+              <>
+                <label className="toggle-row">
+                  Background motion
+                  <input
+                    type="checkbox"
+                    checked={a.motion}
+                    onChange={(e) => update({ motion: e.target.checked })}
+                    aria-describedby="motion-description"
+                  />
+                </label>
+                <Range
+                  label={pattern ? 'Drift speed' : 'Motion intensity'}
+                  value={a.intensity}
+                  onChange={(intensity) => update({ intensity })}
+                />
+                <Range
+                  label={pattern ? 'Pointer response' : 'Cursor displacement'}
+                  value={a.distortion}
+                  onChange={(distortion) => update({ distortion })}
+                />
+                <p className="subtle" id="motion-description">
+                  {pattern
+                    ? 'Turn motion off for a static pattern. Set drift to 0 to keep it still while it still responds to your pointer or touch.'
+                    : 'Turn motion off for a still background.'}{' '}
+                  Motion pauses while solving and follows your reduced-motion preference.
+                </p>
+              </>
+            )}
           </section>
           <section className="settings-card glass">
             <h2>Your data</h2>
