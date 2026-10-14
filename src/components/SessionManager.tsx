@@ -534,7 +534,12 @@ export function SessionManager({
                 disabled={working}
                 onClick={() => (selecting ? toggleChecked(session.id) : select(session))}
               >
-                <PuzzlePreview event={session.puzzle} faceOnly className="manager-puzzle-icon" />
+                <PuzzlePreview
+                  event={session.puzzle}
+                  faceOnly
+                  randomized
+                  className="manager-puzzle-icon"
+                />
                 <span className="manager-session-copy">
                   <strong>{session.name}</strong>
                   <span className="manager-session-meta">

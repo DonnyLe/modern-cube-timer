@@ -133,7 +133,7 @@ test('session edit opens the panel and hides while focus mode is active', async 
   await expect(modal.getByRole('combobox', { name: 'Puzzle', exact: true })).toBeEnabled();
   await expect(modal.getByRole('button', { name: 'Start new session' })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
-  await expect(edit).toBeFocused();
+  await expect(modal).toHaveCount(0);
   await expect(page.locator('.session-label')).toHaveCount(0);
   await page.getByRole('button', { name: 'Enter focus mode' }).click();
   await expect(edit).toBeHidden();

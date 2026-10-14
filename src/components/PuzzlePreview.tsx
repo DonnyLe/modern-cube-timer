@@ -1,17 +1,39 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { puzzles, type PuzzleEvent } from '../core/puzzles';
-import { loadTwisty } from '../core/cubing';
+import { loadScramble, loadTwisty } from '../core/cubing';
+
+// Keep decorative thumbnails stable while browsing and filtering sessions.
+const previewScrambles = new Map<PuzzleEvent, Promise<string>>();
+
+function randomPreviewScramble(event: PuzzleEvent) {
+  let pending = previewScrambles.get(event);
+
+  if (!pending) {
+    pending = loadScramble()
+      .then((module) => module.randomScrambleForEvent(event))
+      .then((algorithm) => algorithm.toString())
+      .catch((error: unknown) => {
+        previewScrambles.delete(event);
+        throw error;
+      });
+    previewScrambles.set(event, pending);
+  }
+
+  return pending;
+}
 
 export function PuzzlePreview({
   scramble = '',
   event,
   faceOnly = false,
+  randomized = false,
   className,
   children,
 }: {
   scramble?: string;
   event: PuzzleEvent;
   faceOnly?: boolean;
+  randomized?: boolean;
   className?: string;
   children?: (status: 'loading' | 'ready' | 'error') => ReactNode;
 }) {
@@ -28,8 +50,12 @@ export function PuzzlePreview({
     void loadTwisty()
       .then(async ({ puzzles: loaders, ExperimentalSVGAnimator }) => {
         const loader = loaders[puzzle.puzzleId];
-        const [kpuzzle, svg] = await Promise.all([loader.kpuzzle(), loader.svg()]);
-        const pattern = kpuzzle.defaultPattern().applyAlg(scramble);
+        const [kpuzzle, svg, algorithm] = await Promise.all([
+          loader.kpuzzle(),
+          loader.svg(),
+          randomized ? randomPreviewScramble(event) : scramble,
+        ]);
+        const pattern = kpuzzle.defaultPattern().applyAlg(algorithm);
 
         if (!alive) return;
         const preview = new ExperimentalSVGAnimator(kpuzzle, svg);
@@ -108,7 +134,7 @@ export function PuzzlePreview({
       alive = false;
       container.replaceChildren();
     };
-  }, [scramble, puzzle.puzzleId, faceOnly, event]);
+  }, [scramble, puzzle.puzzleId, faceOnly, event, randomized]);
 
   return (
     <>
@@ -116,7 +142,11 @@ export function PuzzlePreview({
         className={className ?? (faceOnly ? 'puzzle-face-preview' : 'cube-preview')}
         ref={ref}
         aria-label={
-          scramble ? `${puzzle.label} state for ${scramble}` : `${puzzle.label} solved state`
+          randomized
+            ? `${puzzle.label} randomized preview`
+            : scramble
+              ? `${puzzle.label} state for ${scramble}`
+              : `${puzzle.label} solved state`
         }
         data-puzzle={event}
         data-status={status}
