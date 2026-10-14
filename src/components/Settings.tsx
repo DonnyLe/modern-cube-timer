@@ -11,6 +11,7 @@ export function Range({
   step = 0.01,
   onChange,
   suffix = '',
+  disabled = false,
 }: {
   label: string;
   value: number;
@@ -19,6 +20,7 @@ export function Range({
   step?: number;
   onChange: (v: number) => void;
   suffix?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="range-label">
@@ -31,10 +33,12 @@ export function Range({
       </span>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </label>
@@ -342,7 +346,7 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
             {a.background !== 'solid' && (
               <>
                 <label className="toggle-row">
-                  Background motion
+                  Continuous background motion
                   <input
                     type="checkbox"
                     checked={a.motion}
@@ -351,20 +355,24 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
                   />
                 </label>
                 <Range
-                  label={pattern ? 'Drift speed' : 'Motion intensity'}
-                  value={a.intensity}
+                  label={pattern ? 'Drift speed' : 'Motion speed'}
+                  value={pattern ? a.intensity : Math.max(0.05, a.intensity)}
+                  min={pattern ? 0 : 0.05}
+                  disabled={!a.motion}
                   onChange={(intensity) => update({ intensity })}
                 />
                 <Range
                   label={pattern ? 'Pointer response' : 'Cursor displacement'}
                   value={a.distortion}
+                  disabled={!a.motion}
                   onChange={(distortion) => update({ distortion })}
                 />
                 <p className="subtle" id="motion-description">
                   {pattern
-                    ? 'Turn motion off for a static pattern. Set drift to 0 to keep it still while it still responds to your pointer or touch.'
-                    : 'Turn motion off for a still background.'}{' '}
-                  Motion pauses while solving and follows your reduced-motion preference.
+                    ? 'Keep the pattern drifting while idle. Turn motion off for a static pattern, or set drift to 0 for pointer response only.'
+                    : 'Keep the gradient moving while idle, even without moving your cursor. Turn motion off for a static gradient.'}{' '}
+                  Motion pauses during inspection and solving, respects reduced motion, and stops
+                  while this tab is hidden.
                 </p>
               </>
             )}
