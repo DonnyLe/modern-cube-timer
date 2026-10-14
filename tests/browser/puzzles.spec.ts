@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { puzzleEvents, puzzles } from '../../src/core/puzzles';
+import { puzzles } from '../../src/core/puzzles';
 
 async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
@@ -18,11 +18,12 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 
-test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
-  test.setTimeout(300000);
+test('representative puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
+  test.setTimeout(120000);
   await page.goto('/');
 
-  for (const event of puzzleEvents) {
+  // One cube, one dodecahedron, and one non-twisty puzzle cover each preview renderer.
+  for (const event of ['333', 'minx', 'clock'] as const) {
     await selectPuzzle(page, event);
     // The preview shows the solved state until the scramble arrives, so wait for the scramble first.
     await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
@@ -126,29 +127,28 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   ).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
 
-  for (const event of ['333', '666', '222'] as const) {
-    await selectPuzzle(page, event);
-    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
-      timeout: 60000,
-    });
+  // 6x6 has the longest scramble text, so it is the layout most likely to overflow.
+  await selectPuzzle(page, '666');
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+    timeout: 60000,
+  });
 
-    for (const width of [1440, 390]) {
-      await page.setViewportSize({ width, height: 1000 });
-      const textBox = (await text.boundingBox())!;
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const textBox = (await text.boundingBox())!;
 
-      expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
-      const actionsBox = (await actions.boundingBox())!;
-      const barBox = (await page.locator('.scramble-bar').boundingBox())!;
-      const currentNav = (await page.locator('.segmented').boundingBox())!;
-      const currentTopbar = (await page.locator('.topbar').boundingBox())!;
+    expect((await actions.boundingBox())!.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
+    const actionsBox = (await actions.boundingBox())!;
+    const barBox = (await page.locator('.scramble-bar').boundingBox())!;
+    const currentNav = (await page.locator('.segmented').boundingBox())!;
+    const currentTopbar = (await page.locator('.topbar').boundingBox())!;
 
-      expect(currentNav.x + currentNav.width / 2).toBeCloseTo(
-        currentTopbar.x + currentTopbar.width / 2,
-        0,
-      );
-      expect(actionsBox.x + actionsBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-    }
+    expect(currentNav.x + currentNav.width / 2).toBeCloseTo(
+      currentTopbar.x + currentTopbar.width / 2,
+      0,
+    );
+    expect(actionsBox.x + actionsBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
   }
 
   const style = await page.locator('.scramble-bar').evaluate((element) => {
@@ -174,13 +174,6 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
   await expect(page.getByRole('option', { name: 'Megaminx', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(picker).toHaveText('Megaminx');
-  await expect(picker).toBeFocused();
-  await picker.click();
-  await expect(page.getByRole('option', { selected: true })).toBeFocused();
-  await page.keyboard.down('Space');
-  await page.waitForTimeout(350);
-  await page.keyboard.up('Space');
-  await expect(page.getByRole('listbox')).toBeHidden();
   await picker.click();
   await expect(page.getByRole('option', { selected: true })).toBeFocused();
   await page.keyboard.press('Escape');

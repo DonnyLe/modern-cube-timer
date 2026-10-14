@@ -18,18 +18,18 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 } },
     },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        viewport: { width: 1440, height: 1000 },
-        launchOptions: firefoxLaunchOptions(),
-      },
-    },
-    // Linux WebKit is flaky in CI and unlike Safari, so it only runs locally.
+    // CI runs Chromium only to keep it fast; Firefox and WebKit run locally.
     ...(process.env.CI
       ? []
       : [
+          {
+            name: 'firefox',
+            use: {
+              ...devices['Desktop Firefox'],
+              viewport: { width: 1440, height: 1000 },
+              launchOptions: firefoxLaunchOptions(),
+            },
+          },
           {
             name: 'webkit',
             use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 1000 } },

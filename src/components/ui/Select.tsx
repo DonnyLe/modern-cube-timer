@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { MotionConfig, motion, type HTMLMotionProps } from 'motion/react';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
@@ -20,24 +20,11 @@ export function Select<Value extends string>({
   disabled?: boolean;
   onValueChange: (value: Value) => void;
 }) {
-  const trigger = useRef<HTMLButtonElement>(null);
-  const restoreFocus = useRef(false);
   const [dialog, setDialog] = useState<HTMLElement | null>(null);
   const attachTrigger = useCallback((element: HTMLButtonElement | null) => {
-    trigger.current = element;
     // Keep the menu inside an open dialog so the dialog never treats it as outside content.
     if (element) setDialog(element.closest<HTMLElement>('[role="dialog"]'));
   }, []);
-
-  // Changing puzzles briefly disables the trigger while its session loads, which drops focus.
-  // Restore it once the trigger is enabled again, unless focus has moved elsewhere.
-  useEffect(() => {
-    if (disabled || !restoreFocus.current) return;
-    restoreFocus.current = false;
-    const active = document.activeElement;
-
-    if (!active || active === document.body || active === dialog) trigger.current?.focus();
-  }, [disabled, dialog]);
 
   return (
     <SelectPrimitive.Root
@@ -45,9 +32,7 @@ export function Select<Value extends string>({
       items={options}
       disabled={disabled}
       onValueChange={(next) => {
-        if (next === null) return;
-        restoreFocus.current = true;
-        onValueChange(next);
+        if (next !== null) onValueChange(next);
       }}
     >
       <SelectPrimitive.Trigger
