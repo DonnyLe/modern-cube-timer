@@ -13,7 +13,7 @@ import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
 import { Background } from './components/Background';
 import { Trend } from './components/Trend';
-import { Preview } from './components/Preview';
+import { PuzzleView } from './components/PuzzleView';
 import { SessionManager } from './components/SessionManager';
 import { Dialog } from './components/Dialog';
 import { Settings } from './components/Settings';
@@ -466,7 +466,7 @@ export default function App() {
                 <header>
                   <h2>Scramble preview</h2>
                 </header>
-                <Preview scramble={scramble.scramble} event={puzzle} />
+                <PuzzleView scramble={scramble.scramble} event={puzzle} />
               </article>
             </section>
           </div>

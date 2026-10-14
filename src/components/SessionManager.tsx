@@ -26,8 +26,7 @@ import {
 import { formatSessionDate, formatElapsedTime } from '../utils/date';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';
-import { PuzzleArtwork } from './PuzzleArtwork';
-import { PuzzlePreview } from './PuzzlePreview';
+import { PuzzleView } from './PuzzleView';
 
 export function SessionManager({
   sessions,
@@ -188,9 +187,10 @@ export function SessionManager({
             }}
           />
         </div>
-        <PuzzleArtwork
+        <PuzzleView
           key={puzzle}
-          puzzle={puzzle}
+          event={puzzle}
+          variant="3d"
           scramble={solves.at(-1)?.scramble || preview.scramble}
         />
       </section>
@@ -496,9 +496,10 @@ export function SessionManager({
                 disabled={working}
                 onClick={() => (selecting ? toggleChecked(session.id) : select(session))}
               >
-                <PuzzlePreview
+                <PuzzleView
                   event={session.puzzle}
-                  faceOnly
+                  variant="face"
+                  caption={false}
                   randomized
                   className="manager-puzzle-icon"
                 />
