@@ -16,7 +16,14 @@ import type { Session, Solve } from '../core/types';
 import { puzzles, puzzleEvents, type PuzzleEvent } from '../core/puzzles';
 import { formatTime, statistics, value } from '../core/statistics';
 import { useScramble } from '../core/useScramble';
-import { db, newSession, recentSessionForPuzzle } from '../data/db';
+import { db } from '../data/db';
+import {
+  deleteSessions,
+  newSession,
+  renameSession,
+  selectPuzzleSession,
+} from '../data/sessionActions';
+import { formatSessionDate, formatElapsedTime } from '../utils/date';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';
 import { PuzzleArtwork } from './PuzzleArtwork';
@@ -149,24 +156,6 @@ export function SessionManager({
     return ok;
   };
 
-  const date = (timestamp: number) => {
-    const then = new Date(timestamp);
-    const time = then.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-
-    return then.toDateString() === new Date().toDateString()
-      ? `Today, ${time}`
-      : then.toLocaleDateString(undefined, { dateStyle: 'medium' });
-  };
-
-  const elapsed = (timestamp: number) => {
-    const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000));
-    const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-
-    return minutes < 60
-      ? formatter.format(-minutes, 'minute')
-      : formatter.format(-Math.round(minutes / 60), 'hour');
-  };
-
   return (
     <div
       className="session-manager-body"
@@ -184,13 +173,11 @@ export function SessionManager({
             onValueChange={(event) => {
               if (event === puzzle) return;
               void mutate(async () => {
-                const recent = await recentSessionForPuzzle(event, breakHours);
-
-                const next = recent || (await newSession(event));
+                const { session: next, created } = await selectPuzzleSession(event, breakHours);
 
                 select(next);
 
-                if (!recent) {
+                if (created) {
                   const label = /^[2-7]{3}$/.test(event)
                     ? `${event[0]}x${event[0]}`
                     : puzzles[event].label;
@@ -218,7 +205,7 @@ export function SessionManager({
         </div>
         <p className="manager-metadata">
           {selected
-            ? `${date(selected.createdAt)} · ${solves.length} ${solves.length === 1 ? 'solve' : 'solves'}`
+            ? `${formatSessionDate(selected.createdAt)} · ${solves.length} ${solves.length === 1 ? 'solve' : 'solves'}`
             : 'No sessions for this puzzle yet.'}
         </p>
         {selected && (
@@ -250,7 +237,7 @@ export function SessionManager({
               event.preventDefault();
               if (!name.trim()) return;
               void mutate(async () => {
-                await db.sessions.update(selected.id, { name: name.trim(), automaticName: false });
+                await renameSession(selected.id, name);
               }).then((ok) => {
                 if (ok) setRenaming(false);
               });
@@ -303,7 +290,7 @@ export function SessionManager({
                   <span>{solves.length - index}</span>
                   <strong>{formatTime(value(solve), precision)}</strong>
                   <small title={new Date(solve.timestamp).toLocaleString()}>
-                    {elapsed(solve.timestamp)}
+                    {formatElapsedTime(solve.timestamp)}
                   </small>
                   {Number.isFinite(stats.best) && value(solve) === stats.best && (
                     <Star size={13} aria-label="Session best" />
@@ -462,33 +449,8 @@ export function SessionManager({
                 disabled={working}
                 onClick={() =>
                   void mutate(async () => {
-                    const currentId = useStore.getState().preferences.activeSessionId;
-                    const fallback = await db.transaction(
-                      'rw',
-                      db.sessions,
-                      db.solves,
-                      async () => {
-                        const existing = await db.sessions.orderBy('createdAt').toArray();
-                        const remaining = existing.filter(
-                          (session) => !deleteIds.includes(session.id),
-                        );
-                        const next =
-                          remaining.find((session) => session.id === selectedId) ||
-                          remaining.find((session) => session.id === currentId) ||
-                          remaining.at(-1) ||
-                          (await newSession(
-                            existing.find((session) => session.id === currentId)?.puzzle || puzzle,
-                          ));
+                    const fallback = await deleteSessions(deleteIds, selectedId, puzzle);
 
-                        await db.solves.where('sessionId').anyOf(deleteIds).delete();
-                        await db.sessions.bulkDelete(deleteIds);
-
-                        return next;
-                      },
-                    );
-
-                    if (deleteIds.includes(currentId))
-                      useStore.getState().setPreferences({ activeSessionId: fallback.id });
                     if (deleteIds.includes(selectedId)) select(fallback);
                     setCheckedIds((ids) => ids.filter((id) => !deleteIds.includes(id)));
                     setDeleteIds([]);
@@ -544,7 +506,7 @@ export function SessionManager({
                   <strong>{session.name}</strong>
                   <span className="manager-session-meta">
                     <small>
-                      {date(session.createdAt)} · {counts.get(session.id) ?? 0} solves
+                      {formatSessionDate(session.createdAt)} · {counts.get(session.id) ?? 0} solves
                     </small>
                     {session.id === activeId && <span className="manager-current">Current</span>}
                   </span>

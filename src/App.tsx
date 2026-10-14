@@ -3,7 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
 import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
-import { db, id, saveSessionSolve, sessionForPuzzle } from './data/db';
+import { db, id } from './data/db';
+import { activateSession, saveSessionSolve } from './data/sessionActions';
 import type { Solve, Penalty } from './core/types';
 import type { PuzzleEvent } from './core/puzzles';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
@@ -149,12 +150,7 @@ export default function App() {
     if (dialog === 'sessions') {
       if (closingManager.current) return;
       closingManager.current = true;
-      void safeWrite(async () => {
-        const next =
-          (await db.sessions.get(managerSessionId)) || (await sessionForPuzzle(managerPuzzle));
-
-        store.setPreferences({ activeSessionId: next.id });
-      }).then((ok) => {
+      void safeWrite(() => activateSession(managerSessionId, managerPuzzle)).then((ok) => {
         closingManager.current = false;
         if (ok) setDialog('');
       });

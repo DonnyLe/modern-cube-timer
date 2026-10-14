@@ -1,13 +1,8 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  db,
-  initialize,
-  newSession,
-  recentSessionForPuzzle,
-  saveSessionSolve,
-  sessionName,
-} from '../src/data/db';
+import { db, initialize } from '../src/data/db';
+import { newSession, recentSessionForPuzzle, saveSessionSolve } from '../src/data/sessionActions';
+import { sessionName } from '../src/utils/sessionName';
 import type { Solve } from '../src/core/types';
 
 const hour = 3_600_000;

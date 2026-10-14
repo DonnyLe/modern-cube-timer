@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { db, initialize, sessionForPuzzle } from '../src/data/db';
+import { db, initialize } from '../src/data/db';
+import { sessionForPuzzle } from '../src/data/sessionActions';
 import { backup, csv, parseImport } from '../src/data/transfer';
 import { defaultWorkspace } from '../src/layout/defaults';
 import { ScrambleQueue } from '../src/core/scrambleQueue';
