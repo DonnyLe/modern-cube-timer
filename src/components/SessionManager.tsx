@@ -22,7 +22,7 @@ import {
   newSession,
   renameSession,
   selectPuzzleSession,
-} from '../data/sessionActions';
+} from '../data/actions/session';
 import { formatSessionDate, formatElapsedTime } from '../utils/date';
 import { safeWrite, useStore } from '../data/store';
 import { Select } from './Select';

@@ -4,7 +4,7 @@ import { motion, MotionConfig } from 'motion/react';
 import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
 import { db, id } from './data/db';
-import { activateSession, saveSessionSolve } from './data/sessionActions';
+import { activateSession, saveSessionSolve } from './data/actions/session';
 import type { Solve, Penalty } from './core/types';
 import type { PuzzleEvent } from './core/puzzles';
 import { formatTime, parseTime, statistics, value } from './core/statistics';

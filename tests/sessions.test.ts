@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, initialize } from '../src/data/db';
-import { newSession, recentSessionForPuzzle, saveSessionSolve } from '../src/data/sessionActions';
+import { newSession, recentSessionForPuzzle, saveSessionSolve } from '../src/data/actions/session';
 import { sessionName } from '../src/utils/sessionName';
 import type { Solve } from '../src/core/types';
 

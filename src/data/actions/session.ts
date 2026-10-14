@@ -1,8 +1,8 @@
-import type { Session, Solve, Preferences } from '../core/types';
-import type { PuzzleEvent } from '../core/puzzles';
-import { db, id } from './db';
-import { useStore } from './store';
-import { sessionName } from '../utils/sessionName';
+import type { Session, Solve, Preferences } from '../../core/types';
+import type { PuzzleEvent } from '../../core/puzzles';
+import { db, id } from '../db';
+import { useStore } from '../store';
+import { sessionName } from '../../utils/sessionName';
 
 export async function newSession(puzzle: PuzzleEvent, timestamp = Date.now()): Promise<Session> {
   const session: Session = {
