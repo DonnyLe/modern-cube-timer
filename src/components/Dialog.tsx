@@ -20,16 +20,10 @@ export function Dialog({
 
   useEffect(() => {
     const el = ref.current!;
-    const opener = document.activeElement;
 
     el.showModal();
 
-    return () => {
-      el.close();
-      queueMicrotask(() => {
-        if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-      });
-    };
+    return () => el.close();
   }, []);
 
   return (
