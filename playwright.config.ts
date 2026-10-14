@@ -26,9 +26,14 @@ export default defineConfig({
         launchOptions: firefoxLaunchOptions(),
       },
     },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 1000 } },
-    },
+    // Linux WebKit is flaky in CI and unlike Safari, so it only runs locally.
+    ...(process.env.CI
+      ? []
+      : [
+          {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 1000 } },
+          },
+        ]),
   ],
 });

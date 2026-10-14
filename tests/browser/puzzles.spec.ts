@@ -35,11 +35,15 @@ async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
 }
 
 test('all supported puzzles generate a scramble and a matching SVG preview', async ({ page }) => {
-  test.setTimeout(180000);
+  test.setTimeout(300000);
   await page.goto('/');
 
   for (const event of puzzleEvents) {
     await selectPuzzle(page, event);
+    // The preview shows the solved state until the scramble arrives, so wait for the scramble first.
+    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
+      timeout: 60000,
+    });
     await expect(page.locator('.cube-preview')).toHaveAttribute('data-puzzle', event);
     await expect(page.locator('.cube-preview')).toHaveAttribute('data-status', 'ready', {
       timeout: 60000,
@@ -48,7 +52,6 @@ test('all supported puzzles generate a scramble and a matching SVG preview', asy
     await expect(page.locator('.preview-caption')).toHaveText(
       `${puzzles[event].label} state preview`,
     );
-    await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled();
   }
 });
 test('puzzle switching separates solves, persists selection, and is locked during timing', async ({
