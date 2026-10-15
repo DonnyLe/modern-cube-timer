@@ -1,48 +1,45 @@
-# turn
+# turn · Modern Cube Timer
 
-A local-first, customizable speedcubing timer. Built with React, TypeScript, Vite, IndexedDB, and a WebGL background.
+Your space to solve. A customizable speedcubing timer with puzzle-specific sessions, progress graphs, and a quiet interface that stays out of your way while solving.
 
-See [the implementation plan](docs/implementation-plan.md) and [approved design](docs/design-reference.png).
+**[Open the timer](https://modern-cube-timer.donnyle2005.workers.dev)** · [Developer quickstart](dev/quickstart.md) · [Developer documentation](dev/README.md)
 
-## Puzzles
+## Features
 
-Choose 2×2–7×7, Pyraminx, Skewb, Megaminx, Square-1, or Clock from the scramble bar. Each puzzle has its own sessions, scrambles, statistics, and 2D state preview. Switching puzzles resumes its most recently created session or creates one.
+- **Keyboard and touch timing.** Hold Space or the timer until ready, release to start, and press again to stop. Adjust the hold duration, enable 15-second inspection with automatic +2/DNF penalties, or enter a time manually.
+- **11 puzzle events.** Generate scrambles for 2×2–7×7, Pyraminx, Skewb, Megaminx, Square-1, and Clock with cubing.js. Copy or refresh scrambles and view the resulting puzzle state.
+- **Sessions for every puzzle.** Create, rename, switch, search, filter, and delete sessions. Optionally start a new session after a configurable break; automatic sessions are enabled by default with a four-hour break.
+- **Solve history and statistics.** Review and edit times, penalties, and notes; delete a solve with undo. Track count, best, mean, mo3, ao5, ao12, and ao100.
+- **Progress graphs.** Switch between individual solve times and rolling ao12, browse history in groups of 50 solves, and inspect points with a mouse, touch, or keyboard. Session details include their own graphs and statistics.
+- **Focus mode.** Hide surrounding controls and optionally the supporting widgets. Choose whether to hide the clock or fade the interface while solving.
+- **Personal appearance.** Choose light, dark, system, or time-based automatic themes. Customize colors, backgrounds, motion, typography, timer size, precision, glass effects, and card and control rounding. Start with Liquid Studio, Editorial, or Precision, then save your own presets in the Gallery.
+- **Local storage and data transfer.** Solves, sessions, and settings stay in your browser with IndexedDB. Export a JSON backup or CSV, import turn backups or supported standard csTimer JSON sessions, and review import issues before adding records.
+- **Installable and available offline.** The production app caches its assets for use after an initial online visit and offers an update prompt when a new version is available.
 
-Existing sessions migrate to 3×3. JSON backups use version 2 to preserve puzzle types; version 1 backups remain importable as 3×3. Standard csTimer puzzle sessions are recognized; unsupported scramble types are reported and skipped. CSV exports include puzzle and session columns.
+## Try it
 
-## Development
+1. Open [turn](https://modern-cube-timer.donnyle2005.workers.dev) and select a puzzle from the scramble bar.
+2. Apply the scramble, hold Space until the timer is ready, then release. Press Space to stop. On a touchscreen, use the timer itself.
+3. Open a recent solve to edit its time, penalty, or notes. Use the menu beside the session name to manage sessions.
+4. Visit **Settings** to change timing and appearance, or **Gallery** to try and save presets.
 
-Requires Bun 1.4.2 and Node 22.13+ (used by the existing build and browser-testing tools).
+There is no account or cloud sync. Data belongs to the browser and site address you use; clearing site data removes it. Export JSON backups regularly, especially before changing browsers, devices, or domains. CSV is for analysis; JSON is the restorable backup.
+
+## Run locally
+
+Requires Node.js 22.13+ and Bun 1.4.2 (the version used by CI).
 
 ```sh
+git clone https://github.com/DonnyLe/modern-cube-timer.git
+cd modern-cube-timer
 bun ci
 bun run dev
-bun run lint
-bun run format:check
-bun run test
-bun run build
-bunx --no-install playwright install
-bun run test:e2e
-bun run build && bun run test:e2e:production
 ```
 
-On macOS, the Playwright setup gives its Firefox browser a separate app-data identity
-to avoid macOS 27 blocking access to the regular Firefox profile directory. It uses
-temporary files and leaves the installed browser and personal profiles untouched.
-See [the upstream issue](https://github.com/microsoft/playwright/issues/42768).
+Open <http://127.0.0.1:5173>. No environment variables, account setup, or backend service are required for local development.
 
-Solve records stay in this browser. Export backups regularly before clearing browser data.
+See the [quickstart](dev/quickstart.md) for checks, browser tests, and production preview, and the [Cloudflare guide](dev/deployment.md) for deployment settings.
 
-Use `bun add <package>` for dependencies and `bun add -d <package>` for development tools. Commit `bun.lock`; CI uses `bun ci` to enforce it. Run `bun run test` for the existing Vitest suite; `bun test` invokes Bun’s separate test runner.
+## Built with
 
-The development and production commands first bundle cubing.js with esbuild into generated `public/cubing` files. Vite serves or copies these modules without rebundling them, keeping solver workers separate from React. The generated files are ignored by Git and included in the production offline cache. Run `bun run build:cubing` again after changing the cubing entry modules or dependency.
-
-## Cloudflare Workers Builds
-
-`wrangler.json` configures the built static assets in `dist` for production and branch previews. In the Worker's build settings, use:
-
-- Build command: `bun run build`
-- Deploy command: `npx wrangler deploy`
-- Preview command: `npx wrangler preview`
-
-Wrangler reads the asset directory from the configuration. Do not add `--assets` to the Preview command; it does not support that flag. Leaving out `--name` lets each preview use its branch name.
+React 19, TypeScript, and Vite; cubing.js for scrambles and puzzle rendering; Dexie/IndexedDB for persistence; Zustand for UI state; Recharts for graphs; Motion for animation; and a WebGL background. Static assets are hosted on Cloudflare Workers.
