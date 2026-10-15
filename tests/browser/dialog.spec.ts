@@ -4,7 +4,7 @@ test('dialogs animate closed and rapid toggling never leaves a blocking layer', 
   page,
 }) => {
   await page.goto('/');
-  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const edit = page.getByRole('button', { name: 'Manage sessions', exact: true });
   const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
 
   await edit.click();
@@ -33,7 +33,7 @@ test('dialogs animate closed and rapid toggling never leaves a blocking layer', 
 test('dialogs skip movement when reduced motion is preferred', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
 
   await expect(modal).toBeVisible();

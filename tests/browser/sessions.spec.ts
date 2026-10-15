@@ -50,7 +50,7 @@ test('automatic sessions use the saved break setting and retain previous history
   page,
 }) => {
   await page.goto('/');
-  const sessions = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const sessions = page.getByRole('button', { name: 'Manage sessions', exact: true });
 
   await expect(page.locator('.session-label')).toHaveCount(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -103,10 +103,10 @@ test('sessions can be started without a name and custom names stay available', a
   await page.getByLabel('Start sessions automatically after a break').uncheck();
   await expect(page.getByLabel('Break before a new session (hours)')).toBeDisabled();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   await page.getByRole('button', { name: 'Start new session', exact: true }).click();
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(2);
   await page.getByRole('button', { name: 'Rename', exact: true }).click();
   await page.getByLabel('Session name', { exact: true }).fill('Competition practice');
@@ -114,7 +114,7 @@ test('sessions can be started without a name and custom names stay available', a
   await expect(page.getByRole('heading', { name: 'Competition practice' })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page.locator('.recent footer')).toContainText('Competition practice');
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', /3d|face/, {
     timeout: 30000,
   });
@@ -126,7 +126,7 @@ test('sessions can be started without a name and custom names stay available', a
 
 test('session edit opens the panel and hides while focus mode is active', async ({ page }) => {
   await page.goto('/');
-  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const edit = page.getByRole('button', { name: 'Manage sessions', exact: true });
   const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
 
   await edit.click();
@@ -157,7 +157,7 @@ test('disabling automatic sessions resumes older sessions when switching puzzles
   page,
 }) => {
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Manage sessions' })).toBeEnabled();
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -187,7 +187,7 @@ test('disabling automatic sessions resumes older sessions when switching puzzles
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Start sessions automatically after a break').uncheck();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+  await page.getByRole('button', { name: 'Manage sessions' }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(2);
   await page.getByRole('combobox', { name: 'Puzzle', exact: true }).click();
   await expect(page.getByRole('option', { selected: true })).toBeFocused();

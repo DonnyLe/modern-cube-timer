@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
-import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
+import {
+  Copy,
+  RefreshCw,
+  Plus,
+  ArrowUpRight,
+  Trash2,
+  Pencil,
+  List,
+  Check,
+  Scan,
+} from 'lucide-react';
 import { useStore, safeWrite } from './data/store';
 import { db, id } from './data/db';
 import { activateSession, saveSessionSolve } from './data/actions/session';
@@ -365,14 +375,14 @@ export default function App() {
             <div className="timer-session-heading solve-ui" {...hiddenUI}>
               <p className="timer-session-name">{session?.name}</p>
               <button
-                aria-label="Edit puzzle and session"
-                title="Edit puzzle and session"
+                aria-label="Manage sessions"
+                title="Manage sessions"
                 aria-haspopup="dialog"
                 className="icon-button"
                 disabled={busy || saving || !!pendingSolve || !session}
                 onClick={openSessions}
               >
-                <Pencil size={14} />
+                <List size={14} />
               </button>
             </div>
             <button
