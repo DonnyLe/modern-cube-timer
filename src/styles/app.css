@@ -319,8 +319,8 @@ button svg {
   color: var(--accent);
 }
 .timer-session-heading .icon-button svg {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 .is-focused .timer-session-heading .icon-button {
   display: none;

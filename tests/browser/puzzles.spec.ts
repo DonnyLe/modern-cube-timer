@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { puzzles } from '../../src/core/puzzles';
 
 async function selectPuzzle(page: Page, event: keyof typeof puzzles) {
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
@@ -124,7 +124,7 @@ test('scramble controls stay below floating text at desktop and mobile sizes', a
   await expect(
     page
       .locator('.timer-session-heading')
-      .getByRole('button', { name: 'Edit puzzle and session', exact: true }),
+      .getByRole('button', { name: 'Manage sessions', exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Puzzle', exact: true })).toHaveCount(0);
 
@@ -165,7 +165,7 @@ test('puzzle dropdown supports keyboard selection, Escape, and guards timer shor
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Edit puzzle and session', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
   const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
   await expect(picker).toBeEnabled();
@@ -198,7 +198,7 @@ for (const viewport of [
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+    await page.getByRole('button', { name: 'Manage sessions' }).click();
     const picker = page.getByRole('combobox', { name: 'Puzzle', exact: true });
 
     await picker.click();

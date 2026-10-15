@@ -4,7 +4,7 @@ test('puzzle changes create a session with a notice or resume recent activity', 
   page,
 }) => {
   await page.goto('/');
-  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const edit = page.getByRole('button', { name: 'Manage sessions', exact: true });
 
   await expect(page.locator('.timer-session-name')).toContainText('3x3 session');
   await edit.click();
@@ -83,7 +83,7 @@ test('browsing applies selection only when the manager closes and history follow
   await page.getByRole('button', { name: 'Add manual solve', exact: true }).click();
   await page.getByLabel('Time in seconds').fill('12.84');
   await page.getByRole('button', { name: 'Save solve', exact: true }).click();
-  const edit = page.getByRole('button', { name: 'Edit puzzle and session', exact: true });
+  const edit = page.getByRole('button', { name: 'Manage sessions', exact: true });
   const modal = page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true });
 
   await edit.click();
@@ -147,7 +147,7 @@ test('single-face fallback remains usable without WebGL and with reduced motion'
   await page.getByRole('combobox', { name: 'Color mode' }).click();
   await page.getByRole('option', { name: 'Night', exact: true }).click();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+  await page.getByRole('button', { name: 'Manage sessions' }).click();
   await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', 'face');
   await expect(page.locator('.puzzle-face-preview')).toHaveAttribute('data-status', 'ready', {
     timeout: 30000,
@@ -166,7 +166,7 @@ test('search and filters scope Select all, bulk deletion retains other history, 
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+  await page.getByRole('button', { name: 'Manage sessions' }).click();
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -208,7 +208,7 @@ test('search and filters scope Select all, bulk deletion retains other history, 
       }),
   );
   await page.reload();
-  await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
+  await page.getByRole('button', { name: 'Manage sessions' }).click();
   await expect(page.locator('.manager-session-row')).toHaveCount(4);
   await expect(page.locator('.manager-puzzle-icon[data-status="ready"]')).toHaveCount(4, {
     timeout: 60000,
