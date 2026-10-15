@@ -91,6 +91,7 @@ export interface Preferences {
   automaticSessions: boolean;
   sessionBreakHours: number;
   hideClockWhileSolving: boolean;
+  hideUIWhileSolving: boolean;
   hideWidgetsInFocus: boolean;
   inspection: boolean;
   holdMs: number;
