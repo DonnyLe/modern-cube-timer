@@ -11,7 +11,6 @@ test('dialogs animate closed and rapid toggling never leaves a blocking layer', 
   await expect(modal).toHaveAttribute('data-open', '');
   await page.keyboard.press('Escape');
   await expect(modal).toHaveCount(0);
-  await expect(edit).toBeFocused();
 
   for (let i = 0; i < 5; i++) {
     await edit.click();

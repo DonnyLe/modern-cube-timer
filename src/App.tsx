@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, MotionConfig } from 'motion/react';
 import { Copy, RefreshCw, Plus, ArrowUpRight, Trash2, Pencil, Check, Scan } from 'lucide-react';
@@ -47,7 +47,6 @@ export default function App() {
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false);
-  const brandRef = useRef<HTMLAnchorElement>(null);
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog);
@@ -142,11 +141,15 @@ export default function App() {
     setInputError('');
   };
 
-  const openSessions = (event: MouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.focus();
+  const openSessions = () => {
     setManagerSessionId(preferences.activeSessionId);
     setManagerPuzzle(session?.puzzle || '333');
     setDialog('sessions');
+  };
+
+  const navigate = (next: NavigationView) => {
+    setView(next);
+    if (next === 'Timer') portalContainer.current?.focus({ preventScroll: true });
   };
 
   const close = () => {
@@ -215,6 +218,7 @@ export default function App() {
   return (
     <div
       ref={portalContainer}
+      tabIndex={-1}
       className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
       style={variables}
     >
@@ -222,7 +226,6 @@ export default function App() {
       <UpdateNotice busy={busy || saving} />
       <motion.header animate={focusFade} className="topbar">
         <motion.a
-          ref={brandRef}
           className="brand"
           href="#"
           aria-label={focused ? 'Exit focus mode' : 'turn'}
@@ -233,7 +236,7 @@ export default function App() {
           onClick={(e) => {
             e.preventDefault();
             if (focused) void changeFocus(false);
-            if (!busy) setView('Timer');
+            if (!busy) navigate('Timer');
           }}
         >
           turn
@@ -251,7 +254,7 @@ export default function App() {
                 disabled={busy}
                 className={view === v ? 'active' : ''}
                 aria-current={view === v ? 'page' : undefined}
-                onClick={() => setView(v)}
+                onClick={() => navigate(v)}
               >
                 {!focused && view === v && (
                   <motion.span
@@ -274,10 +277,9 @@ export default function App() {
               title="Enter focus mode"
               aria-label="Enter focus mode"
               disabled={busy || view !== 'Timer'}
-              onClick={(event) => {
+              onClick={() => {
                 void changeFocus(true);
-                if (event.detail === 0) brandRef.current?.focus();
-                else event.currentTarget.blur();
+                portalContainer.current?.focus({ preventScroll: true });
               }}
             >
               <Scan />

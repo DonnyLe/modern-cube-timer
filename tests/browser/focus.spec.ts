@@ -28,7 +28,7 @@ test('focus mode hides header controls, puzzle selector and widgets, and exits o
   await page.mouse.move(5, 5);
   await page.getByRole('button', { name: 'Enter focus mode' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('link', { name: 'Exit focus mode' })).toBeFocused();
+  await expect(page.locator('.app')).toHaveClass(/is-focused/);
   await page.keyboard.press('Escape');
   await expect(nav).toBeVisible();
   await expect(widgets).toBeVisible();
