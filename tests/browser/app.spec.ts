@@ -76,7 +76,8 @@ test('manual solve, penalty, statistics, theme and persistence', async ({ page }
   await page.getByRole('button', { name: 'Save solve' }).click();
   await expect(page.locator('.recent-list')).toContainText('14.84');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByLabel('Night mode', { exact: true }).check();
+  await page.getByRole('combobox', { name: 'Color mode' }).click();
+  await page.getByRole('option', { name: 'Night', exact: true }).click();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await expect(page.locator('.app')).toHaveClass(/theme-dark/);
   await page.reload();

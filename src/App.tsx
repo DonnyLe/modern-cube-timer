@@ -8,6 +8,7 @@ import { activateSession, saveSessionSolve } from './data/actions/session';
 import type { Solve, Penalty } from './core/types';
 import type { PuzzleEvent } from './core/puzzles';
 import { formatTime, parseTime, statistics, value } from './core/statistics';
+import { useTheme } from './core/useTheme';
 import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
@@ -32,7 +33,8 @@ export default function App() {
   const store = useStore(),
     { workspace, preferences } = store,
     a = workspace.appearance,
-    palette = a[a.theme];
+    theme = useTheme(a.theme),
+    palette = a[theme];
   const [view, setView] = useState<NavigationView>('Timer'),
     [dialog, setDialog] = useState(''),
     [selectedSolve, setSelectedSolve] = useState<Solve | null>(null),
@@ -218,10 +220,10 @@ export default function App() {
   return (
     <div
       ref={portalContainer}
-      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''} ${hideUI ? 'is-hiding-ui' : ''}`}
+      className={`app theme-${theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''} ${hideUI ? 'is-hiding-ui' : ''}`}
       style={variables}
     >
-      <Background appearance={a} paused={busy} />
+      <Background theme={theme} appearance={a} paused={busy} />
       <div className="solve-ui" {...hiddenUI}>
         <UpdateNotice busy={busy || saving} />
         <motion.header animate={focusFade} className="topbar">
@@ -485,7 +487,7 @@ export default function App() {
           </div>
         </motion.main>
       ) : view === 'Settings' ? (
-        <Settings dataControls={<DataControls />} />
+        <Settings theme={theme} dataControls={<DataControls />} />
       ) : (
         <Gallery />
       )}
@@ -641,6 +643,7 @@ export default function App() {
         )}
         {dialog === 'sessions' && (
           <SessionManager
+            theme={theme}
             sessions={sessions}
             activeId={preferences.activeSessionId}
             selectedId={managerSessionId}

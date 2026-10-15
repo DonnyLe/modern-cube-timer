@@ -1,5 +1,6 @@
+import { Select } from './ui/Select';
 import { useStore } from '../data/store';
-import type { Appearance, Palette } from '../core/types';
+import type { Appearance, Palette, Theme } from '../core/types';
 import { appearance } from '../layout/defaults';
 import { backgroundCss, backgroundStyles, isPattern } from '../core/backgrounds';
 
@@ -45,14 +46,14 @@ export function Range({
   );
 }
 
-export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
+export function Settings({ dataControls, theme }: { dataControls: React.ReactNode; theme: Theme }) {
   const { workspace, setWorkspace, preferences, setPreferences } = useStore(),
     a = workspace.appearance,
-    p = a[a.theme];
+    p = a[theme];
   const update = (patch: Partial<Appearance>) =>
     setWorkspace({ ...workspace, appearance: { ...a, ...patch } });
   const pattern = isPattern(a.background);
-  const color = (key: keyof Palette, v: string) => update({ [a.theme]: { ...p, [key]: v } });
+  const color = (key: keyof Palette, v: string) => update({ [theme]: { ...p, [key]: v } });
 
   return (
     <main className="settings-page">
@@ -62,9 +63,7 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
           <h1>Your workspace, your way.</h1>
           <p className="subtle">A little quieter. A little brighter. Exactly how you like it.</p>
         </div>
-        <button onClick={() => update({ ...structuredClone(appearance), theme: a.theme })}>
-          Reset appearance
-        </button>
+        <button onClick={() => update(structuredClone(appearance))}>Reset appearance</button>
       </div>
       <div className="settings-layout">
         <div className="settings-sections">
@@ -284,14 +283,29 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
           </section>
           <section className="settings-card glass">
             <h2>Color & background</h2>
-            <label className="toggle-row">
-              Night mode
-              <input
-                type="checkbox"
-                checked={a.theme === 'dark'}
-                onChange={(e) => update({ theme: e.target.checked ? 'dark' : 'light' })}
+            <div className="color-mode">
+              <p>Color mode</p>
+              <Select<Appearance['theme']>
+                label="Color mode"
+                value={a.theme}
+                options={[
+                  { value: 'light', label: 'Day' },
+                  { value: 'dark', label: 'Night' },
+                  { value: 'auto', label: 'Automatic day/night' },
+                  { value: 'system', label: 'Use system settings' },
+                ]}
+                onValueChange={(theme) => update({ theme })}
               />
-            </label>
+              {a.theme === 'auto' && (
+                <p className="subtle">
+                  Day from 7 a.m. to 7 p.m., night after. Uses your local time.
+                </p>
+              )}
+              {a.theme === 'system' && (
+                <p className="subtle">Follows your device’s light or dark appearance.</p>
+              )}
+            </div>
+            <p className="subtle">Editing {theme === 'light' ? 'day' : 'night'} colors.</p>
             <div className="color-grid">
               {(
                 ['text', 'accent', 'tint', 'outline', 'background', 'colorA', 'colorB'] as const

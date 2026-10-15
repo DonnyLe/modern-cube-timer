@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Appearance } from '../core/types';
+import type { Appearance, Theme } from '../core/types';
 import { backgroundCss, patterns } from '../core/backgrounds';
 
 const vertex = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
@@ -38,7 +38,15 @@ function covered(target: EventTarget | null) {
   return false;
 }
 
-export function Background({ appearance: a, paused }: { appearance: Appearance; paused: boolean }) {
+export function Background({
+  appearance: a,
+  theme,
+  paused,
+}: {
+  appearance: Appearance;
+  theme: Theme;
+  paused: boolean;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const elapsed = useRef(0);
   const position = useRef([0.5, 0.5]);
@@ -121,7 +129,7 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
         'glow',
       ].map((k) => [k, gl.getUniformLocation(program, k)]),
     );
-    const palette = a[a.theme];
+    const palette = a[theme];
 
     gl.uniform3fv(uniforms.base, rgb(palette.background));
     gl.uniform3fv(uniforms.a, rgb(palette.colorA));
@@ -240,8 +248,8 @@ export function Background({ appearance: a, paused }: { appearance: Appearance; 
       gl.deleteShader(vs);
       gl.deleteShader(fs);
     };
-  }, [a, paused]);
-  const p = a[a.theme];
+  }, [a, theme, paused]);
+  const p = a[theme];
 
   return (
     <div
