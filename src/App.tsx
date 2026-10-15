@@ -472,9 +472,8 @@ export default function App() {
               <article className="widget glass">
                 <header>
                   <h2>Session trend</h2>
-                  <span className="subtle">Time (s)</span>
                 </header>
-                <Trend solves={solves} />
+                <Trend key={session?.id} solves={solves} />
               </article>
               <article className="widget glass">
                 <header>

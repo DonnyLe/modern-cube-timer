@@ -1,77 +1,81 @@
-import { formatTime, value } from '../core/statistics';
+import { useState } from 'react';
+import { average, formatTime, value } from '../core/statistics';
 import type { Solve } from '../core/types';
+import { Graph } from './Graph';
+import { Select } from './ui/Select';
+
+const options = [
+  { value: 'time', label: 'Solve times' },
+  { value: 'ao12', label: 'Rolling ao12' },
+] as const;
+const pageSize = 50;
 
 export function Trend({ solves }: { solves: Solve[] }) {
-  const shown = solves.slice(-50),
-    values = shown.map(value),
-    finite = values.filter(Number.isFinite);
+  const [metric, setMetric] = useState<'time' | 'ao12'>('time');
+  const [older, setOlder] = useState(0);
+  const end = Math.max(Math.min(pageSize, solves.length), solves.length - older);
+  const start = Math.max(0, end - pageSize);
+  const points = solves.slice(start, end).map((solve, i) => {
+    const index = start + i;
+    const ms =
+      metric === 'time'
+        ? value(solve)
+        : average(solves.slice(Math.max(0, index - 11), index + 1), 12);
 
-  if (!shown.length)
-    return (
-      <div className="empty">
-        <span className="empty-line">↗</span>
-        <p>Your progress, one solve at a time.</p>
-        <small>Your session trend will appear here.</small>
-      </div>
-    );
-  const min = finite.length ? Math.max(0, Math.floor(Math.min(...finite) / 2000) * 2 - 2) : 0,
-    max = finite.length ? Math.max(min + 4, Math.ceil(Math.max(...finite) / 2000) * 2) : 20;
-  const x = (i: number) => 42 + (shown.length === 1 ? 0.5 : i / (shown.length - 1)) * 408,
-    y = (v: number) => 166 - ((v / 1000 - min) / (max - min)) * 132;
-  const segments: string[] = [];
-  let segment = '';
-
-  values.forEach((v, i) => {
-    if (!Number.isFinite(v)) {
-      if (segment) segments.push(segment);
-      segment = '';
-    } else segment += `${segment ? ' L' : 'M'}${x(i)},${y(v)}`;
+    return {
+      x: index + 1,
+      y: ms === null ? null : ms / 1000,
+      label: `Solve ${index + 1}${metric === 'ao12' ? ' ao12' : ''}: ${formatTime(ms)}`,
+    };
   });
-  if (segment) segments.push(segment);
 
   return (
     <>
-      <svg
-        viewBox="0 0 480 204"
-        className="trend-chart"
-        role="img"
-        aria-label={`Session trend. ${shown.length} solves. ${shown.map((s, i) => `Solve ${solves.length - shown.length + i + 1}: ${formatTime(value(s))}`).join('; ')}`}
-      >
-        {[0, 1, 2, 3].map((i) => {
-          const yy = 166 - i * 44;
-
-          return (
-            <g key={i}>
-              <line x1="42" x2="458" y1={yy} y2={yy} className="gridline" />
-              <text x="30" y={yy + 4} textAnchor="end">
-                {(min + ((max - min) * i) / 3).toFixed(0)}
-              </text>
-            </g>
-          );
-        })}
-        {segments.map((d, i) => (
-          <path key={i} d={d} fill="none" className="plot-line" />
-        ))}
-        {values.map((v, i) =>
-          Number.isFinite(v) ? (
-            <circle key={i} cx={x(i)} cy={y(v)} r="3.2" className="plot-point">
-              <title>{formatTime(v)}</title>
-            </circle>
-          ) : (
-            <text key={i} x={x(i)} y="22" textAnchor="middle" className="dnf-mark">
-              ×<title>DNF</title>
-            </text>
-          ),
+      <div className="trend-controls">
+        <Select label="Graph type" value={metric} options={options} onValueChange={setMetric} />
+        {solves.length > pageSize && (
+          <div className="trend-navigation">
+            <button
+              className="text-button"
+              aria-label="Older solves"
+              disabled={start === 0}
+              onClick={() => setOlder(solves.length - Math.max(pageSize, end - pageSize))}
+            >
+              ←
+            </button>
+            <span className="subtle">
+              {start + 1}–{end}
+            </span>
+            <button
+              className="text-button"
+              aria-label="Newer solves"
+              disabled={end === solves.length}
+              onClick={() => setOlder(Math.max(0, solves.length - end - pageSize))}
+            >
+              →
+            </button>
+          </div>
         )}
-        {[0, Math.floor((shown.length - 1) / 2), shown.length - 1]
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .map((i) => (
-            <text key={i} x={x(i)} y="188" textAnchor="middle">
-              {solves.length - shown.length + i + 1}
-            </text>
-          ))}
-      </svg>
-      <span className="chart-caption">Solve</span>
+      </div>
+      {!solves.length ? (
+        <div className="empty">
+          <span className="empty-line">↗</span>
+          <p>Your progress, one solve at a time.</p>
+          <small>Your session trend will appear here.</small>
+        </div>
+      ) : metric === 'ao12' && solves.length < 12 ? (
+        <div className="empty">
+          <p>Rolling ao12 needs 12 solves.</p>
+          <small>{12 - solves.length} more to see your first average.</small>
+        </div>
+      ) : (
+        <Graph
+          points={points}
+          label={`${metric === 'time' ? 'Solve times' : 'Rolling ao12'}, solves ${start + 1}–${end}`}
+          xLabel="Solve"
+          yLabel="Time (s)"
+        />
+      )}
     </>
   );
 }
