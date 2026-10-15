@@ -8,7 +8,7 @@ import {
   ArrowUpRight,
   Trash2,
   Pencil,
-  List,
+  Menu,
   Check,
   Scan,
 } from 'lucide-react';
@@ -382,7 +382,7 @@ export default function App() {
                 disabled={busy || saving || !!pendingSolve || !session}
                 onClick={openSessions}
               >
-                <List size={14} />
+                <Menu size={18} />
               </button>
             </div>
             <button
