@@ -152,11 +152,6 @@ export default function App() {
     setDialog('sessions');
   };
 
-  const navigate = (next: NavigationView) => {
-    setView(next);
-    if (next === 'Timer') portalContainer.current?.focus({ preventScroll: true });
-  };
-
   const close = () => {
     if (dialog === 'sessions') {
       if (closingManager.current) return;
@@ -223,7 +218,6 @@ export default function App() {
   return (
     <div
       ref={portalContainer}
-      tabIndex={-1}
       className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''} ${hideUI ? 'is-hiding-ui' : ''}`}
       style={variables}
     >
@@ -242,7 +236,11 @@ export default function App() {
             onClick={(e) => {
               e.preventDefault();
               if (focused) void changeFocus(false);
-              if (!busy) navigate('Timer');
+
+              if (!busy) {
+                setView('Timer');
+                e.currentTarget.blur();
+              }
             }}
           >
             turn
@@ -260,7 +258,10 @@ export default function App() {
                   disabled={busy}
                   className={view === v ? 'active' : ''}
                   aria-current={view === v ? 'page' : undefined}
-                  onClick={() => navigate(v)}
+                  onClick={(event) => {
+                    setView(v);
+                    if (v === 'Timer') event.currentTarget.blur();
+                  }}
                 >
                   {!focused && view === v && (
                     <motion.span
@@ -283,9 +284,9 @@ export default function App() {
                 title="Enter focus mode"
                 aria-label="Enter focus mode"
                 disabled={busy || view !== 'Timer'}
-                onClick={() => {
+                onClick={(event) => {
                   void changeFocus(true);
-                  portalContainer.current?.focus({ preventScroll: true });
+                  event.currentTarget.blur();
                 }}
               >
                 <Scan />

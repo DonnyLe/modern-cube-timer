@@ -45,12 +45,7 @@ export function Dialog({
                 }
               />
               <DialogPrimitive.Popup
-                finalFocus={() => {
-                  // A ref would focus the parent's first tabbable child instead of the parent.
-                  queueMicrotask(() => portalContainer.current?.focus({ preventScroll: true }));
-
-                  return false;
-                }}
+                finalFocus={false}
                 className={`dialog${wide ? ' wide' : ''}${allowOverflow ? ' dialog-overflow' : ''} ${className}`}
                 render={
                   <motion.div
