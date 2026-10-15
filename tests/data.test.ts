@@ -172,6 +172,7 @@ describe('Zod boundaries', () => {
       automaticSessions: true,
       sessionBreakHours: 4,
       hideClockWhileSolving: false,
+      hideUIWhileSolving: false,
     });
     expect((await db.sessions.get(initial.preferences.activeSessionId))?.name).toBe('My practice');
     expect(restored.warning).toBe('');

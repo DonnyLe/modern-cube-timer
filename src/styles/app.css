@@ -711,11 +711,6 @@ textarea {
   padding: 100px;
   text-align: center;
 }
-.is-running .widget-row,
-.is-running .header-actions {
-  opacity: 0.4;
-  transition: opacity 0.25s;
-}
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -1162,6 +1157,27 @@ input[type='range'] {
     width: 145px;
     padding: 8px 14px;
   }
+}
+
+/* Preserve the layout and timer position while the surrounding UI fades. */
+.solve-ui {
+  transition:
+    opacity 200ms ease-out,
+    filter 200ms ease-out,
+    visibility 0s;
+}
+.is-running .solve-ui {
+  opacity: 0.4;
+}
+.is-hiding-ui .solve-ui {
+  opacity: 0;
+  filter: blur(8px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--solve-fade-duration) linear,
+    filter var(--solve-fade-duration) linear,
+    visibility 0s var(--solve-fade-duration);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -58,6 +58,7 @@ export const preferencesSchema = z.object({
   automaticSessions: z.boolean().default(true),
   sessionBreakHours: z.number().min(1).max(24).default(4),
   hideClockWhileSolving: z.boolean().default(false),
+  hideUIWhileSolving: z.boolean().default(false),
   hideWidgetsInFocus: z.boolean().default(true),
   inspection: z.boolean().default(false),
   holdMs: z.number().min(0).max(1000).default(300),
