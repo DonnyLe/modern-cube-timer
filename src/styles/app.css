@@ -1656,35 +1656,41 @@ input[type='range'] {
   }
 }
 
-.trend-controls,
-.trend-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.trend-view {
+  position: relative;
 }
-.trend-controls {
-  justify-content: flex-end;
+.trend-selector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
 }
-.trend-controls .custom-select-trigger {
+.trend-selector .custom-select-trigger {
   width: auto;
   padding: 6px 10px;
   gap: 6px;
   font-size: 13px;
 }
-.trend-controls .custom-select-icon svg {
+.trend-selector .custom-select-icon svg {
   width: 14px;
   height: 14px;
 }
 .trend-navigation {
-  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
   white-space: nowrap;
 }
+.trend-view > .empty {
+  padding-top: 30px;
+}
 .graph-unit {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 30px;
   color: color-mix(in srgb, var(--ink) 60%, var(--accent));
   font-size: 12px;
-  margin: 8px 0 0;
 }
 .graph-tooltip {
   padding: 8px 10px;
