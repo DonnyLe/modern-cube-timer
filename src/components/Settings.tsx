@@ -83,6 +83,19 @@ export function Settings({ dataControls }: { dataControls: React.ReactNode }) {
               Show “Solving...” until you stop. Inspection and your final time stay visible.
             </p>
             <label className="toggle-row">
+              Hide UI while solving
+              <input
+                type="checkbox"
+                checked={preferences.hideUIWhileSolving}
+                onChange={(e) => setPreferences({ hideUIWhileSolving: e.target.checked })}
+                aria-describedby="hide-ui-description"
+              />
+            </label>
+            <p className="subtle" id="hide-ui-description">
+              Blur and fade everything except the timer as you hold to start. Bring it back when you
+              stop or cancel.
+            </p>
+            <label className="toggle-row">
               15-second inspection
               <input
                 type="checkbox"

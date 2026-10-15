@@ -44,6 +44,7 @@ export const useStore = create<Store>((set, get) => ({
     activeSessionId: '',
     hideWidgetsInFocus: true,
     hideClockWhileSolving: false,
+    hideUIWhileSolving: false,
   },
   past: [],
   future: [],

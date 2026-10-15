@@ -117,7 +117,12 @@ export default function App() {
   );
   const running = timer.phase === 'running',
     busy = timer.phase !== 'idle';
+  const hideUI =
+    preferences.hideUIWhileSolving &&
+    (timer.phase === 'holding' || timer.phase === 'ready' || running);
+  const hiddenUI = { inert: hideUI, 'aria-hidden': hideUI };
   const variables = {
+    '--solve-fade-duration': `${preferences.holdMs}ms`,
     '--ink': palette.text,
     '--accent': palette.accent,
     '--tint': palette.tint,
@@ -219,82 +224,84 @@ export default function App() {
     <div
       ref={portalContainer}
       tabIndex={-1}
-      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''}`}
+      className={`app theme-${a.theme} font-${a.font} ${running ? 'is-running' : ''} ${focused ? 'is-focused' : ''} ${hideUI ? 'is-hiding-ui' : ''}`}
       style={variables}
     >
       <Background appearance={a} paused={busy} />
-      <UpdateNotice busy={busy || saving} />
-      <motion.header animate={focusFade} className="topbar">
-        <motion.a
-          className="brand"
-          href="#"
-          aria-label={focused ? 'Exit focus mode' : 'turn'}
-          title={focused ? 'Hover to exit focus mode · Esc' : undefined}
-          onPointerEnter={(event) => {
-            if (focused && event.pointerType === 'mouse') void changeFocus(false);
-          }}
-          onClick={(e) => {
-            e.preventDefault();
-            if (focused) void changeFocus(false);
-            if (!busy) navigate('Timer');
-          }}
-        >
-          turn
-        </motion.a>
-        <MotionConfig reducedMotion="user">
-          <nav
-            className="segmented"
-            aria-label="Main navigation"
-            inert={focused}
-            aria-hidden={focused}
+      <div className="solve-ui" {...hiddenUI}>
+        <UpdateNotice busy={busy || saving} />
+        <motion.header animate={focusFade} className="topbar">
+          <motion.a
+            className="brand"
+            href="#"
+            aria-label={focused ? 'Exit focus mode' : 'turn'}
+            title={focused ? 'Hover to exit focus mode · Esc' : undefined}
+            onPointerEnter={(event) => {
+              if (focused && event.pointerType === 'mouse') void changeFocus(false);
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              if (focused) void changeFocus(false);
+              if (!busy) navigate('Timer');
+            }}
           >
-            {NAVIGATION_VIEWS.map((v) => (
-              <button
-                key={v}
-                disabled={busy}
-                className={view === v ? 'active' : ''}
-                aria-current={view === v ? 'page' : undefined}
-                onClick={() => navigate(v)}
-              >
-                {!focused && view === v && (
-                  <motion.span
-                    initial={false}
-                    className="segmented-selection"
-                    layoutId="main-navigation-selection"
-                    transition={{ type: 'spring', stiffness: 180, damping: 26 }}
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="segmented-label">{v}</span>
-              </button>
-            ))}
-          </nav>
-        </MotionConfig>
-        <div className="topbar-controls">
-          <div className="header-actions" inert={focused} aria-hidden={focused}>
-            <button
-              className="icon-button glass"
-              title="Enter focus mode"
-              aria-label="Enter focus mode"
-              disabled={busy || view !== 'Timer'}
-              onClick={() => {
-                void changeFocus(true);
-                portalContainer.current?.focus({ preventScroll: true });
-              }}
+            turn
+          </motion.a>
+          <MotionConfig reducedMotion="user">
+            <nav
+              className="segmented"
+              aria-label="Main navigation"
+              inert={focused}
+              aria-hidden={focused}
             >
-              <Scan />
-            </button>
+              {NAVIGATION_VIEWS.map((v) => (
+                <button
+                  key={v}
+                  disabled={busy}
+                  className={view === v ? 'active' : ''}
+                  aria-current={view === v ? 'page' : undefined}
+                  onClick={() => navigate(v)}
+                >
+                  {!focused && view === v && (
+                    <motion.span
+                      initial={false}
+                      className="segmented-selection"
+                      layoutId="main-navigation-selection"
+                      transition={{ type: 'spring', stiffness: 180, damping: 26 }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="segmented-label">{v}</span>
+                </button>
+              ))}
+            </nav>
+          </MotionConfig>
+          <div className="topbar-controls">
+            <div className="header-actions" inert={focused} aria-hidden={focused}>
+              <button
+                className="icon-button glass"
+                title="Enter focus mode"
+                aria-label="Enter focus mode"
+                disabled={busy || view !== 'Timer'}
+                onClick={() => {
+                  void changeFocus(true);
+                  portalContainer.current?.focus({ preventScroll: true });
+                }}
+              >
+                <Scan />
+              </button>
+            </div>
           </div>
-        </div>
-      </motion.header>
+        </motion.header>
+      </div>
       {store.error && (
-        <div className="error-banner" role="alert">
+        <div className="error-banner solve-ui" {...hiddenUI} role="alert">
           {store.error}
           <button onClick={() => store.setError('')}>Dismiss</button>
         </div>
       )}
       {pendingSolve && !saving && (
-        <div className="error-banner" role="alert">
+        <div className="error-banner solve-ui" {...hiddenUI} role="alert">
           {formatTime(value(pendingSolve))} has not been saved.
           <button onClick={() => void persistSolve(pendingSolve)}>Retry save</button>
           <button
@@ -314,7 +321,7 @@ export default function App() {
         <main className="loading">Opening your workspace…</main>
       ) : view === 'Timer' ? (
         <motion.main animate={focusFade} className="workspace-default">
-          <section className="scramble-bar" aria-label="Scramble">
+          <section className="scramble-bar solve-ui" {...hiddenUI} aria-label="Scramble">
             <div className="scramble-actions">
               <button
                 aria-label="Copy scramble"
@@ -346,13 +353,13 @@ export default function App() {
             <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
           </section>
           {scramble.error && (
-            <p role="alert" className="inline-error">
+            <p role="alert" className="inline-error solve-ui" {...hiddenUI}>
               {scramble.error}
               <button onClick={() => void scramble.next()}>Retry</button>
             </p>
           )}
           <section className="timer-area">
-            <div className="timer-session-heading">
+            <div className="timer-session-heading solve-ui" {...hiddenUI}>
               <p className="timer-session-name">{session?.name}</p>
               <button
                 aria-label="Edit puzzle and session"
@@ -389,12 +396,12 @@ export default function App() {
             >
               {displayed}
             </button>
-            <p className="timer-hint" aria-live="polite">
+            <p className="timer-hint solve-ui" {...hiddenUI} aria-live="polite">
               {hint}
             </p>
           </section>
           {a.showStats && (
-            <section className="inline-stats">
+            <section className="inline-stats solve-ui" {...hiddenUI}>
               {(['ao5', 'ao12', 'best'] as const).map((k) => (
                 <div key={k}>
                   <span>{k === 'best' ? 'Best' : k}</span>
@@ -404,9 +411,9 @@ export default function App() {
             </section>
           )}
           <div
-            className={`focus-widgets ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
-            inert={busy || (focused && preferences.hideWidgetsInFocus)}
-            aria-hidden={focused && preferences.hideWidgetsInFocus}
+            className={`focus-widgets solve-ui ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
+            inert={hideUI || busy || (focused && preferences.hideWidgetsInFocus)}
+            aria-hidden={hideUI || (focused && preferences.hideWidgetsInFocus)}
           >
             <section className="widget-row">
               <article className="widget glass recent">
@@ -483,7 +490,7 @@ export default function App() {
         <Gallery />
       )}
       {deleted && (
-        <div className="toast">
+        <div className="toast solve-ui" {...hiddenUI}>
           Solve deleted
           <button
             onClick={() => {
