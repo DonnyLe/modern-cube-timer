@@ -45,6 +45,7 @@ export function Dialog({
                 }
               />
               <DialogPrimitive.Popup
+                finalFocus={false}
                 className={`dialog${wide ? ' wide' : ''}${allowOverflow ? ' dialog-overflow' : ''} ${className}`}
                 render={
                   <motion.div
