@@ -1682,6 +1682,13 @@ input[type='range'] {
 }
 .trend-controls .custom-select-trigger {
   width: auto;
+  padding: 6px 10px;
+  gap: 6px;
+  font-size: 13px;
+}
+.trend-controls .custom-select-icon svg {
+  width: 14px;
+  height: 14px;
 }
 .trend-navigation {
   white-space: nowrap;
