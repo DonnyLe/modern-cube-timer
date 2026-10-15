@@ -144,7 +144,8 @@ test('single-face fallback remains usable without WebGL and with reduced motion'
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByLabel('Night mode', { exact: true }).check();
+  await page.getByRole('combobox', { name: 'Color mode' }).click();
+  await page.getByRole('option', { name: 'Night', exact: true }).click();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await page.getByRole('button', { name: 'Edit puzzle and session' }).click();
   await expect(page.locator('.puzzle-artwork')).toHaveAttribute('data-mode', 'face');

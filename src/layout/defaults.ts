@@ -1,7 +1,7 @@
 import type { Appearance, Workspace, WidgetType } from '../core/types';
 
 export const appearance: Appearance = {
-  theme: 'light',
+  theme: 'system',
   font: 'system',
   opacity: 0.58,
   blur: 14,

@@ -18,7 +18,7 @@ export const paletteSchema = z.object({
 });
 
 export const appearanceSchema = z.object({
-  theme: z.enum(['light', 'dark']),
+  theme: z.enum(['light', 'dark', 'auto', 'system']),
   font: z.enum(['system', 'editorial', 'mono']),
   opacity: z.number().min(0.15).max(1),
   blur: z.number().min(0).max(40),

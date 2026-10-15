@@ -37,6 +37,7 @@ export function SessionManager({
   onViewAll,
   onOpenSolve,
   precision,
+  theme,
 }: {
   sessions: Session[];
   activeId: string;
@@ -46,6 +47,7 @@ export function SessionManager({
   onViewAll: (id: string) => void;
   onOpenSolve: (solve: Solve) => void;
   precision: number;
+  theme: 'light' | 'dark';
 }) {
   const appearance = useStore((state) => state.workspace.appearance);
   const preferences = useStore((state) => state.preferences);
@@ -57,7 +59,7 @@ export function SessionManager({
 
     return () => clearTimeout(timeout);
   }, [notice]);
-  const accent = appearance[appearance.theme].accent;
+  const accent = appearance[theme].accent;
   const channels = [1, 3, 5].map((offset) => {
     const channel = parseInt(accent.slice(offset, offset + 2), 16) / 255;
 

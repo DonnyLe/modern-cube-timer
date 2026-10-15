@@ -56,9 +56,10 @@ export interface Palette {
   colorB: string;
 }
 export type BackgroundStyle = 'gradient' | 'solid' | 'dots' | 'grid' | 'lines' | 'triangles';
+export type Theme = 'light' | 'dark';
 export interface Appearance extends Surface {
   controlRadius: number;
-  theme: 'light' | 'dark';
+  theme: Theme | 'auto' | 'system';
   font: 'system' | 'editorial' | 'mono';
   shadow: number;
   glass: number;

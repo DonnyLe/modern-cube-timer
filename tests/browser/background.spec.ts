@@ -210,7 +210,8 @@ test('gradient colors visibly change within three seconds in both themes', async
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
 
   for (const dark of [false, true]) {
-    await page.getByLabel('Night mode', { exact: true }).setChecked(dark);
+    await page.getByRole('combobox', { name: 'Color mode' }).click();
+    await page.getByRole('option', { name: dark ? 'Night' : 'Day', exact: true }).click();
 
     const capture = async () => {
       await page.evaluate(() => {
