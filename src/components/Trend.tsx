@@ -32,7 +32,6 @@ export function Trend({ solves }: { solves: Solve[] }) {
   return (
     <>
       <div className="trend-controls">
-        <Select label="Graph type" value={metric} options={options} onValueChange={setMetric} />
         {solves.length > pageSize && (
           <div className="trend-navigation">
             <button
@@ -56,6 +55,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
             </button>
           </div>
         )}
+        <Select label="Graph type" value={metric} options={options} onValueChange={setMetric} />
       </div>
       {!solves.length ? (
         <div className="empty">
