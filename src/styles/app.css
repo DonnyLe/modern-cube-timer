@@ -1676,16 +1676,11 @@ input[type='range'] {
 .trend-navigation {
   white-space: nowrap;
 }
-.graph-unit,
-.graph-hint {
+.graph-unit {
   display: block;
   color: color-mix(in srgb, var(--ink) 60%, var(--accent));
   font-size: 12px;
   margin: 8px 0 0;
-}
-.graph-hint {
-  text-align: center;
-  min-height: 1.5em;
 }
 .graph-tooltip {
   padding: 8px 10px;

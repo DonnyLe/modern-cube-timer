@@ -99,7 +99,6 @@ export function Graph({
           ))}
       </LineChart>
       <span className="chart-caption">{xLabel}</span>
-      <p className="graph-hint">Hover, tap, or use arrow keys to explore.</p>
     </div>
   );
 }
