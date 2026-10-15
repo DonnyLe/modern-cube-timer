@@ -172,11 +172,16 @@ describe('Zod boundaries', () => {
       automaticSessions: true,
       sessionBreakHours: 4,
       hideClockWhileSolving: false,
-      hideUIWhileSolving: false,
+      hideUIWhileSolving: true,
     });
     expect((await db.sessions.get(initial.preferences.activeSessionId))?.name).toBe('My practice');
     expect(restored.warning).toBe('');
     expect(await db.sessions.count()).toBe(1);
+    await db.settings.put({
+      key: 'preferences',
+      value: { ...restored.preferences, hideUIWhileSolving: false },
+    });
+    expect((await initialize()).preferences.hideUIWhileSolving).toBe(false);
   });
   it('previews invalid native rows and orphaned solves alongside a valid row', () => {
     const row = { sessionId: 's', duration: 12000, penalty: 'none', scramble: 'R', timestamp: 0 };

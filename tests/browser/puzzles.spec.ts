@@ -58,7 +58,8 @@ test('puzzle switching separates solves, persists selection, and is locked durin
   await page.keyboard.down('Space');
   await page.waitForTimeout(350);
   await page.keyboard.up('Space');
-  await expect(page.getByRole('button', { name: 'Edit puzzle and session' })).toBeDisabled();
+  await expect(page.locator('.timer-session-heading button')).toBeDisabled();
+  await expect(page.locator('.timer-session-heading')).toBeHidden();
   await expect(page.locator('.session-label')).toHaveCount(0);
   await page.keyboard.down('Space');
   await page.keyboard.up('Space');

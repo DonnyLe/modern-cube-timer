@@ -8,8 +8,7 @@ async function openTimer(page: Page, inspection = false) {
     timeout: 30000,
   });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByLabel('Hide UI while solving')).not.toBeChecked();
-  await page.getByLabel('Hide UI while solving').check();
+  await expect(page.getByLabel('Hide UI while solving')).toBeChecked();
   if (inspection) await page.getByLabel('15-second inspection').check();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await page.locator('[data-timer]').focus();
