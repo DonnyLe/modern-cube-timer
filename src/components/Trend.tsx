@@ -70,6 +70,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
         </div>
       ) : (
         <Graph
+          key={`${metric}-${start}`}
           points={points}
           label={`${metric === 'time' ? 'Solve times' : 'Rolling ao12'}, solves ${start + 1}–${end}`}
           xLabel="Solve"

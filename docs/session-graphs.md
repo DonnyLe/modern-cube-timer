@@ -11,9 +11,11 @@ trim the fastest and slowest, then average the remaining ten. One DNF is trimmed
 two or more make the average DNF. The first eleven solves have no average and
 leave a gap. Windows include earlier solves when calculating their first ao12.
 DNFs display × and break the line; missing averages leave gaps. Neither becomes
-zero. Hover, focus, or tap a point to read its solve number and formatted value.
+zero. Hover or tap the graph to read a solve number and formatted value. Keyboard
+users focus the chart and use the left/right arrow keys to move between solves.
 
-`Graph` is the reusable presentation component. Pass ordered numeric x values,
+`Graph` is the reusable presentation component, built with Recharts. Recharts
+owns responsive sizing, scales, ticks, paths, tooltips, and keyboard navigation. Pass ordered numeric x values,
 y values in the caller's units, accessible point labels, axis labels, and an
 optional tick formatter. `null` is missing data; Infinity is an invalid result.
 The caller owns statistics, data selection, navigation, and empty states.

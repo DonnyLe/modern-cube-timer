@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 
 export interface GraphPoint {
   x: number;
@@ -20,102 +20,86 @@ export function Graph({
   yLabel: string;
   formatTick?: (value: number) => string;
 }) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const finite = points
-    .map((point) => point.y)
-    .filter((v): v is number => v !== null && Number.isFinite(v));
-  const low = finite.length ? Math.min(...finite) : 0;
-  const high = finite.length ? Math.max(...finite) : 20;
-  const padding = Math.max((high - low) * 0.1, Math.abs(high) * 0.05, 1);
-  const min = low >= 0 ? Math.max(0, low - padding) : low - padding;
-  const max = high + padding;
-  const first = points[0]?.x ?? 0;
-  const last = points.at(-1)?.x ?? first;
-  const x = (value: number) => 52 + (first === last ? 0.5 : (value - first) / (last - first)) * 398;
-  const y = (value: number) => 166 - ((value - min) / (max - min)) * 132;
-  const segments: string[] = [];
-  let segment = '';
+  const data = points.map((point) => ({
+    ...point,
+    y: point.y !== null && Number.isFinite(point.y) ? point.y : null,
+  }));
 
-  points.forEach((point) => {
-    if (point.y === null || !Number.isFinite(point.y)) {
-      if (segment) segments.push(segment);
-      segment = '';
-    } else segment += `${segment ? ' L' : 'M'}${x(point.x)},${y(point.y)}`;
-  });
-  if (segment) segments.push(segment);
-  const detail =
-    points.find((point) => point.x === selected)?.label ?? 'Hover, tap, or focus a point.';
+  const hasValues = data.some((point) => point.y !== null);
 
   return (
-    <div className="graph">
+    <div
+      className="graph"
+      role="group"
+      aria-label={label}
+      onKeyDown={(event) => {
+        // Space belongs to the focused chart, rather than starting the timer.
+        if (event.key === ' ') event.preventDefault();
+      }}
+    >
       <span className="graph-unit">{yLabel}</span>
-      <svg viewBox="0 0 480 204" className="graph-chart" role="group" aria-label={label}>
-        {[0, 1, 2, 3].map((i) => {
-          const yy = 166 - i * 44;
-
-          return (
-            <g key={i} aria-hidden="true">
-              <line x1="52" x2="458" y1={yy} y2={yy} className="gridline" />
-              <text x="42" y={yy + 4} textAnchor="end">
-                {formatTick(min + ((max - min) * i) / 3)}
-              </text>
-            </g>
-          );
-        })}
-        {segments.map((d, i) => (
-          <path key={i} d={d} fill="none" className="plot-line" aria-hidden="true" />
-        ))}
-        {points.map((point, index) =>
-          point.y === null ? null : (
-            <g
+      <LineChart
+        responsive
+        className="graph-chart"
+        style={{ width: '100%', height: 183 }}
+        data={data}
+        margin={{ top: 16, right: 16, bottom: 0, left: 0 }}
+        accessibilityLayer
+        aria-label={`${label}. Use arrow keys to explore values.`}
+      >
+        <CartesianGrid vertical={false} stroke="var(--outline)" strokeDasharray="3 3" />
+        <XAxis
+          dataKey="x"
+          type="number"
+          domain={['dataMin', 'dataMax']}
+          allowDecimals={false}
+          tickLine={false}
+          axisLine={false}
+          minTickGap={24}
+        />
+        <YAxis
+          domain={hasValues ? [0, 'auto'] : [0, 20]}
+          allowDataOverflow={!hasValues}
+          tickFormatter={formatTick}
+          width={48}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          filterNull={false}
+          isAnimationActive={false}
+          cursor={{ stroke: 'var(--outline)' }}
+          content={({ active, payload }) =>
+            active && payload?.[0] ? (
+              <div className="graph-tooltip" role="status">
+                {payload[0].payload.label}
+              </div>
+            ) : null
+          }
+        />
+        <Line
+          dataKey="y"
+          type="linear"
+          stroke="var(--accent)"
+          strokeWidth={1.5}
+          dot={{ r: 3.2, fill: 'var(--accent)', strokeWidth: 0 }}
+          activeDot={{ r: 5 }}
+          connectNulls={false}
+          isAnimationActive={false}
+        />
+        {points
+          .filter((point) => point.y !== null && !Number.isFinite(point.y))
+          .map((point) => (
+            <ReferenceLine
               key={point.x}
-              role="button"
-              tabIndex={0}
-              aria-label={point.label}
-              className="graph-target"
-              onPointerEnter={() => setSelected(point.x)}
-              onFocus={() => setSelected(point.x)}
-              onClick={() => setSelected(point.x)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setSelected(point.x);
-                }
-              }}
-            >
-              <rect
-                x={index === 0 ? 42 : (x(points[index - 1].x) + x(point.x)) / 2}
-                y="10"
-                width={
-                  (index === points.length - 1 ? 460 : (x(point.x) + x(points[index + 1].x)) / 2) -
-                  (index === 0 ? 42 : (x(points[index - 1].x) + x(point.x)) / 2)
-                }
-                height="164"
-                className="graph-hit"
-              />
-              {Number.isFinite(point.y) ? (
-                <circle cx={x(point.x)} cy={y(point.y)} r="3.2" className="plot-point" />
-              ) : (
-                <text x={x(point.x)} y="26" textAnchor="middle">
-                  ×
-                </text>
-              )}
-              <title>{point.label}</title>
-            </g>
-          ),
-        )}
-        {[0, Math.floor((points.length - 1) / 2), points.length - 1]
-          .filter((v, i, a) => v >= 0 && a.indexOf(v) === i)
-          .map((i) => (
-            <text key={i} x={x(points[i].x)} y="188" textAnchor="middle" aria-hidden="true">
-              {points[i].x}
-            </text>
+              x={point.x}
+              stroke="none"
+              label={{ value: '×', position: 'insideTop', fill: 'var(--accent)' }}
+            />
           ))}
-      </svg>
+      </LineChart>
       <span className="chart-caption">{xLabel}</span>
-      <p className="graph-detail" aria-live="polite">
-        {detail}
-      </p>
+      <p className="graph-hint">Hover, tap, or use arrow keys to explore.</p>
     </div>
   );
 }
