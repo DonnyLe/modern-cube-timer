@@ -520,26 +520,9 @@ small {
   color: color-mix(in srgb, var(--ink) 60%, var(--accent));
   margin-top: 4px;
 }
-.graph-chart {
-  width: 100%;
-  height: 183px;
-  overflow: visible;
-}
 .graph-chart text {
   fill: color-mix(in srgb, var(--ink) 60%, var(--accent));
   font-size: 13px;
-}
-.gridline {
-  stroke: var(--outline);
-  stroke-dasharray: 3 3;
-  stroke-width: 0.7;
-}
-.plot-line {
-  stroke: var(--accent);
-  stroke-width: 1.5;
-}
-.plot-point {
-  fill: var(--accent);
 }
 .dialog {
   position: fixed;
@@ -1681,52 +1664,51 @@ input[type='range'] {
   }
 }
 
-.trend-controls,
-.trend-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.trend-view {
+  position: relative;
 }
-.trend-controls .custom-select-trigger {
+.trend-selector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+.trend-selector .custom-select-trigger {
   width: auto;
   padding: 6px 10px;
   gap: 6px;
   font-size: 13px;
 }
-.trend-controls .custom-select-icon svg {
+.trend-selector .custom-select-icon svg {
   width: 14px;
   height: 14px;
 }
 .trend-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
   white-space: nowrap;
 }
-.graph-unit,
-.graph-detail {
-  display: block;
+.trend-view > .empty {
+  padding-top: 30px;
+}
+.graph-unit {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
   color: color-mix(in srgb, var(--ink) 60%, var(--accent));
   font-size: 12px;
-  margin: 8px 0 0;
 }
-.graph-detail {
-  text-align: center;
-  min-height: 1.5em;
+.graph-tooltip {
+  padding: 8px 10px;
+  border: 1px solid var(--outline);
+  border-radius: var(--control-radius);
+  background: var(--tint);
+  color: var(--ink);
+  font-size: 12px;
 }
-.graph-hit {
-  fill: transparent;
-}
-.graph-target {
-  cursor: pointer;
-}
-.graph-target:focus {
-  outline: none;
-}
-.graph-target:focus .graph-hit {
-  stroke: var(--accent);
-  stroke-width: 1.5;
-}
-
-.graph-target .plot-point,
-.graph-target text {
-  pointer-events: none;
+.graph-chart .recharts-surface:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
