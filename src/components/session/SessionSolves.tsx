@@ -30,7 +30,7 @@ export function SessionSolves({
       ({ solve, number }) =>
         number >= from &&
         number <= to &&
-        value(solve) < target &&
+        (!params.has('under') || value(solve) < target) &&
         (penalty === 'all' || solve.penalty === penalty) &&
         (!notes || !!solve.note.trim()) &&
         `${solve.scramble} ${solve.note} ${formatTime(value(solve), precision)} #${number}`
@@ -67,6 +67,7 @@ export function SessionSolves({
         <label>
           Penalty
           <select
+            aria-label="Penalty"
             value={penalty}
             onChange={(event) => {
               setPenalty(event.target.value);
@@ -82,6 +83,7 @@ export function SessionSolves({
         <label>
           Order
           <select
+            aria-label="Order"
             value={order}
             onChange={(event) => {
               setOrder(event.target.value);
