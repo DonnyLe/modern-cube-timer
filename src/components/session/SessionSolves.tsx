@@ -1,3 +1,4 @@
+import { VirtualSolveList } from './VirtualSolveList';
 import { Checkbox } from '../ui/Checkbox';
 import { Select } from '../ui/Select';
 import { useSearchParams } from 'react-router';
@@ -7,8 +8,6 @@ import { sessionPath } from '../../core/routes';
 import { useMemo, useState } from 'react';
 import type { Solve } from '../../core/types';
 import { formatTime, value } from '../../core/statistics';
-
-const pageSize = 25;
 
 export function SessionSolves({
   solves,
@@ -25,7 +24,6 @@ export function SessionSolves({
   const [penalty, setPenalty] = useState('all');
   const [notes, setNotes] = useState(false);
   const [order, setOrder] = useState('newest');
-  const [page, setPage] = useState(0);
   const [params] = useSearchParams();
   const search = params.toString();
   const reviewIds = useMemo(
@@ -58,9 +56,6 @@ export function SessionSolves({
         ? a.number - b.number
         : b.number - a.number,
   );
-  const lastPage = Math.max(0, Math.ceil(shown.length / pageSize) - 1);
-  const currentPage = Math.min(page, lastPage);
-  const start = currentPage * pageSize;
 
   return (
     <section className="session-panel session-solves" aria-label="Session solves">
@@ -85,10 +80,7 @@ export function SessionSolves({
             type="search"
             placeholder="Scramble, time, or note…"
             value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(0);
-            }}
+            onChange={(event) => setQuery(event.target.value)}
           />
         </label>
         <label>
@@ -102,10 +94,7 @@ export function SessionSolves({
               { value: '+2', label: '+2' },
               { value: 'DNF', label: 'DNF' },
             ]}
-            onValueChange={(next) => {
-              setPenalty(next);
-              setPage(0);
-            }}
+            onValueChange={setPenalty}
           />
         </label>
         <label>
@@ -118,65 +107,26 @@ export function SessionSolves({
               { value: 'oldest', label: 'Oldest first' },
               { value: 'fastest', label: 'Fastest first' },
             ]}
-            onValueChange={(next) => {
-              setOrder(next);
-              setPage(0);
-            }}
+            onValueChange={setOrder}
           />
         </label>
         <Checkbox
           className="session-check"
           label="With notes"
           checked={notes}
-          onCheckedChange={(next) => {
-            setNotes(next);
-            setPage(0);
-          }}
+          onCheckedChange={setNotes}
         />
       </div>
       <p className="subtle session-result-count" role="status">
         {shown.length} matching {shown.length === 1 ? 'solve' : 'solves'}
       </p>
       {shown.length ? (
-        <>
-          <div className="session-solve-list">
-            {shown.slice(start, start + pageSize).map(({ solve, number }) => (
-              <button
-                className="session-solve-row"
-                id={`session-solve-${solve.id}`}
-                key={solve.id}
-                onClick={() => onOpenSolve(solve)}
-                aria-label={`Open solve ${number}: ${formatTime(value(solve), precision)}`}
-              >
-                <span className="subtle">#{number}</span>
-                <strong>
-                  {formatTime(value(solve), precision)}
-                  {solve.penalty === '+2' && <small> +2</small>}
-                </strong>
-                <span>
-                  <span className="session-scramble">
-                    {solve.scramble || 'No scramble recorded'}
-                  </span>
-                  {solve.note && <span className="session-row-note">{solve.note}</span>}
-                </span>
-                <time dateTime={new Date(solve.timestamp).toISOString()}>
-                  {new Date(solve.timestamp).toLocaleString()}
-                </time>
-              </button>
-            ))}
-          </div>
-          <div className="session-pagination">
-            <span>
-              {start + 1}–{Math.min(start + pageSize, shown.length)} of {shown.length}
-            </span>
-            <button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>
-              Previous page
-            </button>
-            <button disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}>
-              Next page
-            </button>
-          </div>
-        </>
+        <VirtualSolveList
+          key={JSON.stringify([query, penalty, notes, order, search])}
+          solves={shown}
+          precision={precision}
+          onOpenSolve={onOpenSolve}
+        />
       ) : (
         <p className="session-empty">
           {solves.length ? 'No solves match these filters.' : 'No solves in this session yet.'}

@@ -256,17 +256,25 @@
   margin-top: 8px;
   overflow-wrap: anywhere;
 }
-.session-pagination {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  margin-top: 20px;
-  font-size: 13px;
+.session-solve-scroll {
+  overflow-y: auto;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
+  border-top: 1px solid var(--outline);
 }
-.session-pagination span {
-  margin-right: auto;
+.session-solve-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.session-solve-list {
+  position: relative;
+  min-width: 0;
+}
+.session-virtual-solve {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 .session-empty {
   padding: 40px 0;
@@ -1077,5 +1085,146 @@
   .session-data-charts > .session-panel,
   .session-data-charts .session-supporting-grid > .session-panel {
     padding: 16px;
+  }
+}
+
+/* Solves owns the viewport; only its measured list and detail panel scroll. */
+.app:has(.session-solves) {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  min-height: 0;
+  overflow: clip;
+}
+.app:has(.session-solves) > .topbar,
+.session-page:has(.session-solves) > .session-back,
+.session-page:has(.session-solves) > .session-header,
+.session-page:has(.session-solves) > .session-tabs,
+.session-solves > .session-list-toolbar,
+.session-solves > .session-result-count,
+.session-solves > .session-filter-context {
+  flex-shrink: 0;
+}
+.app:has(.session-solves) > .page-fade-stack,
+.session-page:has(.session-solves),
+.session-page:has(.session-solves) > .session-content,
+.session-content:has(.session-solves) > .page-fade-stack {
+  flex: 1;
+  min-height: 0;
+}
+.app:has(.session-solves) > .page-fade-stack > .page-fade,
+.session-page:has(.session-solves),
+.session-page:has(.session-solves) > .session-content:not(.session-detail-grid),
+.session-content:has(.session-solves) > .page-fade-stack > .page-fade {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.session-page:has(.session-solves) {
+  width: 100%;
+  padding-bottom: 0;
+}
+.session-page:has(.session-solves) > .session-back {
+  align-self: flex-start;
+}
+.session-content:has(.session-solves) {
+  position: relative;
+}
+.session-solves {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.session-solve-scroll {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+}
+.session-detail-grid:has(.session-solves) {
+  align-items: stretch;
+}
+.session-content:has(.session-solves) > .session-solve-detail {
+  position: static;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+@media (max-width: 1000px) {
+  .session-content:has(.session-solves) > .session-solve-detail {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    grid-row: auto;
+    background: var(--tint);
+  }
+}
+@media (max-width: 767px) {
+  .app:has(.session-solves) {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .app:has(.session-solves) > .topbar {
+    margin-bottom: 12px;
+  }
+  .session-page:has(.session-solves) > .session-back,
+  .session-page:has(.session-solves) > .session-header,
+  .session-page:has(.session-solves) > .session-tabs {
+    margin-bottom: 12px;
+  }
+  .session-page:has(.session-solves) .session-header-actions {
+    gap: 8px;
+  }
+  .session-page:has(.session-solves) .session-header-actions button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .session-solves .session-list-toolbar {
+    gap: 10px;
+  }
+  .session-solves .session-list-toolbar > label:not(.session-search):not(.custom-checkbox-label) {
+    min-width: 120px;
+  }
+  .session-solves .session-result-count {
+    margin-top: 12px;
+  }
+}
+@media (max-width: 767px) and (max-height: 720px) {
+  .app:has(.session-solves) > .topbar {
+    gap: 8px;
+  }
+  .app:has(.session-solves) .segmented button {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .session-page:has(.session-solves) > .session-back,
+  .session-page:has(.session-solves) > .session-header,
+  .session-page:has(.session-solves) > .session-tabs {
+    margin-bottom: 8px;
+  }
+  .session-page:has(.session-solves) > .session-header {
+    gap: 8px;
+  }
+  .session-page:has(.session-solves) .session-tabs a {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .session-solves .session-list-toolbar label {
+    gap: 4px;
+  }
+  .session-solves .session-search input,
+  .session-solves .custom-select-trigger {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .session-solves .session-check {
+    min-height: 36px;
+  }
+  .session-solves .session-result-count {
+    margin-top: 8px;
   }
 }

@@ -44,7 +44,7 @@ test('recent solves entry points open all solves in the expanded session', async
   await page.getByRole('button', { name: 'Continue session', exact: true }).click();
   await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
   await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/solves$/);
-  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.session-result-count')).toHaveText('65 matching solves');
   await expect(page.getByRole('button', { name: 'Back to Timer', exact: true })).toBeVisible();
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
   await page.getByRole('button', { name: 'Continue session', exact: true }).click();
@@ -541,44 +541,105 @@ test('Data shows detailed statistics and legacy Graphs links still resolve', asy
 test('best performances open their original solve and exact average windows', async ({ page }) => {
   await seedSession(page);
   await page.getByRole('link', { name: 'View best ao5:', exact: false }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(5);
+  await expect(page.locator('.session-result-count')).toHaveText('5 matching solves');
   await expect(page).toHaveURL(/solves\?from=\d+&to=\d+$/);
   await page.getByRole('link', { name: 'Overview', exact: true }).click();
   await page.getByRole('link', { name: 'View best ao12:', exact: false }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(12);
+  await expect(page.locator('.session-result-count')).toHaveText('12 matching solves');
 });
 
-test('solves preserves numbering through search, penalties, sorting, and pagination', async ({
+test('solves preserves numbering through search, penalties, sorting, and scrolling', async ({
   page,
 }) => {
   await seedSession(page);
   await page.getByRole('link', { name: 'Solves', exact: true }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.session-result-count')).toHaveText('65 matching solves');
   await expect(page.locator('.session-solve-row').first()).toContainText('#65');
-  await page.getByRole('button', { name: 'Next page' }).click();
-  await expect(page.locator('.session-solve-row').first()).toContainText('#40');
+  const list = page.getByRole('region', { name: 'Scrollable solves', exact: true });
+
+  await list.focus();
+  await page.keyboard.press('End');
+  await expect(page.getByRole('button', { name: /^Open solve 1:/ })).toBeInViewport();
   await page.getByRole('searchbox', { name: 'Search solves' }).fill('Clean finish');
-  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
   await expect(page.locator('.session-solve-row')).toContainText('#11');
   await page.getByRole('searchbox', { name: 'Search solves' }).fill('');
   const notesCheckbox = page.getByRole('checkbox', { name: 'With notes', exact: true });
 
   await page.getByText('With notes', { exact: true }).click();
   await expect(notesCheckbox).toBeChecked();
-  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
   await expect(page.locator('.session-solve-row')).toContainText('#11');
   await notesCheckbox.focus();
   await page.keyboard.press('Space');
   await expect(notesCheckbox).not.toBeChecked();
   await expect(page.locator('.app')).not.toHaveClass(/is-running/);
   await selectSessionOption(page, 'Penalty', 'DNF');
-  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
   await expect(page.locator('.session-solve-row')).toContainText('#18');
   await selectSessionOption(page, 'Penalty', 'All results');
   await selectSessionOption(page, 'Order', 'Fastest first');
   await expect(page.locator('.session-solve-row').first()).toContainText('#1');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('large solve lists render a bounded window and remeasure wrapped rows', async ({
+  page,
+}, testInfo) => {
+  await seedSession(page, 2000);
+  await page.getByRole('link', { name: 'Solves', exact: true }).click();
+  const list = page.getByRole('region', { name: 'Scrollable solves', exact: true });
+
+  await expect(page.locator('.session-result-count')).toHaveText('2000 matching solves');
+  await expect(page.getByRole('button', { name: 'Next page' })).toHaveCount(0);
+  await expect(page.locator('.session-solve-row').first()).toContainText('#2000');
+  expect(await page.locator('.session-solve-row').count()).toBeLessThan(40);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(1000);
+  await page.screenshot({ path: testInfo.outputPath('virtual-solves-desktop.png') });
+  await list.focus();
+  await page.keyboard.press('End');
+  const oldest = page.getByRole('button', { name: /^Open solve 1:/ });
+
+  await expect(oldest).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect(await page.locator('.session-solve-row').count()).toBeLessThan(40);
+  await oldest.click();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toContainText(
+    'Solve #1',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(844);
+  await page.getByRole('button', { name: 'Close solve details', exact: true }).click();
+  await selectSessionOption(page, 'Order', 'Oldest first');
+  await expect(page.locator('.session-solve-row').first()).toContainText('#1');
+  await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+  await expect
+    .poll(async () => {
+      const rows = await page.locator('.session-virtual-solve').evaluateAll((elements) =>
+        elements.map((element) => {
+          const box = element.getBoundingClientRect();
+
+          return { top: box.top, bottom: box.bottom };
+        }),
+      );
+
+      return rows.every((row, index) => index === 0 || row.top >= rows[index - 1].bottom - 1);
+    })
+    .toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await list.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('virtual-solves-mobile.png') });
+  await page.getByRole('button', { name: /^Open solve 1:/ }).click();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('virtual-solves-mobile-details.png') });
+  await page.getByRole('button', { name: 'Close solve details', exact: true }).click();
+  await page.getByRole('searchbox', { name: 'Search solves' }).fill('Clean finish');
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
+  await expect(page.locator('.session-solve-row')).toContainText('#11');
+  await page.setViewportSize({ width: 390, height: 600 });
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(600);
+  expect((await list.boundingBox())!.height).toBeGreaterThan(60);
 });
 
 test('solve panel saves penalties and notes, supports delete undo, and survives reload', async ({
@@ -644,7 +705,7 @@ test('supporting charts link distribution bins and targets back to solves', asyn
     .getByRole('region', { name: 'Consistency by block', exact: true })
     .getByRole('link', { name: 'Solves 51–65' })
     .click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(15);
+  await expect(page.locator('.session-result-count')).toHaveText('15 matching solves');
 });
 
 test('insights link exact best-average windows to their original solves', async ({ page }) => {
@@ -652,10 +713,10 @@ test('insights link exact best-average windows to their original solves', async 
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'What changed as you practiced' })).toBeVisible();
   await page.getByRole('link', { name: 'View these 12 solves' }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(12);
+  await expect(page.locator('.session-result-count')).toHaveText('12 matching solves');
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await page.getByRole('link', { name: 'Closing solves', exact: false }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(16);
+  await expect(page.locator('.session-result-count')).toHaveText('16 matching solves');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
@@ -670,12 +731,12 @@ test('review and annotated solves retain source records and provide a clear filt
 
   await expect(review).toContainText('0.48');
   await review.getByRole('link', { name: /Review all/ }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(3);
+  await expect(page.locator('.session-result-count')).toHaveText('3 matching solves');
   await page.getByRole('link', { name: 'Show all solves' }).click();
   await expect(page.getByRole('status').filter({ hasText: '65 matching solves' })).toBeVisible();
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await page.getByRole('link', { name: /View all 1 annotated solves/ }).click();
-  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
   await expect(page.locator('.session-solve-row')).toContainText('#11');
 });
 
@@ -723,7 +784,9 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
     });
 
     if (tab === 'Data') {
-      await page.getByRole('region', { name: 'Under target', exact: true }).scrollIntoViewIfNeeded();
+      await page
+        .getByRole('region', { name: 'Under target', exact: true })
+        .scrollIntoViewIfNeeded();
       await page.screenshot({ path: testInfo.outputPath('session-data-mobile-scrolled.png') });
     }
   }
@@ -761,11 +824,11 @@ test('router preserves legacy links, browser history, and solve filters across r
   await page.getByRole('link', { name: 'View matching solves', exact: false }).click();
   await expect(page).toHaveURL(/solves\?under=13000$/);
   await expect(page.locator('.session-solve-row').first()).toBeVisible();
-  const count = await page.locator('.session-solve-row').count();
+  const count = await page.locator('.session-result-count').innerText();
 
-  expect(count).toBeGreaterThan(0);
+  expect(count).not.toBe('0 matching solves');
   await page.reload();
-  await expect(page.locator('.session-solve-row')).toHaveCount(count);
+  await expect(page.locator('.session-result-count')).toHaveText(count);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page).toHaveURL(/#\/settings$/);
   await expect(settingsTab.locator('.segmented-selection')).toBeVisible();
@@ -774,7 +837,7 @@ test('router preserves legacy links, browser history, and solve filters across r
   await expect(page.getByRole('combobox', { name: 'Color mode' })).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/solves\?under=13000$/);
-  await expect(page.locator('.session-solve-row')).toHaveCount(count);
+  await expect(page.locator('.session-result-count')).toHaveText(count);
   await expect(timerTab).toHaveAttribute('aria-current', 'page');
   await expect(timerTab.locator('.segmented-selection')).toBeVisible();
 });
