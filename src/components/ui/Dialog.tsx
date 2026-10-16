@@ -13,6 +13,7 @@ export function Dialog({
   allowOverflow = false,
   className = '',
   onEntered,
+  onExited,
 }: {
   open: boolean;
   title: string;
@@ -22,6 +23,7 @@ export function Dialog({
   allowOverflow?: boolean;
   className?: string;
   onEntered?: () => void;
+  onExited?: () => void;
 }) {
   const reducedMotion = useReducedMotion();
 
@@ -34,7 +36,7 @@ export function Dialog({
     >
       <MotionConfig reducedMotion="user">
         {/* AnimatePresence keeps the last content rendered while the exit plays. */}
-        <AnimatePresence>
+        <AnimatePresence onExitComplete={onExited}>
           {open && (
             <DialogPrimitive.Portal keepMounted container={portalContainer}>
               <DialogPrimitive.Backdrop

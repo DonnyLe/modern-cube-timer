@@ -26,3 +26,7 @@ Session pages inherit the app's theme and appearance settings. Solve mutations l
 Session navigation uses a brief opacity crossfade (80ms out, 160ms in). The app header and session tab bar stay steady while content changes. Opening from the timer or picker loads a consistent session snapshot before navigation; live updates continue after opening. Session initialization no longer displays a transient “Opening session…” screen. Reduced-motion preferences skip fades.
 
 When returning to All sessions, the picker opens first while the timer content stays hidden. Once the modal entrance finishes, the timer background fades in gently over 280ms. Closing the picker early releases the held background; reduced motion skips both animations.
+
+Opening Overview or Solves from the session picker prepares the session data, closes the picker and backdrop completely, then starts the session-page crossfade. Navigation waits for the actual modal exit callback rather than a timed delay.
+
+Session filters, graph controls, and the solve editor use the shared Base UI Select. The reusable Checkbox component supplies themed checked, disabled, and keyboard-focus states for notes and graph series. Session dropdowns use consistent 40px heights and inset chevrons.

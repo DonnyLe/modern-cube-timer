@@ -1,3 +1,5 @@
+import { Checkbox } from '../ui/Checkbox';
+import { Select } from '../ui/Select';
 import { SupportingGraphs } from './SupportingGraphs';
 import { useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
@@ -55,32 +57,29 @@ export function SessionGraphs({
           <h2>Solve times & rolling averages</h2>
           <label className="session-axis-label">
             Horizontal axis
-            <select
-              aria-label="Horizontal axis"
+            <Select
+              label="Horizontal axis"
               value={axis}
-              onChange={(event) => setAxis(event.target.value)}
-            >
-              <option value="solve">By solve</option>
-              <option value="timestamp">By time</option>
-            </select>
+              options={[
+                { value: 'solve', label: 'By solve' },
+                { value: 'timestamp', label: 'By time' },
+              ]}
+              onValueChange={setAxis}
+            />
           </label>
         </div>
         <div className="session-series">
           {series.map((key, index) => (
-            <label key={key}>
-              <input
-                type="checkbox"
-                checked={visible.includes(key)}
-                onChange={() =>
-                  setVisible((current) =>
-                    current.includes(key)
-                      ? current.filter((item) => item !== key)
-                      : [...current, key],
-                  )
-                }
-              />
-              <span style={{ color: colors[index] }}>{names[key]}</span>
-            </label>
+            <Checkbox
+              key={key}
+              label={<span style={{ color: colors[index] }}>{names[key]}</span>}
+              checked={visible.includes(key)}
+              onCheckedChange={(checked) =>
+                setVisible((current) =>
+                  checked ? [...current, key] : current.filter((item) => item !== key),
+                )
+              }
+            />
           ))}
         </div>
         {!solves.length ? (

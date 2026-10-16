@@ -1,3 +1,4 @@
+import { Select } from '../ui/Select';
 import { useRef, useEffect, useState } from 'react';
 import { Copy, X } from 'lucide-react';
 import type { Session, Solve, Penalty } from '../../core/types';
@@ -82,18 +83,19 @@ export function SolveDetail({
         </label>
         <label>
           Penalty
-          <select
-            aria-label="Solve penalty"
+          <Select<Penalty>
+            label="Solve penalty"
             value={penalty}
-            onChange={(event) => {
-              setPenalty(event.target.value as Penalty);
+            options={[
+              { value: 'none', label: 'None' },
+              { value: '+2', label: '+2' },
+              { value: 'DNF', label: 'DNF' },
+            ]}
+            onValueChange={(next) => {
+              setPenalty(next);
               setMessage('');
             }}
-          >
-            <option value="none">None</option>
-            <option value="+2">+2</option>
-            <option value="DNF">DNF</option>
-          </select>
+          />
         </label>
         <div className="session-section-header">
           <h3>Scramble</h3>

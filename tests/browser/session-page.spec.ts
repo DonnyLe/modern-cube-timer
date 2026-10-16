@@ -294,6 +294,85 @@ test('closing the picker during its entrance releases the timer background', asy
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
 });
 
+for (const reducedMotion of [false, true]) {
+  for (const action of ['Expand session', 'View all']) {
+    test(`picker closes before ${action} fades in (reduced motion: ${reducedMotion})`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+      await seedSession(page);
+      await page.reload();
+      await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+      await page.getByRole('button', { name: 'Manage sessions', exact: true }).click();
+      await expect(page.getByRole('dialog')).toHaveCSS('transform', 'none');
+      await page.evaluate(() => {
+        const observation = {
+          samples: [] as { overlay: boolean; session: boolean; opacity: number }[],
+          done: false,
+        };
+
+        Object.assign(window, { sessionOpening: observation });
+
+        const sample = () => {
+          const session = document.querySelector('.session-page');
+          const fade = session?.closest('.page-fade');
+
+          observation.samples.push({
+            overlay: !!document.querySelector('[role="dialog"], .dialog-backdrop'),
+            session: !!session,
+            opacity: fade ? Number(getComputedStyle(fade).opacity) : 0,
+          });
+          if (observation.samples.filter((item) => item.session && item.opacity === 1).length < 6)
+            requestAnimationFrame(sample);
+          else observation.done = true;
+        };
+
+        requestAnimationFrame(sample);
+      });
+      await page.getByRole('button', { name: action, exact: true }).click();
+      await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
+      await expect(page).toHaveURL(action === 'Expand session' ? /overview$/ : /solves$/);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as unknown as { sessionOpening: { done: boolean } }).sessionOpening.done,
+          ),
+        )
+        .toBe(true);
+      const samples = await page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              sessionOpening: {
+                samples: { overlay: boolean; session: boolean; opacity: number }[];
+              };
+            }
+          ).sessionOpening.samples,
+      );
+
+      expect(samples.some((item) => item.overlay && item.session)).toBe(false);
+      if (!reducedMotion)
+        expect(samples.some((item) => item.session && item.opacity > 0 && item.opacity < 1)).toBe(
+          true,
+        );
+      await testInfo.attach('modal-exit-then-page-fade-frames', {
+        body: JSON.stringify(samples),
+        contentType: 'application/json',
+      });
+    });
+  }
+}
+
+async function selectSessionOption(
+  page: import('@playwright/test').Page,
+  label: string,
+  option: string,
+) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+  await expect(page.getByRole('listbox')).toBeHidden();
+}
+
 async function seedSession(page: import('@playwright/test').Page, count = 65, allDnf = false) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
@@ -368,11 +447,21 @@ test('solves preserves numbering through search, penalties, sorting, and paginat
   await expect(page.locator('.session-solve-row')).toHaveCount(1);
   await expect(page.locator('.session-solve-row')).toContainText('#11');
   await page.getByRole('searchbox', { name: 'Search solves' }).fill('');
-  await page.getByLabel('Penalty', { exact: true }).selectOption('DNF');
+  const notesCheckbox = page.getByRole('checkbox', { name: 'With notes', exact: true });
+
+  await page.getByText('With notes', { exact: true }).click();
+  await expect(notesCheckbox).toBeChecked();
+  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-solve-row')).toContainText('#11');
+  await notesCheckbox.focus();
+  await page.keyboard.press('Space');
+  await expect(notesCheckbox).not.toBeChecked();
+  await expect(page.locator('.app')).not.toHaveClass(/is-running/);
+  await selectSessionOption(page, 'Penalty', 'DNF');
   await expect(page.locator('.session-solve-row')).toHaveCount(1);
   await expect(page.locator('.session-solve-row')).toContainText('#18');
-  await page.getByLabel('Penalty', { exact: true }).selectOption('all');
-  await page.getByLabel('Order', { exact: true }).selectOption('fastest');
+  await selectSessionOption(page, 'Penalty', 'All results');
+  await selectSessionOption(page, 'Order', 'Fastest first');
   await expect(page.locator('.session-solve-row').first()).toContainText('#1');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
@@ -387,7 +476,7 @@ test('solve panel saves penalties and notes, supports delete undo, and survives 
   const panel = page.getByRole('complementary', { name: 'Solve details' });
 
   await panel.getByLabel('Time before penalty').fill('12.34');
-  await panel.getByLabel('Solve penalty').selectOption('+2');
+  await selectSessionOption(page, 'Solve penalty', '+2');
   await panel.getByLabel('Note', { exact: true }).fill('Saved from session details');
   await panel.getByRole('button', { name: 'Save solve', exact: true }).click();
   await expect(panel.getByRole('status')).toHaveText('Solve saved.');
@@ -408,8 +497,8 @@ test('graphs cover the full session and open an attempt by original number', asy
   await page.getByRole('link', { name: 'Graphs', exact: true }).click();
   await expect(page.getByRole('group', { name: 'Session trend chart', exact: true })).toBeVisible();
   await expect(page.locator('.session-full-trend')).toContainText('65 solves');
-  await page.getByLabel('ao50', { exact: true }).check();
-  await page.getByLabel('Horizontal axis', { exact: true }).selectOption('timestamp');
+  await page.getByRole('checkbox', { name: 'ao50', exact: true }).check();
+  await selectSessionOption(page, 'Horizontal axis', 'By time');
   await page.getByRole('spinbutton', { name: 'Inspect solve number' }).fill('17');
   await page.getByRole('button', { name: 'Open solve', exact: true }).click();
   await expect(page.getByRole('complementary', { name: 'Solve details' })).toContainText(

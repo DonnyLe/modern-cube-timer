@@ -1,3 +1,5 @@
+import { Checkbox } from '../ui/Checkbox';
+import { Select } from '../ui/Select';
 import { useSearchParams } from 'react-router';
 import { Link } from './SessionLinks';
 import { reviewResults } from '../../core/sessionAnalysis';
@@ -91,46 +93,46 @@ export function SessionSolves({
         </label>
         <label>
           Penalty
-          <select
-            aria-label="Penalty"
+          <Select
+            label="Penalty"
             value={penalty}
-            onChange={(event) => {
-              setPenalty(event.target.value);
+            options={[
+              { value: 'all', label: 'All results' },
+              { value: 'none', label: 'No penalty' },
+              { value: '+2', label: '+2' },
+              { value: 'DNF', label: 'DNF' },
+            ]}
+            onValueChange={(next) => {
+              setPenalty(next);
               setPage(0);
             }}
-          >
-            <option value="all">All results</option>
-            <option value="none">No penalty</option>
-            <option value="+2">+2</option>
-            <option value="DNF">DNF</option>
-          </select>
+          />
         </label>
         <label>
           Order
-          <select
-            aria-label="Order"
+          <Select
+            label="Order"
             value={order}
-            onChange={(event) => {
-              setOrder(event.target.value);
+            options={[
+              { value: 'newest', label: 'Newest first' },
+              { value: 'oldest', label: 'Oldest first' },
+              { value: 'fastest', label: 'Fastest first' },
+            ]}
+            onValueChange={(next) => {
+              setOrder(next);
               setPage(0);
             }}
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="fastest">Fastest first</option>
-          </select>
+          />
         </label>
-        <label className="session-check">
-          <input
-            type="checkbox"
-            checked={notes}
-            onChange={(event) => {
-              setNotes(event.target.checked);
-              setPage(0);
-            }}
-          />{' '}
-          With notes
-        </label>
+        <Checkbox
+          className="session-check"
+          label="With notes"
+          checked={notes}
+          onCheckedChange={(next) => {
+            setNotes(next);
+            setPage(0);
+          }}
+        />
       </div>
       <p className="subtle session-result-count" role="status">
         {shown.length} matching {shown.length === 1 ? 'solve' : 'solves'}

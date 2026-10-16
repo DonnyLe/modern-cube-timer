@@ -223,19 +223,27 @@
   flex: 1;
   min-width: 160px;
 }
-.session-list-toolbar input,
-.session-list-toolbar select {
+.session-search input {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.session-list-toolbar > label:not(.session-search):not(.custom-checkbox-label) {
+  min-width: 140px;
+}
+.session-list-toolbar .session-check {
+  min-height: 40px;
+  padding: 0;
   font-size: 14px;
 }
-.session-check {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 0;
-}
-.session-check input {
-  width: auto;
+.session-page .custom-select-trigger {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  gap: 16px;
+  font-size: 14px;
+  line-height: 20px;
 }
 .session-result-count {
   font-size: 13px;
@@ -363,8 +371,9 @@
   gap: 12px;
   font-size: 12px;
 }
-.session-axis-label select {
+.session-axis-label .custom-select-trigger {
   width: auto;
+  min-width: 130px;
   font-size: 13px;
 }
 .session-series {
@@ -379,9 +388,6 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-}
-.session-series input {
-  width: auto;
 }
 .session-large-chart {
   min-width: 0;

@@ -77,6 +77,11 @@ export default function App() {
   useEffect(() => {
     if (location.pathname !== '/') setPickerOpening(false);
   }, [location.pathname]);
+  const pendingSessionPage = useRef<{
+    path: string;
+    state: { sessionEntry: string };
+    locationKey: string;
+  } | null>(null);
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || !!sessionRoute);
@@ -187,14 +192,22 @@ export default function App() {
 
       if (focused) await changeFocus(false);
       setSessionSnapshot(snapshot);
-      setDialog('');
-      navigate(sessionPath(sessionId, tab), { state: { sessionEntry } });
+      const path = sessionPath(sessionId, tab);
+      const state = { sessionEntry };
+
+      if (sessionEntry === 'sessions' && dialog === 'sessions') {
+        pendingSessionPage.current = { path, state, locationKey: location.key };
+        setDialog('');
+      } else {
+        navigate(path, { state });
+      }
     } catch {
       store.setError('Could not open this session. Please try again.');
     }
   };
 
   const openSessions = () => {
+    pendingSessionPage.current = null;
     setManagerSessionId(preferences.activeSessionId);
     setManagerPuzzle(session?.puzzle || '333');
     setDialog('sessions');
@@ -607,6 +620,14 @@ export default function App() {
         open={!!dialog}
         onEntered={() => {
           if (dialog === 'sessions') setPickerOpening(false);
+        }}
+        onExited={() => {
+          const next = pendingSessionPage.current;
+
+          pendingSessionPage.current = null;
+          if (!next || next.locationKey !== location.key) return;
+          setPickerOpening(false);
+          navigate(next.path, { state: next.state });
         }}
         title={
           dialog === 'manual'
