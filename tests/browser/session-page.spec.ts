@@ -91,3 +91,39 @@ test('overview shows live statistics and readable scrambles on mobile', async ({
   await page.locator('.session-solve-row').first().click();
   await expect(page.getByRole('dialog', { name: 'Solve details' })).toBeVisible();
 });
+
+test('solves preserves numbering through search, penalties, sorting, and pagination', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Solves', exact: true }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.session-solve-row').first()).toContainText('#65');
+  await page.getByRole('button', { name: 'Next page' }).click();
+  await expect(page.locator('.session-solve-row').first()).toContainText('#40');
+  await page.getByRole('searchbox', { name: 'Search solves' }).fill('Clean finish');
+  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-solve-row')).toContainText('#11');
+  await page.getByRole('searchbox', { name: 'Search solves' }).fill('');
+  await page.getByLabel('Penalty', { exact: true }).selectOption('DNF');
+  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-solve-row')).toContainText('#18');
+  await page.getByLabel('Penalty', { exact: true }).selectOption('all');
+  await page.getByLabel('Order', { exact: true }).selectOption('fastest');
+  await expect(page.locator('.session-solve-row').first()).toContainText('#1');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('recent solves entry points open all solves in the expanded session', async ({ page }) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.getByRole('button', { name: '65 solves · Fixture practice', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+});

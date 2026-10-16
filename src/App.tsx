@@ -342,6 +342,8 @@ export default function App() {
         <SessionPage
           key={sessionRoute.id}
           sessionId={sessionRoute.id}
+          tab={sessionRoute.tab}
+          search={sessionRoute.search}
           precision={a.precision}
           onOpenSolve={openSolve}
           onBack={() => {
@@ -459,7 +461,7 @@ export default function App() {
                     onClick={() => {
                       setHistoryFromManager(false);
                       setHistorySessionId(preferences.activeSessionId);
-                      setDialog('history');
+                      window.location.hash = sessionLink(preferences.activeSessionId, 'solves');
                     }}
                   >
                     See all <ArrowUpRight size={16} />
@@ -488,7 +490,12 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={openSessions}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      window.location.hash = sessionLink(preferences.activeSessionId, 'solves');
+                    }}
+                  >
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
