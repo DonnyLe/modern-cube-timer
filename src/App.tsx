@@ -273,15 +273,15 @@ export default function App() {
                 <button
                   key={v}
                   disabled={busy}
-                  className={!sessionRoute && view === v ? 'active' : ''}
-                  aria-current={!sessionRoute && view === v ? 'page' : undefined}
+                  className={view === v ? 'active' : ''}
+                  aria-current={view === v ? 'page' : undefined}
                   onClick={(event) => {
                     window.location.hash = '';
                     setView(v);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
                 >
-                  {!focused && !sessionRoute && view === v && (
+                  {!focused && view === v && (
                     <motion.span
                       initial={false}
                       className="segmented-selection"
