@@ -1,18 +1,22 @@
 import { formatTime, value } from '../../core/statistics';
-import { sessionSummary } from '../../core/sessionAnalysis';
+import { compareStretches, sessionSummary } from '../../core/sessionAnalysis';
 import type { Solve } from '../../core/types';
+import { sessionLink } from '../../core/useSessionRoute';
 import { Trend } from '../Trend';
 
 export function SessionOverview({
   solves,
+  sessionId,
   precision,
   onOpenSolve,
 }: {
   solves: Solve[];
+  sessionId: string;
   precision: number;
   onOpenSolve: (solve: Solve) => void;
 }) {
   const summary = sessionSummary(solves);
+  const comparison = compareStretches(solves);
   const metrics = [
     ['Solves', String(solves.length)],
     ['Session mean', formatTime(summary.mean, precision)],
@@ -37,7 +41,15 @@ export function SessionOverview({
           <Trend solves={solves} />
         </section>
         <section className="session-panel">
-          <h2>At a glance</h2>
+          <h2>Session recap</h2>
+          {comparison && (
+            <p className="session-recap">
+              Your final {comparison.size} attempts averaged{' '}
+              {formatTime(Math.abs(comparison.change), precision)}s{' '}
+              {comparison.change <= 0 ? 'faster' : 'slower'} than your first {comparison.size},
+              among finished solves.
+            </p>
+          )}
           <dl className="session-facts">
             <div>
               <dt>Median (finished solves)</dt>
@@ -59,6 +71,9 @@ export function SessionOverview({
           <p className="subtle session-footnote">
             Averages include penalties. An untrimmed mean containing a DNF is DNF.
           </p>
+          <a className="session-all-solves" href={sessionLink(sessionId, 'insights')}>
+            All insights →
+          </a>
         </section>
       </div>
       <section className="session-panel">

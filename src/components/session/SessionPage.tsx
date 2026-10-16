@@ -8,6 +8,7 @@ import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
+import { SessionInsights } from './SessionInsights';
 import { SessionGraphs } from './SessionGraphs';
 import { SolveDetail } from './SolveDetail';
 import { SessionSolves } from './SessionSolves';
@@ -112,12 +113,14 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'graphs', 'solves'].map((item) => (
+        {['overview', 'graphs', 'solves', 'insights'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
             aria-current={
-              (['graphs', 'solves'].includes(tab) ? tab : 'overview') === item ? 'page' : undefined
+              (['graphs', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
+                ? 'page'
+                : undefined
             }
           >
             {item[0].toUpperCase() + item.slice(1)}
@@ -126,8 +129,9 @@ export function SessionPage({
       </nav>
       <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
         <div>
-          {' '}
-          {tab === 'graphs' ? (
+          {tab === 'insights' ? (
+            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
+          ) : tab === 'graphs' ? (
             <SessionGraphs
               sessionId={session.id}
               solves={solves}
@@ -144,7 +148,12 @@ export function SessionPage({
             />
           ) : (
             <>
-              <SessionOverview solves={solves} precision={precision} onOpenSolve={openSolve} />
+              <SessionOverview
+                sessionId={session.id}
+                solves={solves}
+                precision={precision}
+                onOpenSolve={openSolve}
+              />
               <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
                 View all {solves.length} solves →
               </a>

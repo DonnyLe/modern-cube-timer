@@ -6,6 +6,7 @@ import {
   distribution,
   consistencyBlocks,
   underTarget,
+  compareStretches,
 } from '../src/core/sessionAnalysis';
 import type { Solve } from '../src/core/types';
 
@@ -78,4 +79,19 @@ it('consistency blocks retain incomplete and all-DNF blocks without zero times',
 
   expect(blocks[0]).toMatchObject({ start: 0, end: 4, q1: 11500, median: 13000, q3: 14500 });
   expect(blocks[1]).toMatchObject({ start: 4, end: 5, count: 0, median: null });
+});
+
+it('stretch comparisons do not overlap and explain DNF omission', () => {
+  expect(compareStretches([solve(12000)])).toBeNull();
+  const solves = Array.from({ length: 12 }, (_, i) => solve(i < 3 ? 20000 : 10000));
+
+  expect(compareStretches(solves)).toEqual({
+    size: 3,
+    opening: 20000,
+    closing: 10000,
+    change: -10000,
+  });
+  solves[0].penalty = 'DNF';
+  expect(compareStretches(solves)?.opening).toBe(20000);
+  expect(compareStretches(Array.from({ length: 12 }, () => solve(12000, 'DNF')))).toBeNull();
 });

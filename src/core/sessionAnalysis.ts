@@ -56,6 +56,24 @@ export function underTarget(solves: Solve[], target: number) {
   });
 }
 
+export function compareStretches(solves: Solve[]) {
+  if (solves.length < 12) return null;
+  const size = Math.min(50, Math.floor(solves.length / 4));
+
+  const mean = (items: Solve[]) => {
+    const times = items.map(value).filter(Number.isFinite);
+
+    return times.length ? times.reduce((sum, time) => sum + time, 0) / times.length : null;
+  };
+
+  const opening = mean(solves.slice(0, size));
+  const closing = mean(solves.slice(-size));
+
+  return opening === null || closing === null
+    ? null
+    : { size, opening, closing, change: closing - opening };
+}
+
 export function rollingAverage(solves: Solve[], count: number) {
   return solves.map((_, index) =>
     average(solves.slice(Math.max(0, index + 1 - count), index + 1), count),

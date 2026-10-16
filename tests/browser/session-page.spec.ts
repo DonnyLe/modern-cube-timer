@@ -170,3 +170,17 @@ test('supporting charts link distribution bins and targets back to solves', asyn
     .click();
   await expect(page.locator('.session-solve-row')).toHaveCount(15);
 });
+
+test('insights link exact best-average windows to their original solves', async ({ page }) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'What changed as you practiced' })).toBeVisible();
+  await page.getByRole('link', { name: 'View these 12 solves' }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(12);
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await page.getByRole('link', { name: 'Closing solves', exact: false }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(16);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
