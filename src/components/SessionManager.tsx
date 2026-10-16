@@ -35,6 +35,7 @@ export function SessionManager({
   onSelect,
   onPuzzleChange,
   onViewAll,
+  onExpand,
   onOpenSolve,
   precision,
   theme,
@@ -45,6 +46,7 @@ export function SessionManager({
   onSelect: (id: string) => void;
   onPuzzleChange: (puzzle: PuzzleEvent) => void;
   onViewAll: (id: string) => void;
+  onExpand: (id: string) => void;
   onOpenSolve: (solve: Solve) => void;
   precision: number;
   theme: 'light' | 'dark';
@@ -225,7 +227,7 @@ export function SessionManager({
             </button>
             <button
               className="text-button"
-              onClick={() => onViewAll(selected.id)}
+              onClick={() => onExpand(selected.id)}
               disabled={working}
             >
               <Maximize2 size={14} /> Expand session

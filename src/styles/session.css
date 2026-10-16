@@ -1,0 +1,94 @@
+.session-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+.session-back {
+  margin-bottom: 24px;
+}
+.session-header,
+.session-identity,
+.session-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.session-header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.session-identity {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.session-identity h1 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.session-identity h1:focus {
+  outline: none;
+}
+.session-identity p {
+  font-size: 14px;
+}
+.session-thumbnail {
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  flex: 0 0 44px;
+}
+.session-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--outline);
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.session-tabs a {
+  text-decoration: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+}
+.session-tabs a[aria-current='page'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.session-panel {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-width: 0;
+}
+.session-panel h2 {
+  margin-bottom: 16px;
+}
+.session-rename {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.session-page button {
+  font-size: 14px;
+}
+@media (max-width: 650px) {
+  .session-identity h1 {
+    font-size: 22px;
+  }
+  .session-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .session-panel {
+    padding: 16px;
+  }
+  .session-tabs a {
+    padding: 12px 14px;
+  }
+}
