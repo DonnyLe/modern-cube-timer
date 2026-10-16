@@ -22,3 +22,5 @@ Stretch comparisons need at least 12 attempts and compare the first and last qua
 Timer, Settings, and Gallery also use hash routes, so browser Back/Forward and reloads preserve navigation.
 
 Session pages inherit the app's theme and appearance settings. Solve mutations live in `src/data/actions/solve.ts`; derived analysis lives in `src/core/sessionAnalysis.ts`. Browser coverage is in `tests/browser/session-page.spec.ts` and calculation coverage in `tests/session-analysis.test.ts`.
+
+Session navigation uses a brief opacity fade (80ms out, 160ms in). The app header and session tab bar stay steady while content changes. Opening from the timer or picker loads a consistent session snapshot before navigation; live updates continue after opening. Session initialization no longer displays a transient “Opening session…” screen. Reduced-motion preferences skip fades.

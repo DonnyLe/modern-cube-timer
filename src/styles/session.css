@@ -3,6 +3,9 @@
   margin: 0 auto;
   padding-bottom: 32px;
 }
+.session-pending {
+  min-height: 50vh;
+}
 .session-back {
   margin-bottom: 24px;
 }

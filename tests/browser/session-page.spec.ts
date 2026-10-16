@@ -118,6 +118,73 @@ test('picker entry keeps All sessions through filtered solves, reload and browse
   await expect(page.getByRole('heading', { name: 'Fixture practice', exact: true })).toBeVisible();
 });
 
+for (const reducedMotion of [false, true]) {
+  test(`session navigation fades without a loading screen (reduced motion: ${reducedMotion})`, async ({
+    page,
+  }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+    await seedSession(page);
+    await page.reload();
+    await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'View session: Fixture practice', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('.app > .page-fade')).toHaveCSS('opacity', '1');
+    await page.evaluate(() => {
+      const observation = { loading: false, samples: [] as number[], headers: [] as number[] };
+      const observer = new MutationObserver(() => {
+        if (document.body.textContent?.includes('Opening session…')) observation.loading = true;
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      const started = performance.now();
+
+      const sample = () => {
+        for (const element of document.querySelectorAll('.page-fade'))
+          observation.samples.push(Number(getComputedStyle(element).opacity));
+        const header = document.querySelector('.topbar');
+
+        if (header) observation.headers.push(Number(getComputedStyle(header).opacity));
+        if (performance.now() - started < 1200) requestAnimationFrame(sample);
+        else observer.disconnect();
+      };
+
+      requestAnimationFrame(sample);
+      Object.assign(window, { sessionTransitionObservation: observation });
+    });
+    await page.getByRole('button', { name: 'View session: Fixture practice', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Fixture practice', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('.app > .page-fade')).toHaveCSS('opacity', '1');
+    await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+    await expect(
+      page.getByRole('region', { name: 'Full session trend', exact: true }),
+    ).toBeVisible();
+    await expect(page.locator('.session-page .page-fade')).toHaveCSS('opacity', '1');
+    const observation = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            sessionTransitionObservation: {
+              loading: boolean;
+              samples: number[];
+              headers: number[];
+            };
+          }
+        ).sessionTransitionObservation,
+    );
+
+    expect(observation.loading).toBe(false);
+    expect(observation.headers.every((opacity) => opacity === 1)).toBe(true);
+    expect(observation.samples.some((opacity) => opacity > 0 && opacity < 1)).toBe(!reducedMotion);
+    await testInfo.attach('rendered-opacity-samples', {
+      body: JSON.stringify(observation),
+      contentType: 'application/json',
+    });
+  });
+}
+
 async function seedSession(page: import('@playwright/test').Page, count = 65, allDnf = false) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
@@ -368,6 +435,7 @@ test('router preserves legacy links, browser history, and solve filters across r
     .fill('13');
   await page.getByRole('link', { name: 'View matching solves', exact: false }).click();
   await expect(page).toHaveURL(/solves\?under=13000$/);
+  await expect(page.locator('.session-solve-row').first()).toBeVisible();
   const count = await page.locator('.session-solve-row').count();
 
   expect(count).toBeGreaterThan(0);
@@ -388,12 +456,13 @@ test('router preserves legacy links, browser history, and solve filters across r
 
 test('router resolves session index and unknown tabs to Overview', async ({ page }) => {
   await seedSession(page);
-  await page.goto('/#/session/expanded-fixture');
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/overview$/);
-  await page.goto('/#/session/expanded-fixture/unknown-tab');
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/overview$/);
-  await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
+
+  for (const suffix of ['', '/unknown-tab', '/unknown/nested']) {
+    await page.goto(`/#/session/expanded-fixture${suffix}`);
+    await expect(page).toHaveURL(/#\/session\/expanded-fixture\/overview$/);
+    await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  }
 });

@@ -14,7 +14,8 @@ import { ArrowLeft, Download, Pencil, Play } from 'lucide-react';
 import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
 import { sessionPath } from '../../core/routes';
-import { db } from '../../data/db';
+import { loadSessionDetails, type SessionDetails } from '../../data/sessionDetails';
+import { PageFade } from '../ui/PageFade';
 import { restoreSolve } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
@@ -31,22 +32,27 @@ export function SessionPage({
   onBack,
   onContinue,
   precision,
+  initialData,
 }: {
+  initialData?: SessionDetails;
   onBack: (toPicker: boolean) => void;
   onContinue: () => void;
   precision: number;
 }) {
-  const { sessionId = '' } = useParams();
+  const { sessionId = '', '*': tab = '' } = useParams();
+  const validTab = ['overview', 'graphs', 'solves', 'insights'].includes(tab);
   const navigate = useNavigate();
   const location = useLocation();
   const fromPicker = location.state?.sessionEntry === 'sessions';
   const backLabel = fromPicker ? 'All sessions' : 'Back to Timer';
   const onSolves = !!useMatch('/session/:sessionId/solves');
-  const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
-  const solves = useLiveQuery(
-    () => db.solves.where('sessionId').equals(sessionId).sortBy('timestamp'),
+  const data = useLiveQuery(
+    () => loadSessionDetails(sessionId),
     [sessionId],
+    initialData?.sessionId === sessionId ? initialData : undefined,
   );
+  const session = data?.session;
+  const solves = data?.solves;
   const [selectedId, setSelectedId] = useState('');
   const [deleted, setDeleted] = useState<Solve | null>(null);
   const selected = solves?.find((solve) => solve.id === selectedId);
@@ -65,9 +71,16 @@ export function SessionPage({
 
   useEffect(() => {
     heading.current?.focus();
-  }, [sessionId, session?.id]);
+  }, [sessionId, session?.id, validTab]);
 
-  if (!solves) return <main className="session-page loading">Opening session…</main>;
+  if (!solves)
+    return (
+      <main
+        className="session-page session-pending"
+        aria-label="Session details"
+        aria-busy="true"
+      />
+    );
   if (!session)
     return (
       <main className="session-page">
@@ -77,6 +90,9 @@ export function SessionPage({
         <h1>This session is no longer available.</h1>
       </main>
     );
+
+  // Normalize URLs outside the animated content so redirects never wait for an exit.
+  if (!validTab) return <Navigate to={sessionPath(session.id)} state={location.state} replace />;
 
   return (
     <main className="session-page" aria-label="Session details">
@@ -132,9 +148,8 @@ export function SessionPage({
         ))}
       </nav>
       <div className={selected && onSolves ? 'session-detail-grid' : ''}>
-        <div>
-          <Routes>
-            <Route index element={<Navigate to="overview" state={location.state} replace />} />
+        <PageFade pageKey={location.pathname}>
+          <Routes location={location}>
             <Route
               path="overview"
               element={
@@ -185,12 +200,8 @@ export function SessionPage({
                 />
               }
             />
-            <Route
-              path="*"
-              element={<Navigate to={sessionPath(session.id)} state={location.state} replace />}
-            />
           </Routes>
-        </div>
+        </PageFade>
         {selected && onSolves && (
           <SolveDetail
             key={selected.id}
