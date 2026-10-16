@@ -10,7 +10,9 @@ function readRoute() {
   if (!match) return null;
 
   try {
-    return { id: decodeURIComponent(match[1]), tab: match[2] || 'overview' };
+    const [tab = 'overview', search = ''] = (match[2] || 'overview').split('?');
+
+    return { id: decodeURIComponent(match[1]), tab, search };
   } catch {
     return null;
   }

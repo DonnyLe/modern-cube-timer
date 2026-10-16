@@ -8,18 +8,23 @@ import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
+import { SessionSolves } from './SessionSolves';
 import { SessionOverview } from './SessionOverview';
 import { PuzzleView } from '../PuzzleView';
 import '../../styles/session.css';
 
 export function SessionPage({
   sessionId,
+  tab,
+  search,
   onBack,
   onContinue,
   precision,
   onOpenSolve,
 }: {
   sessionId: string;
+  tab: string;
+  search: string;
   onBack: () => void;
   onContinue: () => void;
   precision: number;
@@ -93,11 +98,32 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        <a href={sessionLink(session.id)} aria-current="page">
-          Overview
-        </a>
+        {['overview', 'solves'].map((item) => (
+          <a
+            key={item}
+            href={sessionLink(session.id, item)}
+            aria-current={(tab === 'solves' ? 'solves' : 'overview') === item ? 'page' : undefined}
+          >
+            {item === 'overview' ? 'Overview' : 'Solves'}
+          </a>
+        ))}
       </nav>
-      <SessionOverview solves={solves} precision={precision} onOpenSolve={onOpenSolve} />
+      {tab === 'solves' ? (
+        <SessionSolves
+          key={search}
+          solves={solves}
+          precision={precision}
+          onOpenSolve={onOpenSolve}
+          search={search}
+        />
+      ) : (
+        <>
+          <SessionOverview solves={solves} precision={precision} onOpenSolve={onOpenSolve} />
+          <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
+            View all {solves.length} solves →
+          </a>
+        </>
+      )}
     </main>
   );
 }
