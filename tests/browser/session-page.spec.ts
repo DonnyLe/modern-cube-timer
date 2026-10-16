@@ -487,26 +487,54 @@ test('Data shows detailed statistics and legacy Graphs links still resolve', asy
   await page.getByRole('link', { name: 'Data', exact: true }).click();
   const stats = page.getByRole('region', { name: 'Session statistics', exact: true });
 
-  await expect(stats.locator('.session-data-metrics > div')).toHaveCount(12);
+  await expect(stats.locator(':scope > section')).toHaveCount(3);
+  const performance = stats.getByRole('region', { name: 'Performance statistics', exact: true });
+  const averages = stats.getByRole('table', { name: 'Current and best rolling averages' });
+
+  await expect(performance.locator('dl > div').filter({ hasText: 'Mean' })).toContainText('DNF');
+  await expect(performance.locator('dl > div').filter({ hasText: 'Median' })).toContainText(
+    '14.00',
+  );
+  await expect(averages.getByRole('row', { name: /^ao5\s/ })).toContainText('13.00');
+  await expect(averages.getByRole('row', { name: /^ao50\s/ })).toBeVisible();
+  const consistency = stats.getByRole('region', { name: 'Consistency statistics', exact: true });
+
+  await expect(consistency).toContainText('2.23');
+  await expect(consistency).toContainText('13.00 – 15.50');
   const statsBox = await stats.boundingBox();
   const graphBox = await page
     .getByRole('region', { name: 'Full session trend', exact: true })
     .boundingBox();
 
   expect(graphBox!.x).toBeGreaterThan(statsBox!.x);
-  await expect(stats).toContainText('Standard deviation');
-  await expect(stats).toContainText('Median (finished)');
   await expect(stats).toContainText('64 / 65');
-  await expect(
-    stats.locator('div').filter({ has: page.getByText('Session mean', { exact: true }) }),
-  ).toContainText('DNF');
+  const distributionBox = await page
+    .getByRole('region', { name: 'Time distribution', exact: true })
+    .boundingBox();
+  const targetBox = await page
+    .getByRole('region', { name: 'Under target', exact: true })
+    .boundingBox();
+
+  expect(distributionBox!.y).toBeGreaterThan(graphBox!.y);
+  expect(Math.abs(distributionBox!.y - targetBox!.y)).toBeLessThan(2);
+  expect(distributionBox!.x).toBeGreaterThan(statsBox!.x);
+  expect(targetBox!.y + targetBox!.height).toBeLessThan(1000);
+  await consistency.getByLabel('About consistency statistics').click();
+  await expect(consistency.getByText(/Standard deviation and the middle/)).toBeVisible();
   await page.goto('/#session/expanded-fixture/graphs?under=13000');
   await expect(page).toHaveURL(/session\/expanded-fixture\/data\?under=13000$/);
   await expect(page.getByRole('link', { name: 'Data', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
   );
-  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const width of [900, 768, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
+
+  await stats.getByLabel('About performance statistics').click();
+  await expect(stats.getByText(/Times include \+2 penalties/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 });
 
@@ -585,6 +613,7 @@ test('graphs cover the full session and open an attempt by original number', asy
   await expect(page.locator('.session-full-trend')).toContainText('65 solves');
   await page.getByRole('checkbox', { name: 'ao50', exact: true }).check();
   await selectSessionOption(page, 'Horizontal axis', 'By time');
+  await page.locator('.session-inspect-disclosure > summary').click();
   await page.getByRole('spinbutton', { name: 'Inspect solve number' }).fill('17');
   await page.getByRole('button', { name: 'Open solve', exact: true }).click();
   await expect(page.getByRole('complementary', { name: 'Solve details' })).toContainText(
@@ -595,7 +624,13 @@ test('graphs cover the full session and open an attempt by original number', asy
 test('supporting charts link distribution bins and targets back to solves', async ({ page }) => {
   await seedSession(page);
   await page.getByRole('link', { name: 'Data', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Time distribution', exact: true })).toBeVisible();
+  const histogram = page.getByRole('region', { name: 'Time distribution', exact: true });
+
+  await expect(histogram).toBeVisible();
+  await histogram.locator('.session-distribution-bands > summary').click();
+  await histogram.getByRole('link').first().click();
+  await expect(page).toHaveURL(/solves\?min=\d+&under=\d+$/);
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
   const target = page.getByRole('region', { name: 'Under target', exact: true });
 
   await target.getByLabel('Target in seconds').fill('13');
@@ -604,6 +639,7 @@ test('supporting charts link distribution bins and targets back to solves', asyn
   await expect(page.locator('.session-solve-row')).not.toHaveCount(0);
   await expect(page.locator('.session-solve-list')).not.toContainText('DNF');
   await page.getByRole('link', { name: 'Data', exact: true }).click();
+  await page.locator('.session-more-charts > summary').click();
   await page
     .getByRole('region', { name: 'Consistency by block', exact: true })
     .getByRole('link', { name: 'Solves 51–65' })
@@ -681,12 +717,17 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
   for (const tab of ['Overview', 'Data', 'Solves', 'Insights']) {
     await page.getByRole('link', { name: tab, exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    await page.screenshot({
+      path: testInfo.outputPath(`session-${tab.toLowerCase()}-mobile.png`),
+      fullPage: true,
+    });
+
+    if (tab === 'Data') {
+      await page.getByRole('region', { name: 'Under target', exact: true }).scrollIntoViewIfNeeded();
+      await page.screenshot({ path: testInfo.outputPath('session-data-mobile-scrolled.png') });
+    }
   }
 
-  await page.screenshot({
-    path: testInfo.outputPath('session-insights-mobile.png'),
-    fullPage: true,
-  });
   await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('.app')).toHaveClass(/theme-light/);
 });

@@ -13,6 +13,7 @@ export function Graph({
   xLabel,
   yLabel,
   fill = false,
+  height = 183,
   formatTick = (value) => Number(value.toFixed(2)).toString(),
 }: {
   points: GraphPoint[];
@@ -20,6 +21,7 @@ export function Graph({
   xLabel: string;
   yLabel: string;
   fill?: boolean;
+  height?: number;
   formatTick?: (value: number) => string;
 }) {
   const data = points.map((point) => ({
@@ -43,7 +45,7 @@ export function Graph({
       <LineChart
         responsive
         className="graph-chart"
-        style={{ width: '100%', height: fill ? '100%' : 183 }}
+        style={{ width: '100%', height: fill ? '100%' : height }}
         data={data}
         margin={{ top: 16, right: 16, bottom: 0, left: 0 }}
         accessibilityLayer
