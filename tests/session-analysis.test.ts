@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { bestAverage, rollingAverage, sessionSummary } from '../src/core/sessionAnalysis';
+import {
+  bestAverage,
+  rollingAverage,
+  sessionSummary,
+  distribution,
+  consistencyBlocks,
+  underTarget,
+} from '../src/core/sessionAnalysis';
 import type { Solve } from '../src/core/types';
 
 const solve = (duration: number, penalty: Solve['penalty'] = 'none'): Solve => ({
@@ -49,4 +56,26 @@ it('rolling windows continue across the 50-solve boundary', () => {
   expect(rollingAverage(solves, 12)[50]).toBe(45500);
   expect(rollingAverage(solves, 50)[49]).toBe(25500);
   expect(rollingAverage(solves, 100)[64]).toBeNull();
+});
+
+it('distribution and targets account for +2, zero, ties and DNFs', () => {
+  const solves = [solve(0), solve(14000, '+2'), solve(15000), solve(14000, 'DNF')];
+  const bins = distribution(solves);
+
+  expect(bins.reduce((sum, bin) => sum + bin.count, 0)).toBe(3);
+  expect(bins[0].count).toBe(1);
+  expect(underTarget(solves, 15000).at(-1)).toEqual({ number: 4, count: 1, percent: 25 });
+  expect(distribution([solve(12000), solve(12000)])).toEqual([
+    { lower: 12000, upper: 13000, count: 2 },
+  ]);
+});
+
+it('consistency blocks retain incomplete and all-DNF blocks without zero times', () => {
+  const blocks = consistencyBlocks(
+    [solve(10000), solve(12000), solve(14000), solve(16000), solve(0, 'DNF')],
+    4,
+  );
+
+  expect(blocks[0]).toMatchObject({ start: 0, end: 4, q1: 11500, median: 13000, q3: 14500 });
+  expect(blocks[1]).toMatchObject({ start: 4, end: 5, count: 0, median: null });
 });

@@ -151,3 +151,22 @@ test('graphs cover the full session and open an attempt by original number', asy
     'Solve #17',
   );
 });
+
+test('supporting charts link distribution bins and targets back to solves', async ({ page }) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Time distribution', exact: true })).toBeVisible();
+  const target = page.getByRole('region', { name: 'Under target', exact: true });
+
+  await target.getByLabel('Target in seconds').fill('13');
+  await target.getByRole('link', { name: 'View matching solves' }).click();
+  await expect(page).toHaveURL(/under=13000/);
+  await expect(page.locator('.session-solve-row')).not.toHaveCount(0);
+  await expect(page.locator('.session-solve-list')).not.toContainText('DNF');
+  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await page
+    .getByRole('region', { name: 'Consistency by block', exact: true })
+    .getByRole('link', { name: 'Solves 51–65' })
+    .click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(15);
+});

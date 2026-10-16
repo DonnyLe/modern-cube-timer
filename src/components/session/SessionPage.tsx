@@ -128,7 +128,12 @@ export function SessionPage({
         <div>
           {' '}
           {tab === 'graphs' ? (
-            <SessionGraphs solves={solves} precision={precision} onOpenSolve={openSolve} />
+            <SessionGraphs
+              sessionId={session.id}
+              solves={solves}
+              precision={precision}
+              onOpenSolve={openSolve}
+            />
           ) : tab === 'solves' ? (
             <SessionSolves
               key={search}

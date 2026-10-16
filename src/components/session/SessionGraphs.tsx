@@ -1,3 +1,4 @@
+import { SupportingGraphs } from './SupportingGraphs';
 import { useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { rollingAverage } from '../../core/sessionAnalysis';
@@ -13,10 +14,12 @@ const colors = ['var(--accent)', '#84a8a0', '#9298ce', '#be9a82', '#9eabba'];
 
 export function SessionGraphs({
   solves,
+  sessionId,
   precision,
   onOpenSolve,
 }: {
   solves: Solve[];
+  sessionId: string;
   precision: number;
   onOpenSolve: (solve: Solve) => void;
 }) {
@@ -200,6 +203,7 @@ export function SessionGraphs({
           averages. DNF attempts are marked rather than plotted as zero.
         </p>
       </section>
+      <SupportingGraphs solves={solves} sessionId={sessionId} precision={precision} />
     </div>
   );
 }

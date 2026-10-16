@@ -28,6 +28,7 @@ export function SessionSolves({
     .map((solve, index) => ({ solve, number: index + 1 }))
     .filter(
       ({ solve, number }) =>
+        value(solve) >= Number(params.get('min') || 0) &&
         number >= from &&
         number <= to &&
         (!params.has('under') || value(solve) < target) &&
