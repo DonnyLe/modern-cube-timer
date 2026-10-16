@@ -74,6 +74,30 @@ export function compareStretches(solves: Solve[]) {
     : { size, opening, closing, change: closing - opening };
 }
 
+export function reviewResults(solves: Solve[]) {
+  const times = solves
+    .map(value)
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const q1 = quantile(times, 0.25);
+  const q3 = quantile(times, 0.75);
+  const spread = q1 === null || q3 === null ? 0 : q3 - q1;
+
+  return solves.flatMap((solve, index) => {
+    const reasons: string[] = [];
+    const time = value(solve);
+
+    if (solve.penalty !== 'none') reasons.push(solve.penalty);
+
+    if (times.length >= 4 && q1 !== null && q3 !== null && Number.isFinite(time)) {
+      if (time < q1 - 1.5 * spread) reasons.push('Unusually short');
+      if (time > q3 + 1.5 * spread) reasons.push('Unusually long');
+    }
+
+    return reasons.length ? [{ solve, number: index + 1, reasons }] : [];
+  });
+}
+
 export function rollingAverage(solves: Solve[], count: number) {
   return solves.map((_, index) =>
     average(solves.slice(Math.max(0, index + 1 - count), index + 1), count),
@@ -112,6 +136,9 @@ export function sessionSummary(solves: Solve[]) {
       : null,
     dnfs: solves.filter((s) => s.penalty === 'DNF').length,
     plusTwo: solves.filter((s) => s.penalty === '+2').length,
+    elapsedMs: solves.length
+      ? Math.max(0, solves.at(-1)!.timestamp - solves[0].timestamp + solves[0].duration)
+      : 0,
     solvingMs: solves.reduce((sum, solve) => sum + solve.duration, 0),
   };
 }

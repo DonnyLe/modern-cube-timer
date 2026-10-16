@@ -168,7 +168,7 @@ export function SupportingGraphs({
           <>
             <p className="session-target-summary">
               {progress.at(-1)!.count} / {solves.length}{' '}
-              <span className="subtle">under {formatTime(target, precision)}s</span>
+              <span className="subtle">under {(target / 1000).toFixed(precision)}s</span>
             </p>
             <Graph
               points={progress.map((point) => ({

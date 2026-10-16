@@ -45,7 +45,7 @@ export function SessionOverview({
           {comparison && (
             <p className="session-recap">
               Your final {comparison.size} attempts averaged{' '}
-              {formatTime(Math.abs(comparison.change), precision)}s{' '}
+              {(Math.abs(comparison.change) / 1000).toFixed(precision)}s{' '}
               {comparison.change <= 0 ? 'faster' : 'slower'} than your first {comparison.size},
               among finished solves.
             </p>
@@ -54,6 +54,10 @@ export function SessionOverview({
             <div>
               <dt>Median (finished solves)</dt>
               <dd>{formatTime(summary.median, precision)}</dd>
+            </div>
+            <div>
+              <dt>Elapsed session time</dt>
+              <dd>{Math.round(summary.elapsedMs / 60000)} min</dd>
             </div>
             <div>
               <dt>Time solving</dt>

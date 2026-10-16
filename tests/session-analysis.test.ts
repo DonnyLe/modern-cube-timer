@@ -7,6 +7,7 @@ import {
   consistencyBlocks,
   underTarget,
   compareStretches,
+  reviewResults,
 } from '../src/core/sessionAnalysis';
 import type { Solve } from '../src/core/types';
 
@@ -94,4 +95,20 @@ it('stretch comparisons do not overlap and explain DNF omission', () => {
   solves[0].penalty = 'DNF';
   expect(compareStretches(solves)?.opening).toBe(20000);
   expect(compareStretches(Array.from({ length: 12 }, () => solve(12000, 'DNF')))).toBeNull();
+});
+
+it('flags unusual results without removing them from session statistics', () => {
+  const solves = [
+    solve(480),
+    ...Array.from({ length: 12 }, () => solve(15000)),
+    solve(15000, '+2'),
+    solve(15000, 'DNF'),
+  ];
+  const flagged = reviewResults(solves);
+
+  expect(flagged.find((item) => item.number === 1)?.reasons).toContain('Unusually short');
+  expect(flagged.find((item) => item.number === 15)?.reasons).toContain('DNF');
+  expect(sessionSummary(solves).count).toBe(15);
+  expect(sessionSummary(solves).best).toBe(480);
+  expect(reviewResults([])).toEqual([]);
 });

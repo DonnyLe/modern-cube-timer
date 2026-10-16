@@ -1,4 +1,4 @@
-import type { Penalty } from '../../core/types';
+import type { Penalty, Solve } from '../../core/types';
 import { db } from '../db';
 
 export async function editSolve(
@@ -17,5 +17,13 @@ export async function deleteSolve(id: string) {
     await db.solves.delete(id);
 
     return solve;
+  });
+}
+
+export async function restoreSolve(solve: Solve) {
+  await db.transaction('rw', db.sessions, db.solves, async () => {
+    if (!(await db.sessions.get(solve.sessionId)))
+      throw new Error('This session no longer exists.');
+    await db.solves.add(solve);
   });
 }

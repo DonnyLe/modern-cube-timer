@@ -29,11 +29,11 @@ test('missing session has a way back', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
 });
 
-async function seedSession(page: import('@playwright/test').Page, count = 65) {
+async function seedSession(page: import('@playwright/test').Page, count = 65, allDnf = false) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
   const sessionId = await page.evaluate(
-    (count) =>
+    ({ count, allDnf }) =>
       new Promise<string>((resolve, reject) => {
         const request = indexedDB.open('turn-timer');
 
@@ -54,7 +54,7 @@ async function seedSession(page: import('@playwright/test').Page, count = 65) {
               id: `expanded-${i}`,
               sessionId: 'expanded-fixture',
               duration: i === 0 ? 480 : 12000 + (i % 10) * 500,
-              penalty: i === 17 ? 'DNF' : i === 16 ? '+2' : 'none',
+              penalty: allDnf || i === 17 ? 'DNF' : i === 16 ? '+2' : 'none',
               scramble: "R U2 F' L2 D B2 R' U F2 D' L U2 B' R2 D2 F U' L2 B D'",
               timestamp: 1800000000000 + i * 30000,
               note: i === 10 ? 'Clean finish' : '',
@@ -71,7 +71,7 @@ async function seedSession(page: import('@playwright/test').Page, count = 65) {
           };
         };
       }),
-    count,
+    { count, allDnf },
   );
 
   await page.goto(`/#session/${sessionId}/overview`);
@@ -183,4 +183,70 @@ test('insights link exact best-average windows to their original solves', async 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('review and annotated solves retain source records and provide a clear filter reset', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  const review = page.getByRole('region', { name: 'Results to review', exact: true });
+
+  await expect(review).toContainText('0.48');
+  await review.getByRole('link', { name: /Review all/ }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(3);
+  await page.getByRole('link', { name: 'Show all solves' }).click();
+  await expect(page.getByRole('status').filter({ hasText: '65 matching solves' })).toBeVisible();
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await page.getByRole('link', { name: /View all 1 annotated solves/ }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(1);
+  await expect(page.locator('.session-solve-row')).toContainText('#11');
+});
+
+test('empty pages and all-DNF graphs show meaningful states', async ({ page }) => {
+  await seedSession(page, 0);
+
+  for (const tab of ['Graphs', 'Insights', 'Solves']) {
+    await page.getByRole('link', { name: tab, exact: true }).click();
+    await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
+  }
+
+  await expect(page.getByText('No solves in this session yet.')).toBeVisible();
+  await seedSession(page, 12, true);
+  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await expect(page.getByText('No finished solves to plot.')).toBeVisible();
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await expect(page.getByText('No valid average of 12 yet.')).toBeVisible();
+});
+
+test('session pages retain the app theme and fit mobile screens', async ({ page }, testInfo) => {
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await seedSession(page);
+  await expect(page.locator('.app')).toHaveClass(/theme-dark/);
+
+  for (const tab of ['Overview', 'Graphs', 'Solves', 'Insights']) {
+    await page.getByRole('link', { name: tab, exact: true }).click();
+    await expect(page.getByRole('link', { name: tab, exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`session-${tab.toLowerCase()}-desktop.png`),
+      fullPage: true,
+    });
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const tab of ['Overview', 'Graphs', 'Solves', 'Insights']) {
+    await page.getByRole('link', { name: tab, exact: true }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  }
+
+  await page.screenshot({
+    path: testInfo.outputPath('session-insights-mobile.png'),
+    fullPage: true,
+  });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('.app')).toHaveClass(/theme-light/);
 });

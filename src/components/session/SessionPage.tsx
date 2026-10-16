@@ -5,6 +5,7 @@ import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
 import { sessionLink } from '../../core/useSessionRoute';
 import { db } from '../../data/db';
+import { restoreSolve } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
@@ -130,7 +131,12 @@ export function SessionPage({
       <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
         <div>
           {tab === 'insights' ? (
-            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
+            <SessionInsights
+              onOpenSolve={openSolve}
+              solves={solves}
+              sessionId={session.id}
+              precision={precision}
+            />
           ) : tab === 'graphs' ? (
             <SessionGraphs
               sessionId={session.id}
@@ -140,6 +146,7 @@ export function SessionPage({
             />
           ) : tab === 'solves' ? (
             <SessionSolves
+              sessionId={session.id}
               key={search}
               solves={solves}
               precision={precision}
@@ -178,7 +185,7 @@ export function SessionPage({
           Solve deleted{' '}
           <button
             onClick={() => {
-              void safeWrite(() => db.solves.add(deleted)).then((ok) => {
+              void safeWrite(() => restoreSolve(deleted)).then((ok) => {
                 if (ok) setDeleted(null);
               });
             }}

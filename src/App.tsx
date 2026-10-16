@@ -54,14 +54,16 @@ export default function App() {
     [inputError, setInputError] = useState(''),
     [managerSessionId, setManagerSessionId] = useState(''),
     [managerPuzzle, setManagerPuzzle] = useState<PuzzleEvent>('333'),
-    [historyFromManager, setHistoryFromManager] = useState(false),
-    [historySessionId, setHistorySessionId] = useState(''),
     [returnDialog, setReturnDialog] = useState(''),
     [deleted, setDeleted] = useState<Solve | null>(null),
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false);
   const sessionRoute = useSessionRoute();
+
+  useEffect(() => {
+    if (sessionRoute) setDialog('');
+  }, [sessionRoute]);
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || !!sessionRoute);
@@ -177,13 +179,7 @@ export default function App() {
         if (ok) setDialog('');
       });
     } else {
-      setDialog(
-        dialog === 'solve'
-          ? returnDialog
-          : dialog === 'history' && historyFromManager
-            ? 'sessions'
-            : '',
-      );
+      setDialog(dialog === 'solve' ? returnDialog : '');
     }
 
     setReturnDialog('');
@@ -194,12 +190,9 @@ export default function App() {
     useLiveQuery(
       () =>
         dialog === 'history'
-          ? db.solves
-              .where('sessionId')
-              .equals(historySessionId || preferences.activeSessionId)
-              .sortBy('timestamp')
+          ? db.solves.where('sessionId').equals(preferences.activeSessionId).sortBy('timestamp')
           : [],
-      [dialog, historySessionId, preferences.activeSessionId],
+      [dialog, preferences.activeSessionId],
     ) || [];
   const historyStats = statistics(historySolves);
 
@@ -458,8 +451,6 @@ export default function App() {
                   <button
                     className="text-button"
                     onClick={() => {
-                      setHistoryFromManager(false);
-                      setHistorySessionId(preferences.activeSessionId);
                       setDialog('history');
                     }}
                   >
@@ -664,7 +655,6 @@ export default function App() {
               ))}
             </div>
             <button
-              disabled={!!historySessionId && historySessionId !== preferences.activeSessionId}
               onClick={() => {
                 setManual('');
                 setDialog('manual');
@@ -688,9 +678,9 @@ export default function App() {
               window.location.hash = sessionLink(id);
             }}
             onViewAll={(id) => {
-              setHistoryFromManager(true);
-              setHistorySessionId(id);
-              setDialog('history');
+              setDialog('');
+              void changeFocus(false);
+              window.location.hash = sessionLink(id, 'solves');
             }}
             onOpenSolve={(solve) => openSolve(solve, 'sessions')}
             precision={a.precision}

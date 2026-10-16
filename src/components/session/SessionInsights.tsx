@@ -1,3 +1,4 @@
+import { SessionReview } from './SessionReview';
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
@@ -8,10 +9,12 @@ export function SessionInsights({
   solves,
   sessionId,
   precision,
+  onOpenSolve,
 }: {
   solves: Solve[];
   sessionId: string;
   precision: number;
+  onOpenSolve: (solve: Solve) => void;
 }) {
   const summary = useMemo(() => sessionSummary(solves), [solves]);
   const comparison = useMemo(() => compareStretches(solves), [solves]);
@@ -34,7 +37,7 @@ export function SessionInsights({
               <p className="session-insight-lead">
                 {comparison.change === 0
                   ? 'Your opening and closing means matched.'
-                  : `Your final ${comparison.size} attempts averaged ${formatTime(Math.abs(comparison.change), precision)}s ${comparison.change < 0 ? 'faster' : 'slower'}.`}
+                  : `Your final ${comparison.size} attempts averaged ${(Math.abs(comparison.change) / 1000).toFixed(precision)}s ${comparison.change < 0 ? 'faster' : 'slower'}.`}
               </p>
               <dl className="session-comparison">
                 <div>
@@ -83,9 +86,7 @@ export function SessionInsights({
           <h2>Your strongest average of 12</h2>
           {summary.best12 ? (
             <>
-              <p className="session-insight-lead">
-                {formatTime(summary.best12.time, precision)} seconds
-              </p>
+              <p className="session-insight-lead">{formatTime(summary.best12.time, precision)}</p>
               <p className="subtle">
                 Solves {summary.best12.start + 1}–{summary.best12.end + 1} formed your best ao12.
               </p>
@@ -130,7 +131,7 @@ export function SessionInsights({
               </p>
               <p className="subtle">
                 {solves.length ? ((matching / solves.length) * 100).toFixed(1) : '0.0'}% finished
-                below {formatTime(target, precision)} seconds.
+                below {(target / 1000).toFixed(precision)} seconds.
               </p>
               <div className="session-proportion">
                 <span
@@ -150,6 +151,12 @@ export function SessionInsights({
           )}
         </section>
       </div>
+      <SessionReview
+        solves={solves}
+        sessionId={sessionId}
+        precision={precision}
+        onOpenSolve={onOpenSolve}
+      />
       <p className="subtle session-footnote">
         Insights describe this session's recorded times. Solve phases and technique are not
         inferred.
