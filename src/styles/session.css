@@ -267,3 +267,88 @@
   color: var(--accent);
   font-size: 14px;
 }
+
+.session-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+.session-detail-grid > div {
+  min-width: 0;
+}
+.session-solve-detail {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
+}
+.session-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.session-section-header h2,
+.session-section-header h3 {
+  margin: 0;
+}
+.session-detail-time {
+  font-size: 40px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+}
+.session-solve-detail form {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+.session-solve-detail label {
+  font-size: 13px;
+}
+.session-solve-detail .session-section-header {
+  margin: 0;
+}
+.session-detail-net {
+  height: 150px;
+  min-height: 0;
+}
+.session-detail-grid .session-solve-row {
+  grid-template-columns: 32px 75px minmax(0, 1fr);
+  gap: 12px;
+}
+.session-detail-grid .session-solve-row time {
+  grid-column: 3;
+}
+.session-solve-detail h2:focus {
+  outline: none;
+}
+.session-delete-confirm {
+  margin-top: 20px;
+  font-size: 14px;
+}
+.session-delete-confirm button {
+  margin: 12px 8px 0 0;
+}
+.session-undo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+@media (max-width: 1000px) {
+  .session-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .session-solve-detail {
+    grid-row: 1;
+    position: static;
+    max-height: none;
+  }
+}
+@media (max-width: 480px) {
+  .session-detail-grid .session-solve-row .session-scramble {
+    grid-column: auto;
+  }
+}

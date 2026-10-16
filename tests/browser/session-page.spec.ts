@@ -87,7 +87,7 @@ test('overview shows live statistics and readable scrambles on mobile', async ({
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.locator('.session-solve-row').first().click();
-  await expect(page.getByRole('dialog', { name: 'Solve details' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toBeVisible();
 });
 
 test('solves preserves numbering through search, penalties, sorting, and pagination', async ({
@@ -111,4 +111,29 @@ test('solves preserves numbering through search, penalties, sorting, and paginat
   await expect(page.locator('.session-solve-row').first()).toContainText('#1');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('solve panel saves penalties and notes, supports delete undo, and survives reload', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Solves', exact: true }).click();
+  await page.getByRole('button', { name: 'Open solve 65:', exact: false }).click();
+  const panel = page.getByRole('complementary', { name: 'Solve details' });
+
+  await panel.getByLabel('Time before penalty').fill('12.34');
+  await panel.getByLabel('Solve penalty').selectOption('+2');
+  await panel.getByLabel('Note', { exact: true }).fill('Saved from session details');
+  await panel.getByRole('button', { name: 'Save solve', exact: true }).click();
+  await expect(panel.getByRole('status')).toHaveText('Solve saved.');
+  await expect(panel.locator('.session-detail-time')).toHaveText('14.34');
+  await panel.getByRole('button', { name: 'Delete solve', exact: true }).click();
+  await panel.getByRole('button', { name: 'Confirm delete' }).click();
+  await expect(page.locator('.session-solve-row').first()).toContainText('#64');
+  await page.getByRole('button', { name: 'Undo delete' }).click();
+  await expect(page.locator('.session-solve-row').first()).toContainText('14.34');
+  await page.reload();
+  await expect(page.locator('.session-solve-row').first()).toContainText(
+    'Saved from session details',
+  );
 });

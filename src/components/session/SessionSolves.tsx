@@ -116,6 +116,7 @@ export function SessionSolves({
             {shown.slice(start, start + pageSize).map(({ solve, number }) => (
               <button
                 className="session-solve-row"
+                id={`session-solve-${solve.id}`}
                 key={solve.id}
                 onClick={() => onOpenSolve(solve)}
                 aria-label={`Open solve ${number}: ${formatTime(value(solve), precision)}`}

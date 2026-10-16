@@ -273,15 +273,15 @@ export default function App() {
                 <button
                   key={v}
                   disabled={busy}
-                  className={view === v ? 'active' : ''}
-                  aria-current={view === v ? 'page' : undefined}
+                  className={!sessionRoute && view === v ? 'active' : ''}
+                  aria-current={!sessionRoute && view === v ? 'page' : undefined}
                   onClick={(event) => {
                     window.location.hash = '';
                     setView(v);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
                 >
-                  {!focused && view === v && (
+                  {!focused && !sessionRoute && view === v && (
                     <motion.span
                       initial={false}
                       className="segmented-selection"
@@ -345,7 +345,6 @@ export default function App() {
           tab={sessionRoute.tab}
           search={sessionRoute.search}
           precision={a.precision}
-          onOpenSolve={openSolve}
           onBack={() => {
             window.location.hash = '';
             setManagerSessionId(sessionRoute.id);
