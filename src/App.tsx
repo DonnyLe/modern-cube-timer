@@ -342,6 +342,8 @@ export default function App() {
         <SessionPage
           key={sessionRoute.id}
           sessionId={sessionRoute.id}
+          precision={a.precision}
+          onOpenSolve={openSolve}
           onBack={() => {
             window.location.hash = '';
             setManagerSessionId(sessionRoute.id);

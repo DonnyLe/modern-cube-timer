@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Download, Pencil, Play } from 'lucide-react';
-import type { Session } from '../../core/types';
+import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
 import { sessionLink } from '../../core/useSessionRoute';
 import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
+import { SessionOverview } from './SessionOverview';
 import { PuzzleView } from '../PuzzleView';
 import '../../styles/session.css';
 
@@ -15,10 +16,14 @@ export function SessionPage({
   sessionId,
   onBack,
   onContinue,
+  precision,
+  onOpenSolve,
 }: {
   sessionId: string;
   onBack: () => void;
   onContinue: () => void;
+  precision: number;
+  onOpenSolve: (solve: Solve) => void;
 }) {
   const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
   const solves = useLiveQuery(
@@ -92,14 +97,7 @@ export function SessionPage({
           Overview
         </a>
       </nav>
-      <section className="session-panel">
-        <h2>Session details</h2>
-        <p className="subtle">
-          {solves.length
-            ? `${solves.length} recorded solves in this session.`
-            : 'Your solves will appear here as you practice.'}
-        </p>
-      </section>
+      <SessionOverview solves={solves} precision={precision} onOpenSolve={onOpenSolve} />
     </main>
   );
 }
