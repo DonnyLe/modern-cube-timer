@@ -137,3 +137,17 @@ test('solve panel saves penalties and notes, supports delete undo, and survives 
     'Saved from session details',
   );
 });
+
+test('graphs cover the full session and open an attempt by original number', async ({ page }) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await expect(page.getByRole('group', { name: 'Session trend chart', exact: true })).toBeVisible();
+  await expect(page.locator('.session-full-trend')).toContainText('65 solves');
+  await page.getByLabel('ao50', { exact: true }).check();
+  await page.getByLabel('Horizontal axis', { exact: true }).selectOption('timestamp');
+  await page.getByRole('spinbutton', { name: 'Inspect solve number' }).fill('17');
+  await page.getByRole('button', { name: 'Open solve', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toContainText(
+    'Solve #17',
+  );
+});

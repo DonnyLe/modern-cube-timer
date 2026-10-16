@@ -352,3 +352,62 @@
     grid-column: auto;
   }
 }
+
+.session-axis-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.session-axis-label select {
+  width: auto;
+  font-size: 13px;
+}
+.session-series {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 12px 0;
+}
+.session-series label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.session-series input {
+  width: auto;
+}
+.session-large-chart {
+  min-width: 0;
+}
+.session-large-chart .recharts-text {
+  fill: var(--ink);
+  opacity: 0.7;
+  font-size: 11px;
+}
+.session-inspect {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.session-inspect label {
+  font-size: 12px;
+}
+.session-inspect input {
+  width: 90px;
+}
+.session-inspect > span {
+  margin-bottom: 12px;
+}
+@media (max-width: 650px) {
+  .session-full-trend > .session-section-header {
+    align-items: start;
+    flex-direction: column;
+  }
+}

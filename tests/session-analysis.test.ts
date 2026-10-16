@@ -42,3 +42,11 @@ describe('session analysis', () => {
     expect(bestAverage([solve(10000)], 5)).toBeNull();
   });
 });
+
+it('rolling windows continue across the 50-solve boundary', () => {
+  const solves = Array.from({ length: 65 }, (_, i) => solve((i + 1) * 1000));
+
+  expect(rollingAverage(solves, 12)[50]).toBe(45500);
+  expect(rollingAverage(solves, 50)[49]).toBe(25500);
+  expect(rollingAverage(solves, 100)[64]).toBeNull();
+});

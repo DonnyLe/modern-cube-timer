@@ -8,6 +8,7 @@ import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
+import { SessionGraphs } from './SessionGraphs';
 import { SolveDetail } from './SolveDetail';
 import { SessionSolves } from './SessionSolves';
 import { SessionOverview } from './SessionOverview';
@@ -111,20 +112,24 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'solves'].map((item) => (
+        {['overview', 'graphs', 'solves'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
-            aria-current={(tab === 'solves' ? 'solves' : 'overview') === item ? 'page' : undefined}
+            aria-current={
+              (['graphs', 'solves'].includes(tab) ? tab : 'overview') === item ? 'page' : undefined
+            }
           >
-            {item === 'overview' ? 'Overview' : 'Solves'}
+            {item[0].toUpperCase() + item.slice(1)}
           </a>
         ))}
       </nav>
       <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
         <div>
           {' '}
-          {tab === 'solves' ? (
+          {tab === 'graphs' ? (
+            <SessionGraphs solves={solves} precision={precision} onOpenSolve={openSolve} />
+          ) : tab === 'solves' ? (
             <SessionSolves
               key={search}
               solves={solves}
