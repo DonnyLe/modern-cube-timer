@@ -112,25 +112,30 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'graphs', 'solves'].map((item) => (
+        {['overview', 'data', 'solves'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
             aria-current={
-              (['graphs', 'solves'].includes(tab) ? tab : 'overview') === item ? 'page' : undefined
+              (['data', 'solves'].includes(tab) ? tab : 'overview') === item ? 'page' : undefined
             }
           >
             {item[0].toUpperCase() + item.slice(1)}
           </a>
         ))}
       </nav>
-      <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
+      <div
+        className={
+          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
+        }
+      >
         <div>
           {' '}
-          {tab === 'graphs' ? (
+          {tab === 'data' ? (
             <SessionGraphs solves={solves} precision={precision} onOpenSolve={openSolve} />
           ) : tab === 'solves' ? (
             <SessionSolves
+              sessionId={session.id}
               key={search}
               solves={solves}
               precision={precision}
