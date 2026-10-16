@@ -460,7 +460,7 @@ export default function App() {
                     onClick={() => {
                       setHistoryFromManager(false);
                       setHistorySessionId(preferences.activeSessionId);
-                      setDialog('history');
+                      window.location.hash = sessionLink(preferences.activeSessionId, 'solves');
                     }}
                   >
                     See all <ArrowUpRight size={16} />
@@ -489,7 +489,12 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={openSessions}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      window.location.hash = sessionLink(preferences.activeSessionId, 'solves');
+                    }}
+                  >
                     {solves.length} solves · {session?.name}
                   </button>
                   <button

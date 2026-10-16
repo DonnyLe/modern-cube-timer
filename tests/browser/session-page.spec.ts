@@ -31,6 +31,19 @@ test('missing session has a way back', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
 });
 
+test('recent solves entry points open all solves in the expanded session', async ({ page }) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.getByRole('button', { name: '65 solves · Fixture practice', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+});
+
 async function seedSession(page: import('@playwright/test').Page, count = 65) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
