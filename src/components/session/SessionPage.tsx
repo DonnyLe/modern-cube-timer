@@ -121,11 +121,16 @@ export function SessionPage({
           </a>
         ))}
       </nav>
-      <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
+      <div
+        className={
+          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
+        }
+      >
         <div>
           {' '}
           {tab === 'solves' ? (
             <SessionSolves
+              sessionId={session.id}
               key={search}
               solves={solves}
               precision={precision}

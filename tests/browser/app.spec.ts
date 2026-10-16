@@ -109,6 +109,37 @@ test('pattern backgrounds can be previewed, selected, and persist', async ({ pag
   await expect(page.getByRole('slider', { name: 'Pointer response', exact: true })).toBeVisible();
   await page.getByRole('radio', { name: 'Grid' }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise((resolve, reject) => {
+            const request = indexedDB.open('turn-timer');
+
+            request.onerror = () => reject(request.error);
+
+            request.onsuccess = () => {
+              const db = request.result;
+              const transaction = db.transaction('settings', 'readonly');
+              const row = transaction.objectStore('settings').get('workspace');
+
+              transaction.oncomplete = () => {
+                db.close();
+                resolve({
+                  background: row.result?.value.appearance.background,
+                  spacing: row.result?.value.appearance.patternSpacing,
+                });
+              };
+
+              transaction.onabort = () => {
+                db.close();
+                reject(transaction.error);
+              };
+            };
+          }),
+      ),
+    )
+    .toEqual({ background: 'grid', spacing: 40 });
   await page.reload();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('radio', { name: 'Grid' })).toBeChecked();
