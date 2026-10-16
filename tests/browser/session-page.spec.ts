@@ -8,6 +8,8 @@ test('expanded session survives reload, keeps the timer paused, and returns to i
   await page.getByRole('button', { name: 'Expand session', exact: true }).click();
   await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
   await expect(page).toHaveURL(/#session\/.+\/overview$/);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
