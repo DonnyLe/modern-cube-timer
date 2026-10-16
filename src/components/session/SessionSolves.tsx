@@ -1,5 +1,6 @@
+import { Link, useSearchParams } from 'react-router';
 import { reviewResults } from '../../core/sessionAnalysis';
-import { sessionLink } from '../../core/useSessionRoute';
+import { sessionPath } from '../../core/routes';
 import { useMemo, useState } from 'react';
 import type { Solve } from '../../core/types';
 import { formatTime, value } from '../../core/statistics';
@@ -10,13 +11,11 @@ export function SessionSolves({
   solves,
   precision,
   onOpenSolve,
-  search = '',
   sessionId,
 }: {
   solves: Solve[];
   precision: number;
   onOpenSolve: (solve: Solve) => void;
-  search?: string;
   sessionId: string;
 }) {
   const [query, setQuery] = useState('');
@@ -24,7 +23,8 @@ export function SessionSolves({
   const [notes, setNotes] = useState(false);
   const [order, setOrder] = useState('newest');
   const [page, setPage] = useState(0);
-  const params = new URLSearchParams(search);
+  const [params] = useSearchParams();
+  const search = params.toString();
   const reviewIds = useMemo(
     () => new Set(reviewResults(solves).map((item) => item.solve.id)),
     [solves],
@@ -72,7 +72,7 @@ export function SessionSolves({
                   ? `Solves ${from}–${to}`
                   : 'Selected time range'}
           </span>
-          <a href={sessionLink(sessionId, 'solves')}>Show all solves</a>
+          <Link to={sessionPath(sessionId, 'solves')}>Show all solves</Link>
         </div>
       )}
       <div className="session-list-toolbar">
