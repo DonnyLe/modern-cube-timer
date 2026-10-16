@@ -1,20 +1,9 @@
-import {
-  Link,
-  NavLink,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useMatch,
-  useNavigate,
-  useParams,
-} from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Download, Pencil, Play } from 'lucide-react';
 import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
-import { sessionPath } from '../../core/routes';
+import { sessionLink } from '../../core/useSessionRoute';
 import { db } from '../../data/db';
 import { restoreSolve } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
@@ -29,18 +18,20 @@ import { PuzzleView } from '../PuzzleView';
 import '../../styles/session.css';
 
 export function SessionPage({
+  sessionId,
+  tab,
+  search,
   onBack,
   onContinue,
   precision,
 }: {
+  sessionId: string;
+  tab: string;
+  search: string;
   onBack: () => void;
   onContinue: () => void;
   precision: number;
 }) {
-  const { sessionId = '' } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const onSolves = !!useMatch('/session/:sessionId/solves');
   const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
   const solves = useLiveQuery(
     () => db.solves.where('sessionId').equals(sessionId).sortBy('timestamp'),
@@ -52,7 +43,7 @@ export function SessionPage({
 
   const openSolve = (solve: Solve) => {
     setSelectedId(solve.id);
-    if (!onSolves) navigate(sessionPath(sessionId, 'solves'));
+    if (tab !== 'solves') window.location.hash = sessionLink(sessionId, 'solves');
   };
 
   const closeDetail = () => {
@@ -124,69 +115,59 @@ export function SessionPage({
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
         {['overview', 'graphs', 'solves', 'insights'].map((item) => (
-          <NavLink key={item} to={sessionPath(session.id, item)} end>
+          <a
+            key={item}
+            href={sessionLink(session.id, item)}
+            aria-current={
+              (['graphs', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
+                ? 'page'
+                : undefined
+            }
+          >
             {item[0].toUpperCase() + item.slice(1)}
-          </NavLink>
+          </a>
         ))}
       </nav>
-      <div className={selected && onSolves ? 'session-detail-grid' : ''}>
+      <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
         <div>
-          <Routes>
-            <Route index element={<Navigate to="overview" replace />} />
-            <Route
-              path="overview"
-              element={
-                <>
-                  <SessionOverview
-                    sessionId={session.id}
-                    solves={solves}
-                    precision={precision}
-                    onOpenSolve={openSolve}
-                  />
-                  <Link className="session-all-solves" to={sessionPath(session.id, 'solves')}>
-                    View all {solves.length} solves →
-                  </Link>
-                </>
-              }
+          {tab === 'insights' ? (
+            <SessionInsights
+              onOpenSolve={openSolve}
+              solves={solves}
+              sessionId={session.id}
+              precision={precision}
             />
-            <Route
-              path="solves"
-              element={
-                <SessionSolves
-                  key={location.search}
-                  sessionId={session.id}
-                  solves={solves}
-                  precision={precision}
-                  onOpenSolve={openSolve}
-                />
-              }
+          ) : tab === 'graphs' ? (
+            <SessionGraphs
+              sessionId={session.id}
+              solves={solves}
+              precision={precision}
+              onOpenSolve={openSolve}
             />
-            <Route
-              path="graphs"
-              element={
-                <SessionGraphs
-                  sessionId={session.id}
-                  solves={solves}
-                  precision={precision}
-                  onOpenSolve={openSolve}
-                />
-              }
+          ) : tab === 'solves' ? (
+            <SessionSolves
+              sessionId={session.id}
+              key={search}
+              solves={solves}
+              precision={precision}
+              onOpenSolve={openSolve}
+              search={search}
             />
-            <Route
-              path="insights"
-              element={
-                <SessionInsights
-                  sessionId={session.id}
-                  solves={solves}
-                  precision={precision}
-                  onOpenSolve={openSolve}
-                />
-              }
-            />
-            <Route path="*" element={<Navigate to={sessionPath(session.id)} replace />} />
-          </Routes>
+          ) : (
+            <>
+              <SessionOverview
+                sessionId={session.id}
+                solves={solves}
+                precision={precision}
+                onOpenSolve={openSolve}
+              />
+              <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
+                View all {solves.length} solves →
+              </a>
+            </>
+          )}
         </div>
-        {selected && onSolves && (
+        {selected && tab === 'solves' && (
           <SolveDetail
             key={selected.id}
             solve={selected}

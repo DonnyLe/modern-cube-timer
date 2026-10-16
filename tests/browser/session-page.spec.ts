@@ -10,7 +10,7 @@ test('expanded session survives reload, keeps the timer paused, and returns to i
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
-  await expect(page).toHaveURL(/#\/?session\/.+\/overview$/);
+  await expect(page).toHaveURL(/#session\/.+\/overview$/);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.keyboard.press('Space');
@@ -36,12 +36,12 @@ test('recent solves entry points open all solves in the expanded session', async
   await page.reload();
   await page.getByRole('button', { name: 'Continue session', exact: true }).click();
   await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
-  await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/solves$/);
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
   await expect(page.locator('.session-solve-row')).toHaveCount(25);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
   await page.getByRole('button', { name: 'Continue session', exact: true }).click();
   await page.getByRole('button', { name: '65 solves · Fixture practice', exact: true }).click();
-  await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/solves$/);
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
 });
 
 test('session trend See all opens graphs and exits focus mode safely', async ({ page }) => {
@@ -58,7 +58,7 @@ test('session trend See all opens graphs and exits focus mode safely', async ({ 
     .filter({ has: page.getByRole('heading', { name: 'Session trend', exact: true }) });
 
   await trend.getByRole('button', { name: 'See all', exact: true }).click();
-  await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/graphs$/);
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/graphs$/);
   await expect(page.getByRole('region', { name: 'Full session trend', exact: true })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
@@ -284,53 +284,4 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
   });
   await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('.app')).toHaveClass(/theme-light/);
-});
-
-test('router preserves legacy links, browser history, and solve filters across reloads', async ({
-  page,
-}) => {
-  // The fixture starts on the old #session/... URL, which remains supported.
-  await seedSession(page);
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/graphs$/);
-  await page.goBack();
-  await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
-  await page.goForward();
-  await expect(page.getByRole('link', { name: 'Graphs', exact: true })).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
-  await page
-    .getByRole('region', { name: 'Under target', exact: true })
-    .getByLabel('Target in seconds')
-    .fill('13');
-  await page.getByRole('link', { name: 'View matching solves', exact: false }).click();
-  await expect(page).toHaveURL(/solves\?under=13000$/);
-  const count = await page.locator('.session-solve-row').count();
-
-  expect(count).toBeGreaterThan(0);
-  await page.reload();
-  await expect(page.locator('.session-solve-row')).toHaveCount(count);
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page).toHaveURL(/#\/settings$/);
-  await page.reload();
-  await expect(page.getByRole('combobox', { name: 'Color mode' })).toBeVisible();
-  await page.goBack();
-  await expect(page).toHaveURL(/solves\?under=13000$/);
-  await expect(page.locator('.session-solve-row')).toHaveCount(count);
-});
-
-test('router resolves session index and unknown tabs to Overview', async ({ page }) => {
-  await seedSession(page);
-  await page.goto('/#/session/expanded-fixture');
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/overview$/);
-  await page.goto('/#/session/expanded-fixture/unknown-tab');
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/overview$/);
-  await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
 });

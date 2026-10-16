@@ -30,7 +30,6 @@
     "motion": "^12.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router": "^8.4.0",
     "recharts": "^3.10.1",
     "zod": "^4.6.5",
     "zustand": "^5.0.0"

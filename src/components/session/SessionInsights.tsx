@@ -1,9 +1,8 @@
-import { Link } from 'react-router';
 import { SessionReview } from './SessionReview';
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
-import { sessionPath } from '../../core/routes';
+import { sessionLink } from '../../core/useSessionRoute';
 import type { Solve } from '../../core/types';
 
 export function SessionInsights({
@@ -61,14 +60,14 @@ export function SessionInsights({
                 </div>
               </dl>
               <div className="session-bin-links">
-                <Link to={`${sessionPath(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
+                <a href={`${sessionLink(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
                   Opening solves →
-                </Link>
-                <Link
-                  to={`${sessionPath(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
+                </a>
+                <a
+                  href={`${sessionLink(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
                 >
                   Closing solves →
-                </Link>
+                </a>
               </div>
               <p className="subtle session-footnote">
                 Compares finished solves within each stretch, including +2. DNFs are omitted from
@@ -91,12 +90,12 @@ export function SessionInsights({
               <p className="subtle">
                 Solves {summary.best12.start + 1}–{summary.best12.end + 1} formed your best ao12.
               </p>
-              <Link
+              <a
                 className="session-all-solves"
-                to={`${sessionPath(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
+                href={`${sessionLink(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
               >
                 View these 12 solves →
-              </Link>
+              </a>
               <p className="subtle session-footnote">
                 Uses the same trimmed-average rules as your timer. Tied windows show the earliest
                 match.
@@ -139,12 +138,12 @@ export function SessionInsights({
                   style={{ width: `${solves.length ? (matching / solves.length) * 100 : 0}%` }}
                 />
               </div>
-              <Link
+              <a
                 className="session-all-solves"
-                to={`${sessionPath(sessionId, 'solves')}?under=${target}`}
+                href={`${sessionLink(sessionId, 'solves')}?under=${target}`}
               >
                 View matching solves →
-              </Link>
+              </a>
               <p className="subtle session-footnote">
                 All attempts count toward the total. +2 penalties apply.
               </p>

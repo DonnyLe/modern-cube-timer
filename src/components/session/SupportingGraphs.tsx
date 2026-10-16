@@ -1,9 +1,8 @@
-import { Link } from 'react-router';
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from 'recharts';
 import { consistencyBlocks, distribution, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
-import { sessionPath } from '../../core/routes';
+import { sessionLink } from '../../core/useSessionRoute';
 import type { Solve } from '../../core/types';
 import { Graph } from '../Graph';
 
@@ -67,12 +66,12 @@ export function SupportingGraphs({
             </div>
             <div className="session-bin-links">
               {histogram.map((bin) => (
-                <Link
+                <a
                   key={bin.lower}
-                  to={`${sessionPath(sessionId, 'solves')}?min=${bin.lower}&under=${bin.upper}`}
+                  href={`${sessionLink(sessionId, 'solves')}?min=${bin.lower}&under=${bin.upper}`}
                 >
                   {bin.label}s · {bin.count}
-                </Link>
+                </a>
               ))}
             </div>
           </>
@@ -133,12 +132,12 @@ export function SupportingGraphs({
             </div>
             <div className="session-bin-links">
               {blocks.map((block) => (
-                <Link
+                <a
                   key={block.start}
-                  to={`${sessionPath(sessionId, 'solves')}?from=${block.start + 1}&to=${block.end}`}
+                  href={`${sessionLink(sessionId, 'solves')}?from=${block.start + 1}&to=${block.end}`}
                 >
                   Solves {block.start + 1}–{block.end}
-                </Link>
+                </a>
               ))}
             </div>
           </>
@@ -182,12 +181,12 @@ export function SupportingGraphs({
               yLabel="Share (%)"
               formatTick={(value) => `${Math.round(value)}%`}
             />
-            <Link
+            <a
               className="session-all-solves"
-              to={`${sessionPath(sessionId, 'solves')}?under=${target}`}
+              href={`${sessionLink(sessionId, 'solves')}?under=${target}`}
             >
               View matching solves →
-            </Link>
+            </a>
           </>
         ) : (
           <p className="session-empty">Add solves to track your target.</p>

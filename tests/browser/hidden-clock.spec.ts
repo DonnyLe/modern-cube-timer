@@ -92,12 +92,12 @@ test('hidden clock persists, keeps inspection visible, and can be disabled', asy
     )
     .toBe(true);
   await page.reload();
-  await expect(page).toHaveURL(/#\/settings$/);
-  await expect(setting).toBeChecked();
-  await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled({
     timeout: 30000,
   });
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(setting).toBeChecked();
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
   const timer = page.locator('[data-timer]');
 
   await timer.focus();

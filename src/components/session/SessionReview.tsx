@@ -1,8 +1,7 @@
-import { Link } from 'react-router';
 import { useMemo } from 'react';
 import { reviewResults } from '../../core/sessionAnalysis';
 import { formatTime, value } from '../../core/statistics';
-import { sessionPath } from '../../core/routes';
+import { sessionLink } from '../../core/useSessionRoute';
 import type { Solve } from '../../core/types';
 
 export function SessionReview({
@@ -42,12 +41,9 @@ export function SessionReview({
                 <span className="session-scramble">{solve.scramble || 'No scramble recorded'}</span>
               </button>
             ))}
-            <Link
-              className="session-all-solves"
-              to={`${sessionPath(sessionId, 'solves')}?review=1`}
-            >
+            <a className="session-all-solves" href={`${sessionLink(sessionId, 'solves')}?review=1`}>
               Review all {review.length} results →
-            </Link>
+            </a>
           </>
         ) : (
           <p className="session-empty">No unusual results or penalties to review.</p>
@@ -76,9 +72,9 @@ export function SessionReview({
                   <span>{solve.note}</span>
                 </button>
               ))}
-            <Link className="session-all-solves" to={`${sessionPath(sessionId, 'solves')}?notes=1`}>
+            <a className="session-all-solves" href={`${sessionLink(sessionId, 'solves')}?notes=1`}>
               View all {annotated.length} annotated solves →
-            </Link>
+            </a>
           </>
         ) : (
           <p className="session-empty">Add a note to any solve to keep your observations here.</p>
