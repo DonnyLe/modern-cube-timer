@@ -1,4 +1,4 @@
-import { Link, NavLink } from './SessionLinks';
+import { NavLink } from './SessionLinks';
 import {
   Navigate,
   Route,
@@ -40,7 +40,7 @@ export function SessionPage({
   precision: number;
 }) {
   const { sessionId = '', '*': tab = '' } = useParams();
-  const validTab = ['overview', 'graphs', 'solves', 'insights'].includes(tab);
+  const validTab = ['overview', 'data', 'solves', 'insights'].includes(tab);
   const navigate = useNavigate();
   const location = useLocation();
   const fromPicker = location.state?.sessionEntry === 'sessions';
@@ -92,7 +92,14 @@ export function SessionPage({
     );
 
   // Normalize URLs outside the animated content so redirects never wait for an exit.
-  if (!validTab) return <Navigate to={sessionPath(session.id)} state={location.state} replace />;
+  if (!validTab)
+    return (
+      <Navigate
+        to={sessionPath(session.id, tab === 'graphs' ? 'data' : 'overview') + location.search}
+        state={location.state}
+        replace
+      />
+    );
 
   return (
     <main className="session-page" aria-label="Session details">
@@ -141,29 +148,26 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'graphs', 'solves', 'insights'].map((item) => (
+        {['overview', 'data', 'solves', 'insights'].map((item) => (
           <NavLink key={item} to={sessionPath(session.id, item)} end>
             {item[0].toUpperCase() + item.slice(1)}
           </NavLink>
         ))}
       </nav>
-      <div className={selected && onSolves ? 'session-detail-grid' : ''}>
+      <div
+        className={selected && onSolves ? 'session-content session-detail-grid' : 'session-content'}
+      >
         <PageFade pageKey={location.pathname}>
           <Routes location={location}>
             <Route
               path="overview"
               element={
-                <>
-                  <SessionOverview
-                    sessionId={session.id}
-                    solves={solves}
-                    precision={precision}
-                    onOpenSolve={openSolve}
-                  />
-                  <Link className="session-all-solves" to={sessionPath(session.id, 'solves')}>
-                    View all {solves.length} solves →
-                  </Link>
-                </>
+                <SessionOverview
+                  sessionId={session.id}
+                  solves={solves}
+                  precision={precision}
+                  onOpenSolve={openSolve}
+                />
               }
             />
             <Route
@@ -179,7 +183,7 @@ export function SessionPage({
               }
             />
             <Route
-              path="graphs"
+              path="data"
               element={
                 <SessionGraphs
                   sessionId={session.id}

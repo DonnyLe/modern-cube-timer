@@ -66,7 +66,7 @@ test('session trend See all opens graphs and exits focus mode safely', async ({ 
     .filter({ has: page.getByRole('heading', { name: 'Session trend', exact: true }) });
 
   await trend.getByRole('button', { name: 'See all', exact: true }).click();
-  await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/graphs$/);
+  await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/data$/);
   await expect(page.getByRole('region', { name: 'Full session trend', exact: true })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
@@ -163,7 +163,7 @@ for (const reducedMotion of [false, true]) {
       'opacity',
       '1',
     );
-    await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+    await page.getByRole('link', { name: 'Data', exact: true }).click();
     await expect(
       page.getByRole('region', { name: 'Full session trend', exact: true }),
     ).toBeVisible();
@@ -422,16 +422,102 @@ async function seedSession(page: import('@playwright/test').Page, count = 65, al
   await expect(page.getByRole('heading', { name: 'Fixture practice', exact: true })).toBeVisible();
 }
 
-test('overview shows live statistics and readable scrambles on mobile', async ({ page }) => {
+test('overview shows duration, best performances and insight placeholders on mobile', async ({
+  page,
+}) => {
   await seedSession(page);
-  await expect(page.locator('.session-metrics')).toContainText('65');
-  await expect(page.locator('.session-metrics')).toContainText('DNF');
-  await expect(page.locator('.session-solve-row')).toHaveCount(5);
-  await expect(page.locator('.session-scramble').first()).toContainText("L2 B D'");
+  await expect(page.getByRole('region', { name: 'Session length', exact: true })).toContainText(
+    '65',
+  );
+  await expect(page.getByRole('region', { name: 'Best performances', exact: true })).toContainText(
+    '0.48',
+  );
+  await expect(page.locator('.session-insight-placeholder')).toHaveCount(4);
+  await expect(page.getByText('Insight content to be defined.', { exact: true })).toHaveCount(4);
+  await expect(page.locator('.session-scramble')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await page.locator('.session-solve-row').first().click();
-  await expect(page.getByRole('complementary', { name: 'Solve details' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open best solve 1:', exact: false }).click();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toContainText(
+    'Solve #1',
+  );
+});
+
+test('Overview panels and graph expand to fill taller desktop viewports', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await seedSession(page);
+  const chart = page.locator('.session-insight-workspace .graph-chart');
+  const originalHeight = await chart.evaluate((element) => element.getBoundingClientRect().height);
+
+  for (const height of [1000, 1200]) {
+    await page.setViewportSize({ width: 1440, height });
+    await expect
+      .poll(async () => {
+        const workspace = await page.locator('.session-insight-workspace').boundingBox();
+
+        return height - (workspace!.y + workspace!.height);
+      })
+      .toBeLessThan(40);
+  }
+
+  await expect
+    .poll(() => chart.evaluate((element) => element.getBoundingClientRect().height))
+    .toBeGreaterThan(originalHeight + 100);
+  const graph = await page
+    .getByRole('region', { name: 'Session trend overview', exact: true })
+    .boundingBox();
+  const insights = await page
+    .getByRole('region', { name: 'Session insight placeholders', exact: true })
+    .boundingBox();
+
+  expect(graph!.x).toBeLessThan(insights!.x);
+  expect(Math.abs(graph!.height - insights!.height)).toBeLessThan(2);
+});
+
+test('Data shows detailed statistics and legacy Graphs links still resolve', async ({ page }) => {
+  await seedSession(page);
+  const insights = await page
+    .getByRole('region', { name: 'Session insight placeholders', exact: true })
+    .boundingBox();
+  const trend = await page
+    .getByRole('region', { name: 'Session trend overview', exact: true })
+    .boundingBox();
+
+  expect(trend!.x).toBeLessThan(insights!.x);
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
+  const stats = page.getByRole('region', { name: 'Session statistics', exact: true });
+
+  await expect(stats.locator('.session-data-metrics > div')).toHaveCount(12);
+  const statsBox = await stats.boundingBox();
+  const graphBox = await page
+    .getByRole('region', { name: 'Full session trend', exact: true })
+    .boundingBox();
+
+  expect(graphBox!.x).toBeGreaterThan(statsBox!.x);
+  await expect(stats).toContainText('Standard deviation');
+  await expect(stats).toContainText('Median (finished)');
+  await expect(stats).toContainText('64 / 65');
+  await expect(
+    stats.locator('div').filter({ has: page.getByText('Session mean', { exact: true }) }),
+  ).toContainText('DNF');
+  await page.goto('/#session/expanded-fixture/graphs?under=13000');
+  await expect(page).toHaveURL(/session\/expanded-fixture\/data\?under=13000$/);
+  await expect(page.getByRole('link', { name: 'Data', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test('best performances open their original solve and exact average windows', async ({ page }) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'View best ao5:', exact: false }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(5);
+  await expect(page).toHaveURL(/solves\?from=\d+&to=\d+$/);
+  await page.getByRole('link', { name: 'Overview', exact: true }).click();
+  await page.getByRole('link', { name: 'View best ao12:', exact: false }).click();
+  await expect(page.locator('.session-solve-row')).toHaveCount(12);
 });
 
 test('solves preserves numbering through search, penalties, sorting, and pagination', async ({
@@ -494,7 +580,7 @@ test('solve panel saves penalties and notes, supports delete undo, and survives 
 
 test('graphs cover the full session and open an attempt by original number', async ({ page }) => {
   await seedSession(page);
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
   await expect(page.getByRole('group', { name: 'Session trend chart', exact: true })).toBeVisible();
   await expect(page.locator('.session-full-trend')).toContainText('65 solves');
   await page.getByRole('checkbox', { name: 'ao50', exact: true }).check();
@@ -508,7 +594,7 @@ test('graphs cover the full session and open an attempt by original number', asy
 
 test('supporting charts link distribution bins and targets back to solves', async ({ page }) => {
   await seedSession(page);
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Time distribution', exact: true })).toBeVisible();
   const target = page.getByRole('region', { name: 'Under target', exact: true });
 
@@ -517,7 +603,7 @@ test('supporting charts link distribution bins and targets back to solves', asyn
   await expect(page).toHaveURL(/under=13000/);
   await expect(page.locator('.session-solve-row')).not.toHaveCount(0);
   await expect(page.locator('.session-solve-list')).not.toContainText('DNF');
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
   await page
     .getByRole('region', { name: 'Consistency by block', exact: true })
     .getByRole('link', { name: 'Solves 51–65' })
@@ -560,14 +646,14 @@ test('review and annotated solves retain source records and provide a clear filt
 test('empty pages and all-DNF graphs show meaningful states', async ({ page }) => {
   await seedSession(page, 0);
 
-  for (const tab of ['Graphs', 'Insights', 'Solves']) {
+  for (const tab of ['Data', 'Insights', 'Solves']) {
     await page.getByRole('link', { name: tab, exact: true }).click();
     await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
   }
 
   await expect(page.getByText('No solves in this session yet.')).toBeVisible();
   await seedSession(page, 12, true);
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
   await expect(page.getByText('No finished solves to plot.')).toBeVisible();
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await expect(page.getByText('No valid average of 12 yet.')).toBeVisible();
@@ -578,7 +664,7 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
   await seedSession(page);
   await expect(page.locator('.app')).toHaveClass(/theme-dark/);
 
-  for (const tab of ['Overview', 'Graphs', 'Solves', 'Insights']) {
+  for (const tab of ['Overview', 'Data', 'Solves', 'Insights']) {
     await page.getByRole('link', { name: tab, exact: true }).click();
     await expect(page.getByRole('link', { name: tab, exact: true })).toHaveAttribute(
       'aria-current',
@@ -592,7 +678,7 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
 
   await page.setViewportSize({ width: 390, height: 844 });
 
-  for (const tab of ['Overview', 'Graphs', 'Solves', 'Insights']) {
+  for (const tab of ['Overview', 'Data', 'Solves', 'Insights']) {
     await page.getByRole('link', { name: tab, exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   }
@@ -614,8 +700,8 @@ test('router preserves legacy links, browser history, and solve filters across r
 
   // The fixture starts on the old #session/... URL, which remains supported.
   await seedSession(page);
-  await page.getByRole('link', { name: 'Graphs', exact: true }).click();
-  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/graphs$/);
+  await page.getByRole('link', { name: 'Data', exact: true }).click();
+  await expect(page).toHaveURL(/#\/session\/expanded-fixture\/data$/);
   await expect(timerTab.locator('.segmented-selection')).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
@@ -623,7 +709,7 @@ test('router preserves legacy links, browser history, and solve filters across r
     'page',
   );
   await page.goForward();
-  await expect(page.getByRole('link', { name: 'Graphs', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Data', exact: true })).toHaveAttribute(
     'aria-current',
     'page',
   );

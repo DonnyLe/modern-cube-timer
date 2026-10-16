@@ -12,12 +12,14 @@ export function Graph({
   label,
   xLabel,
   yLabel,
+  fill = false,
   formatTick = (value) => Number(value.toFixed(2)).toString(),
 }: {
   points: GraphPoint[];
   label: string;
   xLabel: string;
   yLabel: string;
+  fill?: boolean;
   formatTick?: (value: number) => string;
 }) {
   const data = points.map((point) => ({
@@ -29,7 +31,7 @@ export function Graph({
 
   return (
     <div
-      className="graph"
+      className={fill ? 'graph graph-fill' : 'graph'}
       role="group"
       aria-label={label}
       onKeyDown={(event) => {
@@ -41,7 +43,7 @@ export function Graph({
       <LineChart
         responsive
         className="graph-chart"
-        style={{ width: '100%', height: 183 }}
+        style={{ width: '100%', height: fill ? '100%' : 183 }}
         data={data}
         margin={{ top: 16, right: 16, bottom: 0, left: 0 }}
         accessibilityLayer

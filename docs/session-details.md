@@ -2,9 +2,9 @@
 
 Select the session name above the timer to open its Overview, or open **Manage sessions**, choose a session, and select **Expand session**. **View all** opens its Solves tab directly. Browsing does not change the timer's active session; use **Continue session** to resume that session.
 
-- **Overview** shows session statistics, a recent trend, and recent times with full scrambles.
+- **Overview** uses an insight workspace that fills the available desktop viewport: elapsed session length and time solving, best single/ao5/ao12 linked to their original solves, a session trend on the left and four clearly marked insight placeholders on the right.
 - **Solves** supports scramble/time/note search, penalties, note filters, sorting, and pagination. Selecting an attempt opens its scramble, cube net, time, penalty, note, and averages at that point. Deletion requires confirmation and provides Undo.
-- **Graphs** includes full-session singles and rolling averages, a histogram, consistency by blocks of up to 50 attempts, and the share of attempts below a configurable target.
+- **Data** adds twelve compact statistics blocks for mean, finished mean, median, standard deviation, best and slowest times, range, quartiles, finished count and penalties. The compact blocks sit to the left of the main graph on desktop. Data also includes full-session singles and rolling averages, a histogram, consistency by blocks of up to 50 attempts, and the share of attempts below a configurable target.
 - **Insights** compares opening and closing stretches, identifies the earliest best ao12 window, and links to target matches, unusual results, and annotated solves.
 
 React Router manages session and tab URLs using `#/session/<id>/<tab>` (older `#session/...` links still work) and survive reloads. Solve ranges and time bands are linked using hash query parameters. **Show all solves** clears that context. CSV export includes only the viewed session.
@@ -30,3 +30,7 @@ When returning to All sessions, the picker opens first while the timer content s
 Opening Overview or Solves from the session picker prepares the session data, closes the picker and backdrop completely, then starts the session-page crossfade. Navigation waits for the actual modal exit callback rather than a timed delay.
 
 Session filters, graph controls, and the solve editor use the shared Base UI Select. The reusable Checkbox component supplies themed checked, disabled, and keyboard-focus states for notes and graph series. Session dropdowns use consistent 40px heights and inset chevrons.
+
+The Data tab uses `#/session/<id>/data`. Existing `/graphs` links redirect to Data, retaining query parameters and the return destination. Finished-solve descriptive statistics exclude DNFs and include +2 penalties; standard deviation uses the finished-solve population.
+
+On desktop, Overview uses the available viewport height: both summary panels and the lower graph/insight row stretch with the window, including the chart plot and the four insight slots. Narrow layouts stack and scroll naturally. Data retains smaller statistics blocks on the left of its main chart.

@@ -1,9 +1,18 @@
+import { Activity, ChartNoAxesColumn, Flame, TrendingUp } from 'lucide-react';
 import { Link } from './SessionLinks';
 import { formatTime, value } from '../../core/statistics';
-import { compareStretches, sessionSummary } from '../../core/sessionAnalysis';
+import { sessionSummary } from '../../core/sessionAnalysis';
 import type { Solve } from '../../core/types';
 import { sessionPath } from '../../core/routes';
+import { formatSessionDuration } from '../../utils/date';
 import { Trend } from '../Trend';
+
+const insightSlots = [
+  { title: 'Progress', icon: TrendingUp },
+  { title: 'Consistency', icon: Activity },
+  { title: 'Streaks', icon: Flame },
+  { title: 'Session comparison', icon: ChartNoAxesColumn },
+];
 
 export function SessionOverview({
   solves,
@@ -17,102 +26,118 @@ export function SessionOverview({
   onOpenSolve: (solve: Solve) => void;
 }) {
   const summary = sessionSummary(solves);
-  const comparison = compareStretches(solves);
-  const metrics = [
-    ['Solves', String(solves.length)],
-    ['Session mean', formatTime(summary.mean, precision)],
-    ['Best single', formatTime(summary.best, precision)],
-    ['Best ao5', formatTime(summary.best5?.time ?? null, precision)],
-    ['Best ao12', formatTime(summary.best12?.time ?? null, precision)],
-  ];
+  const best = solves.find(
+    (solve) => Number.isFinite(value(solve)) && value(solve) === summary.best,
+  );
+  const bestNumber = best ? solves.indexOf(best) + 1 : null;
+  const clock = (timestamp: number) =>
+    new Date(timestamp).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
   return (
-    <div className="session-sections">
-      <dl className="session-metrics session-panel">
-        {metrics.map(([label, time]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{time}</dd>
+    <div className="session-sections session-insight-workspace">
+      <div className="session-summary-grid">
+        <section className="session-panel session-duration" aria-label="Session length">
+          <h2>Session length</h2>
+          <div className="session-duration-content">
+            <div>
+              <p className="session-duration-value">{formatSessionDuration(summary.elapsedMs)}</p>
+              <p className="subtle session-time-range">
+                {solves.length
+                  ? `${clock(solves[0].timestamp - solves[0].duration)} – ${clock(solves.at(-1)!.timestamp)}`
+                  : 'No solves yet'}
+              </p>
+            </div>
+            <dl className="session-duration-facts">
+              <div>
+                <dt>Solves</dt>
+                <dd>{solves.length}</dd>
+              </div>
+              <div>
+                <dt>Time solving</dt>
+                <dd>{formatSessionDuration(summary.solvingMs)}</dd>
+              </div>
+            </dl>
           </div>
-        ))}
-      </dl>
-      <div className="session-overview-grid">
-        <section className="session-panel">
-          <h2>Session trend</h2>
-          <Trend solves={solves} />
         </section>
-        <section className="session-panel">
-          <h2>Session recap</h2>
-          {comparison && (
-            <p className="session-recap">
-              Your final {comparison.size} attempts averaged{' '}
-              {(Math.abs(comparison.change) / 1000).toFixed(precision)}s{' '}
-              {comparison.change <= 0 ? 'faster' : 'slower'} than your first {comparison.size},
-              among finished solves.
-            </p>
-          )}
-          <dl className="session-facts">
-            <div>
-              <dt>Median (finished solves)</dt>
-              <dd>{formatTime(summary.median, precision)}</dd>
+        <section className="session-panel" aria-label="Best performances">
+          <h2>Best performances</h2>
+          <div className="session-best-grid">
+            <div className="session-best-tile">
+              <p className="subtle">Best single</p>
+              {best ? (
+                <button
+                  className="text-button session-best-value"
+                  onClick={() => onOpenSolve(best)}
+                  aria-label={`Open best solve ${bestNumber}: ${formatTime(value(best), precision)}`}
+                >
+                  {formatTime(value(best), precision)}
+                </button>
+              ) : (
+                <p className="session-best-value">{formatTime(summary.best, precision)}</p>
+              )}
+              <p className="subtle">
+                {bestNumber ? `Solve #${bestNumber}` : 'No finished solves yet'}
+              </p>
             </div>
-            <div>
-              <dt>Elapsed session time</dt>
-              <dd>{Math.round(summary.elapsedMs / 60000)} min</dd>
-            </div>
-            <div>
-              <dt>Time solving</dt>
-              <dd>{Math.round(summary.solvingMs / 60000)} min</dd>
-            </div>
-            <div>
-              <dt>+2 penalties</dt>
-              <dd>{summary.plusTwo}</dd>
-            </div>
-            <div>
-              <dt>DNFs</dt>
-              <dd>{summary.dnfs}</dd>
-            </div>
-          </dl>
-          <p className="subtle session-footnote">
-            Averages include penalties. An untrimmed mean containing a DNF is DNF.
-          </p>
-          <Link className="session-all-solves" to={sessionPath(sessionId, 'insights')}>
-            All insights →
-          </Link>
+            {[
+              { name: 'Best ao5', result: summary.best5 },
+              { name: 'Best ao12', result: summary.best12 },
+            ].map(({ name, result }) => (
+              <div className="session-best-tile" key={name}>
+                <p className="subtle">{name}</p>
+                {result ? (
+                  <Link
+                    className="session-best-value"
+                    aria-label={`View ${name.toLowerCase()}: ${formatTime(result.time, precision)}`}
+                    to={`${sessionPath(sessionId, 'solves')}?from=${result.start + 1}&to=${result.end + 1}`}
+                  >
+                    {formatTime(result.time, precision)}
+                  </Link>
+                ) : (
+                  <p className="session-best-value">—</p>
+                )}
+                <p className="subtle">
+                  {result
+                    ? `Solves #${result.start + 1}–${result.end + 1}`
+                    : 'Not enough valid solves'}
+                </p>
+              </div>
+            ))}
+          </div>
         </section>
       </div>
-      <section className="session-panel">
-        <h2>Recent solves</h2>
-        {solves.length ? (
-          <div className="session-solve-list">
-            {solves
-              .slice(-5)
-              .reverse()
-              .map((solve, index) => (
-                <button
-                  className="session-solve-row"
-                  key={solve.id}
-                  onClick={() => onOpenSolve(solve)}
-                  aria-label={`Open solve ${solves.length - index}: ${formatTime(value(solve), precision)}`}
-                >
-                  <span className="subtle">#{solves.length - index}</span>
-                  <strong>
-                    {formatTime(value(solve), precision)}
-                    {solve.penalty === '+2' && <small> +2</small>}
-                  </strong>
-                  <span className="session-scramble">
-                    {solve.scramble || 'No scramble recorded'}
-                  </span>
-                  <time dateTime={new Date(solve.timestamp).toISOString()}>
-                    {new Date(solve.timestamp).toLocaleString()}
-                  </time>
-                </button>
-              ))}
+      <div className="session-workspace-grid">
+        <section className="session-panel" aria-label="Session trend overview">
+          <div className="session-section-header session-trend-heading">
+            <h2>Session trend</h2>
+            <dl className="session-trend-mean">
+              <div>
+                <dt>Session mean</dt>
+                <dd>{formatTime(summary.mean, precision)}</dd>
+              </div>
+            </dl>
+            <Link className="session-all-solves" to={sessionPath(sessionId, 'data')}>
+              All data ↗
+            </Link>
           </div>
-        ) : (
-          <p className="subtle">Your solves and their scrambles will appear here.</p>
-        )}
-      </section>
+          <Trend solves={solves} fill />
+        </section>
+        <section className="session-panel" aria-label="Session insight placeholders">
+          <h2>Session insights</h2>
+          <div className="session-placeholder-grid">
+            {insightSlots.map(({ title, icon: Icon }) => (
+              <div className="session-insight-placeholder" key={title}>
+                <div className="session-placeholder-heading">
+                  <Icon size={18} aria-hidden="true" />
+                  <h3>{title}</h3>
+                  <span className="session-placeholder-badge">Placeholder</span>
+                </div>
+                <p className="subtle">Insight content to be defined.</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

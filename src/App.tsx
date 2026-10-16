@@ -183,7 +183,7 @@ export default function App() {
   };
 
   const openSessionPage = async (
-    tab: 'overview' | 'solves' | 'graphs',
+    tab: 'overview' | 'solves' | 'data',
     sessionId = preferences.activeSessionId,
     sessionEntry = 'timer',
   ) => {
@@ -573,7 +573,7 @@ export default function App() {
                           <h2>Session trend</h2>
                           <button
                             className="text-button"
-                            onClick={() => void openSessionPage('graphs')}
+                            onClick={() => void openSessionPage('data')}
                           >
                             See all <ArrowUpRight size={16} />
                           </button>
