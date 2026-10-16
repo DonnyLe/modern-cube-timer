@@ -681,7 +681,6 @@ export default function App() {
             onPuzzleChange={setManagerPuzzle}
             onExpand={(id) => {
               setDialog('');
-              void changeFocus(false);
               window.location.hash = sessionLink(id);
             }}
             onViewAll={(id) => {
