@@ -9,7 +9,13 @@ test('expanded session survives reload, keeps the timer paused, and returns to i
   await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
+  const navigation = page.getByRole('navigation', { name: 'Main navigation' });
+
+  await expect(navigation).toBeVisible();
+  const timerTab = navigation.getByRole('button', { name: 'Timer', exact: true });
+
+  await expect(timerTab).toHaveAttribute('aria-current', 'page');
+  await expect(timerTab.locator('.segmented-selection')).toBeVisible();
   await expect(page).toHaveURL(/#\/?session\/.+\/overview$/);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -289,10 +295,15 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
 test('router preserves legacy links, browser history, and solve filters across reloads', async ({
   page,
 }) => {
+  const navigation = page.getByRole('navigation', { name: 'Main navigation' });
+  const timerTab = navigation.getByRole('button', { name: 'Timer', exact: true });
+  const settingsTab = navigation.getByRole('button', { name: 'Settings', exact: true });
+
   // The fixture starts on the old #session/... URL, which remains supported.
   await seedSession(page);
   await page.getByRole('link', { name: 'Graphs', exact: true }).click();
   await expect(page).toHaveURL(/#\/session\/expanded-fixture\/graphs$/);
+  await expect(timerTab.locator('.segmented-selection')).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute(
     'aria-current',
@@ -316,11 +327,15 @@ test('router preserves legacy links, browser history, and solve filters across r
   await expect(page.locator('.session-solve-row')).toHaveCount(count);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page).toHaveURL(/#\/settings$/);
+  await expect(settingsTab.locator('.segmented-selection')).toBeVisible();
+  await expect(timerTab.locator('.segmented-selection')).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('combobox', { name: 'Color mode' })).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/solves\?under=13000$/);
   await expect(page.locator('.session-solve-row')).toHaveCount(count);
+  await expect(timerTab).toHaveAttribute('aria-current', 'page');
+  await expect(timerTab.locator('.segmented-selection')).toBeVisible();
 });
 
 test('router resolves session index and unknown tabs to Overview', async ({ page }) => {

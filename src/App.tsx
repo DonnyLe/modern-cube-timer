@@ -62,7 +62,9 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const sessionRoute = useMatch('/session/:sessionId/*');
-  const view = NAVIGATION_VIEWS.find((item) => location.pathname === NAVIGATION_PATHS[item]);
+  const view = sessionRoute
+    ? 'Timer'
+    : NAVIGATION_VIEWS.find((item) => location.pathname === NAVIGATION_PATHS[item]);
 
   useEffect(() => {
     if (sessionRoute) setDialog('');
@@ -263,14 +265,14 @@ export default function App() {
                 <button
                   key={v}
                   disabled={busy}
-                  className={!sessionRoute && view === v ? 'active' : ''}
-                  aria-current={!sessionRoute && view === v ? 'page' : undefined}
+                  className={view === v ? 'active' : ''}
+                  aria-current={view === v ? 'page' : undefined}
                   onClick={(event) => {
                     navigate(NAVIGATION_PATHS[v]);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
                 >
-                  {!focused && !sessionRoute && view === v && (
+                  {!focused && view === v && (
                     <motion.span
                       initial={false}
                       className="segmented-selection"
