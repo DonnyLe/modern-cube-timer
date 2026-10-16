@@ -1,7 +1,8 @@
+import { Link } from 'react-router';
 import { formatTime, value } from '../../core/statistics';
 import { compareStretches, sessionSummary } from '../../core/sessionAnalysis';
 import type { Solve } from '../../core/types';
-import { sessionLink } from '../../core/useSessionRoute';
+import { sessionPath } from '../../core/routes';
 import { Trend } from '../Trend';
 
 export function SessionOverview({
@@ -75,9 +76,9 @@ export function SessionOverview({
           <p className="subtle session-footnote">
             Averages include penalties. An untrimmed mean containing a DNF is DNF.
           </p>
-          <a className="session-all-solves" href={sessionLink(sessionId, 'insights')}>
+          <Link className="session-all-solves" to={sessionPath(sessionId, 'insights')}>
             All insights →
-          </a>
+          </Link>
         </section>
       </div>
       <section className="session-panel">

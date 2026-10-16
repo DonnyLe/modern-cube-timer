@@ -22,7 +22,8 @@ import { useTheme } from './core/useTheme';
 import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
-import { useSessionRoute, sessionLink } from './core/useSessionRoute';
+import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from 'react-router';
+import { sessionPath } from './core/routes';
 import { SessionPage } from './components/session/SessionPage';
 import { Background } from './components/Background';
 import { isPattern } from './core/backgrounds';
@@ -39,7 +40,7 @@ import { download } from './data/transfer';
 
 const NAVIGATION_VIEWS = ['Timer', 'Settings', 'Gallery'] as const;
 
-type NavigationView = (typeof NAVIGATION_VIEWS)[number];
+const NAVIGATION_PATHS = { Timer: '/', Settings: '/settings', Gallery: '/gallery' } as const;
 
 export default function App() {
   const store = useStore(),
@@ -47,8 +48,7 @@ export default function App() {
     a = workspace.appearance,
     theme = useTheme(a.theme),
     palette = a[theme];
-  const [view, setView] = useState<NavigationView>('Timer'),
-    [dialog, setDialog] = useState(''),
+  const [dialog, setDialog] = useState(''),
     [selectedSolve, setSelectedSolve] = useState<Solve | null>(null),
     [manual, setManual] = useState(''),
     [inputError, setInputError] = useState(''),
@@ -59,7 +59,10 @@ export default function App() {
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false);
-  const sessionRoute = useSessionRoute();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const sessionRoute = useMatch('/session/:sessionId/*');
+  const view = NAVIGATION_VIEWS.find((item) => location.pathname === NAVIGATION_PATHS[item]);
 
   useEffect(() => {
     if (sessionRoute) setDialog('');
@@ -166,7 +169,7 @@ export default function App() {
 
   const openSessionPage = async (tab: 'solves' | 'graphs') => {
     if (focused) await changeFocus(false);
-    window.location.hash = sessionLink(preferences.activeSessionId, tab);
+    navigate(sessionPath(preferences.activeSessionId, tab));
   };
 
   const openSessions = () => {
@@ -242,8 +245,7 @@ export default function App() {
               if (focused) void changeFocus(false);
 
               if (!busy) {
-                window.location.hash = '';
-                setView('Timer');
+                navigate('/');
                 e.currentTarget.blur();
               }
             }}
@@ -264,8 +266,7 @@ export default function App() {
                   className={!sessionRoute && view === v ? 'active' : ''}
                   aria-current={!sessionRoute && view === v ? 'page' : undefined}
                   onClick={(event) => {
-                    window.location.hash = '';
-                    setView(v);
+                    navigate(NAVIGATION_PATHS[v]);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
                 >
@@ -326,197 +327,209 @@ export default function App() {
       )}
       {!store.ready ? (
         <main className="loading">Opening your workspace…</main>
-      ) : sessionRoute ? (
-        <SessionPage
-          key={sessionRoute.id}
-          sessionId={sessionRoute.id}
-          tab={sessionRoute.tab}
-          search={sessionRoute.search}
-          precision={a.precision}
-          onBack={() => {
-            window.location.hash = '';
-            setManagerSessionId(sessionRoute.id);
-            setDialog('sessions');
-          }}
-          onContinue={() => {
-            window.location.hash = '';
-            setView('Timer');
-          }}
-        />
-      ) : view === 'Timer' ? (
-        <motion.main animate={focusFade} className="workspace-default">
-          <section className="scramble-bar solve-ui" {...hiddenUI} aria-label="Scramble">
-            <div className="scramble-actions">
-              <button
-                aria-label="Copy scramble"
-                className="icon-button"
-                disabled={!scramble.scramble}
-                onClick={() => {
-                  void navigator.clipboard
-                    .writeText(scramble.scramble)
-                    .then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1600);
-                    })
-                    .catch(() =>
-                      store.setError('Could not copy. Select and copy the scramble text.'),
-                    );
-                }}
-              >
-                {copied ? <Check /> : <Copy />}
-              </button>
-              <button
-                aria-label="New scramble"
-                className="icon-button"
-                disabled={busy || scramble.loading}
-                onClick={() => void scramble.next()}
-              >
-                <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
-              </button>
-            </div>
-            <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
-          </section>
-          {scramble.error && (
-            <p role="alert" className="inline-error solve-ui" {...hiddenUI}>
-              {scramble.error}
-              <button onClick={() => void scramble.next()}>Retry</button>
-            </p>
-          )}
-          <section className="timer-area">
-            <div className="timer-session-heading solve-ui" {...hiddenUI}>
-              <p className="timer-session-name">{session?.name}</p>
-              <button
-                aria-label="Manage sessions"
-                title="Manage sessions"
-                aria-haspopup="dialog"
-                className="icon-button"
-                disabled={busy || saving || !!pendingSolve || !session}
-                onClick={openSessions}
-              >
-                <Menu size={18} />
-              </button>
-            </div>
-            <button
-              data-timer
-              className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
-              aria-label="Timer. Hold to start, press to stop"
-              style={{
-                fontWeight: a.timerWeight,
-                fontSize: a.autoFit
-                  ? focused
-                    ? `clamp(64px, min(28vw, 24svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 280px)`
-                    : `clamp(64px,11vw,${a.timerSize}px)`
-                  : `${a.timerSize}px`,
-                fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',
-              }}
-              onPointerDown={(e) => {
-                e.currentTarget.setPointerCapture(e.pointerId);
-                timer.press();
-              }}
-              onPointerUp={() => timer.release()}
-              onPointerCancel={() => {
-                if (!running) timer.cancel();
-              }}
-            >
-              {displayed}
-            </button>
-            <p className="timer-hint solve-ui" {...hiddenUI} aria-live="polite">
-              {hint}
-            </p>
-          </section>
-          {a.showStats && (
-            <section className="inline-stats solve-ui" {...hiddenUI}>
-              {(['ao5', 'ao12', 'best'] as const).map((k) => (
-                <div key={k}>
-                  <span>{k === 'best' ? 'Best' : k}</span>
-                  <strong>{formatTime(stats[k])}</strong>
-                </div>
-              ))}
-            </section>
-          )}
-          <div
-            className={`focus-widgets solve-ui ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
-            inert={hideUI || busy || (focused && preferences.hideWidgetsInFocus)}
-            aria-hidden={hideUI || (focused && preferences.hideWidgetsInFocus)}
-          >
-            <section className="widget-row">
-              <article className="widget glass recent">
-                <header>
-                  <h2>Recent solves</h2>
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      void openSessionPage('solves');
-                    }}
-                  >
-                    See all <ArrowUpRight size={16} />
-                  </button>
-                </header>
-                {solves.length ? (
-                  <div className="recent-list">
-                    {solves
-                      .slice(-3)
-                      .reverse()
-                      .map((s, i) => (
-                        <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
-                          <span>{solves.length - i}</span>
-                          <strong>
-                            {formatTime(value(s))}
-                            {s.penalty === '+2' && <small> +2</small>}
-                          </strong>
-                          <Pencil size={13} />
-                        </button>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="empty">
-                    <p>Your first solve starts here.</p>
-                    <small>Hold space, then release.</small>
-                  </div>
-                )}
-                <footer>
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      void openSessionPage('solves');
-                    }}
-                  >
-                    {solves.length} solves · {session?.name}
-                  </button>
-                  <button
-                    aria-label="Add manual solve"
-                    className="icon-button small"
-                    onClick={() => {
-                      setManual('');
-                      setDialog('manual');
-                    }}
-                  >
-                    <Plus size={18} />
-                  </button>
-                </footer>
-              </article>
-              <article className="widget glass">
-                <header>
-                  <h2>Session trend</h2>
-                  <button className="text-button" onClick={() => void openSessionPage('graphs')}>
-                    See all <ArrowUpRight size={16} />
-                  </button>
-                </header>
-                <Trend key={session?.id} solves={solves} />
-              </article>
-              <article className="widget glass">
-                <header>
-                  <h2>Scramble preview</h2>
-                </header>
-                <PuzzleView scramble={scramble.scramble} event={puzzle} />
-              </article>
-            </section>
-          </div>
-        </motion.main>
-      ) : view === 'Settings' ? (
-        <Settings theme={theme} dataControls={<DataControls />} />
       ) : (
-        <Gallery />
+        <Routes>
+          <Route
+            path="session/:sessionId/*"
+            element={
+              <SessionPage
+                key={sessionRoute?.params.sessionId}
+                precision={a.precision}
+                onBack={() => {
+                  navigate('/');
+                  setManagerSessionId(
+                    sessionRoute?.params.sessionId || preferences.activeSessionId,
+                  );
+                  setDialog('sessions');
+                }}
+                onContinue={() => navigate('/')}
+              />
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <motion.main animate={focusFade} className="workspace-default">
+                <section className="scramble-bar solve-ui" {...hiddenUI} aria-label="Scramble">
+                  <div className="scramble-actions">
+                    <button
+                      aria-label="Copy scramble"
+                      className="icon-button"
+                      disabled={!scramble.scramble}
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(scramble.scramble)
+                          .then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1600);
+                          })
+                          .catch(() =>
+                            store.setError('Could not copy. Select and copy the scramble text.'),
+                          );
+                      }}
+                    >
+                      {copied ? <Check /> : <Copy />}
+                    </button>
+                    <button
+                      aria-label="New scramble"
+                      className="icon-button"
+                      disabled={busy || scramble.loading}
+                      onClick={() => void scramble.next()}
+                    >
+                      <RefreshCw size={20} className={scramble.loading ? 'spin' : ''} />
+                    </button>
+                  </div>
+                  <p className="scramble-text">{scramble.scramble || 'Preparing scramble…'}</p>
+                </section>
+                {scramble.error && (
+                  <p role="alert" className="inline-error solve-ui" {...hiddenUI}>
+                    {scramble.error}
+                    <button onClick={() => void scramble.next()}>Retry</button>
+                  </p>
+                )}
+                <section className="timer-area">
+                  <div className="timer-session-heading solve-ui" {...hiddenUI}>
+                    <p className="timer-session-name">{session?.name}</p>
+                    <button
+                      aria-label="Manage sessions"
+                      title="Manage sessions"
+                      aria-haspopup="dialog"
+                      className="icon-button"
+                      disabled={busy || saving || !!pendingSolve || !session}
+                      onClick={openSessions}
+                    >
+                      <Menu size={18} />
+                    </button>
+                  </div>
+                  <button
+                    data-timer
+                    className={`timer-number ${focused && a.autoFit ? 'focus-auto-fit' : ''} ${timer.phase === 'ready' ? 'ready' : ''} ${timer.phase === 'holding' ? 'holding' : ''}`}
+                    aria-label="Timer. Hold to start, press to stop"
+                    style={{
+                      fontWeight: a.timerWeight,
+                      fontSize: a.autoFit
+                        ? focused
+                          ? `clamp(64px, min(28vw, 24svh, calc((100cqi - 60px) / ${Math.max(displayed.length, 4) * (a.timerFont === 'mono' ? 0.62 : 0.5)})), 280px)`
+                          : `clamp(64px,11vw,${a.timerSize}px)`
+                        : `${a.timerSize}px`,
+                      fontFamily: a.timerFont === 'mono' ? 'ui-monospace,monospace' : 'inherit',
+                    }}
+                    onPointerDown={(e) => {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      timer.press();
+                    }}
+                    onPointerUp={() => timer.release()}
+                    onPointerCancel={() => {
+                      if (!running) timer.cancel();
+                    }}
+                  >
+                    {displayed}
+                  </button>
+                  <p className="timer-hint solve-ui" {...hiddenUI} aria-live="polite">
+                    {hint}
+                  </p>
+                </section>
+                {a.showStats && (
+                  <section className="inline-stats solve-ui" {...hiddenUI}>
+                    {(['ao5', 'ao12', 'best'] as const).map((k) => (
+                      <div key={k}>
+                        <span>{k === 'best' ? 'Best' : k}</span>
+                        <strong>{formatTime(stats[k])}</strong>
+                      </div>
+                    ))}
+                  </section>
+                )}
+                <div
+                  className={`focus-widgets solve-ui ${focused && preferences.hideWidgetsInFocus ? 'focus-widgets-hidden' : ''}`}
+                  inert={hideUI || busy || (focused && preferences.hideWidgetsInFocus)}
+                  aria-hidden={hideUI || (focused && preferences.hideWidgetsInFocus)}
+                >
+                  <section className="widget-row">
+                    <article className="widget glass recent">
+                      <header>
+                        <h2>Recent solves</h2>
+                        <button
+                          className="text-button"
+                          onClick={() => {
+                            void openSessionPage('solves');
+                          }}
+                        >
+                          See all <ArrowUpRight size={16} />
+                        </button>
+                      </header>
+                      {solves.length ? (
+                        <div className="recent-list">
+                          {solves
+                            .slice(-3)
+                            .reverse()
+                            .map((s, i) => (
+                              <button className="solve-row" key={s.id} onClick={() => openSolve(s)}>
+                                <span>{solves.length - i}</span>
+                                <strong>
+                                  {formatTime(value(s))}
+                                  {s.penalty === '+2' && <small> +2</small>}
+                                </strong>
+                                <Pencil size={13} />
+                              </button>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="empty">
+                          <p>Your first solve starts here.</p>
+                          <small>Hold space, then release.</small>
+                        </div>
+                      )}
+                      <footer>
+                        <button
+                          className="text-button"
+                          onClick={() => {
+                            void openSessionPage('solves');
+                          }}
+                        >
+                          {solves.length} solves · {session?.name}
+                        </button>
+                        <button
+                          aria-label="Add manual solve"
+                          className="icon-button small"
+                          onClick={() => {
+                            setManual('');
+                            setDialog('manual');
+                          }}
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </footer>
+                    </article>
+                    <article className="widget glass">
+                      <header>
+                        <h2>Session trend</h2>
+                        <button
+                          className="text-button"
+                          onClick={() => void openSessionPage('graphs')}
+                        >
+                          See all <ArrowUpRight size={16} />
+                        </button>
+                      </header>
+                      <Trend key={session?.id} solves={solves} />
+                    </article>
+                    <article className="widget glass">
+                      <header>
+                        <h2>Scramble preview</h2>
+                      </header>
+                      <PuzzleView scramble={scramble.scramble} event={puzzle} />
+                    </article>
+                  </section>
+                </div>
+              </motion.main>
+            }
+          />
+          <Route
+            path="settings"
+            element={<Settings theme={theme} dataControls={<DataControls />} />}
+          />
+          <Route path="gallery" element={<Gallery />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       )}
       {deleted && (
         <div className="toast solve-ui" {...hiddenUI}>
@@ -646,11 +659,11 @@ export default function App() {
             onPuzzleChange={setManagerPuzzle}
             onExpand={(id) => {
               setDialog('');
-              window.location.hash = sessionLink(id);
+              navigate(sessionPath(id));
             }}
             onViewAll={(id) => {
               setDialog('');
-              window.location.hash = sessionLink(id, 'solves');
+              navigate(sessionPath(id, 'solves'));
             }}
             onOpenSolve={(solve) => openSolve(solve, 'sessions')}
             precision={a.precision}
