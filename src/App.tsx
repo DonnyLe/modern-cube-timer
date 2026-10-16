@@ -342,6 +342,8 @@ export default function App() {
         <SessionPage
           key={sessionRoute.id}
           sessionId={sessionRoute.id}
+          tab={sessionRoute.tab}
+          search={sessionRoute.search}
           precision={a.precision}
           onOpenSolve={openSolve}
           onBack={() => {
