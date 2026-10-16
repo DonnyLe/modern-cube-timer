@@ -23,4 +23,6 @@ Timer, Settings, and Gallery also use hash routes, so browser Back/Forward and r
 
 Session pages inherit the app's theme and appearance settings. Solve mutations live in `src/data/actions/solve.ts`; derived analysis lives in `src/core/sessionAnalysis.ts`. Browser coverage is in `tests/browser/session-page.spec.ts` and calculation coverage in `tests/session-analysis.test.ts`.
 
-Session navigation uses a brief opacity fade (80ms out, 160ms in). The app header and session tab bar stay steady while content changes. Opening from the timer or picker loads a consistent session snapshot before navigation; live updates continue after opening. Session initialization no longer displays a transient “Opening session…” screen. Reduced-motion preferences skip fades.
+Session navigation uses a brief opacity crossfade (80ms out, 160ms in). The app header and session tab bar stay steady while content changes. Opening from the timer or picker loads a consistent session snapshot before navigation; live updates continue after opening. Session initialization no longer displays a transient “Opening session…” screen. Reduced-motion preferences skip fades.
+
+When returning to All sessions, the picker opens first while the timer content stays hidden. Once the modal entrance finishes, the timer background fades in gently over 280ms. Closing the picker early releases the held background; reduced motion skips both animations.

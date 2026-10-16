@@ -72,6 +72,11 @@ export default function App() {
   useEffect(() => {
     if (sessionRoute) setDialog('');
   }, [sessionRoute]);
+  const [pickerOpening, setPickerOpening] = useState(false);
+
+  useEffect(() => {
+    if (location.pathname !== '/') setPickerOpening(false);
+  }, [location.pathname]);
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || !!sessionRoute);
@@ -196,6 +201,8 @@ export default function App() {
   };
 
   const close = () => {
+    setPickerOpening(false);
+
     if (dialog === 'sessions') {
       if (closingManager.current) return;
       closingManager.current = true;
@@ -348,6 +355,10 @@ export default function App() {
         <PageFade
           pageKey={sessionRoute ? `session/${sessionRoute.params.sessionId}` : location.pathname}
           initial={false}
+          enterReady={!pickerOpening}
+          transition={
+            dialog === 'sessions' ? { duration: 0.28, ease: [0.4, 0, 0.2, 1] } : undefined
+          }
         >
           <Routes location={location}>
             <Route
@@ -368,6 +379,7 @@ export default function App() {
                         session?.puzzle ||
                         '333',
                     );
+                    setPickerOpening(true);
                     setDialog('sessions');
                   }}
                   onContinue={() => navigate('/')}
@@ -593,6 +605,9 @@ export default function App() {
       )}
       <Dialog
         open={!!dialog}
+        onEntered={() => {
+          if (dialog === 'sessions') setPickerOpening(false);
+        }}
         title={
           dialog === 'manual'
             ? 'Add a solve'

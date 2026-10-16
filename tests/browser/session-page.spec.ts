@@ -129,7 +129,10 @@ for (const reducedMotion of [false, true]) {
     await expect(
       page.getByRole('button', { name: 'View session: Fixture practice', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.app > .page-fade')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.app > .page-fade-stack > .page-fade:not([aria-hidden])')).toHaveCSS(
+      'opacity',
+      '1',
+    );
     await page.evaluate(() => {
       const observation = { loading: false, samples: [] as number[], headers: [] as number[] };
       const observer = new MutationObserver(() => {
@@ -156,12 +159,18 @@ for (const reducedMotion of [false, true]) {
     await expect(
       page.getByRole('heading', { name: 'Fixture practice', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.app > .page-fade')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.app > .page-fade-stack > .page-fade:not([aria-hidden])')).toHaveCSS(
+      'opacity',
+      '1',
+    );
     await page.getByRole('link', { name: 'Graphs', exact: true }).click();
     await expect(
       page.getByRole('region', { name: 'Full session trend', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.session-page .page-fade')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.session-page .page-fade:not([aria-hidden])')).toHaveCSS(
+      'opacity',
+      '1',
+    );
     const observation = await page.evaluate(
       () =>
         (
@@ -184,6 +193,106 @@ for (const reducedMotion of [false, true]) {
     });
   });
 }
+
+for (const reducedMotion of [false, true]) {
+  test(`picker opens before its timer background fades in (reduced motion: ${reducedMotion})`, async ({
+    page,
+  }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+    await seedSession(page);
+    await page.reload();
+    await expect(page.locator('.session-page .page-fade:not([aria-hidden])')).toHaveCSS(
+      'opacity',
+      '1',
+    );
+    await page.evaluate(() => {
+      const handoff = {
+        samples: [] as { opacity: number | null; settled: boolean }[],
+        finished: false,
+      };
+
+      Object.assign(window, { pickerHandoff: handoff });
+
+      const sample = () => {
+        const modal = document.querySelector('[role="dialog"]');
+
+        if (modal) {
+          const timer = document.querySelector('.workspace-default');
+          const fade = timer?.closest('.page-fade');
+
+          handoff.samples.push({
+            opacity: fade ? Number(getComputedStyle(fade).opacity) : null,
+            settled:
+              getComputedStyle(modal).transform === 'none' &&
+              Number(getComputedStyle(modal).opacity) === 1,
+          });
+        }
+
+        if (handoff.samples.filter((sample) => sample.opacity === 1).length < 6)
+          requestAnimationFrame(sample);
+        else handoff.finished = true;
+      };
+
+      requestAnimationFrame(sample);
+    });
+    await page.getByRole('button', { name: 'All sessions', exact: true }).click();
+    await expect(
+      page.getByRole('dialog', { name: 'Puzzle and sessions', exact: true }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { pickerHandoff: { finished: boolean } }).pickerHandoff.finished,
+        ),
+      )
+      .toBe(true);
+    const samples = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            pickerHandoff: { samples: { opacity: number | null; settled: boolean }[] };
+          }
+        ).pickerHandoff.samples,
+    );
+
+    expect(
+      samples
+        .filter((sample) => sample.opacity !== null && sample.opacity > 0)
+        .every((sample) => sample.settled),
+    ).toBe(true);
+
+    if (!reducedMotion) {
+      expect(samples.some((sample) => sample.opacity === null || sample.opacity === 0)).toBe(true);
+      expect(
+        samples.some(
+          (sample) => sample.opacity !== null && sample.opacity > 0 && sample.opacity < 1,
+        ),
+      ).toBe(true);
+    }
+
+    await testInfo.attach('picker-background-frames', {
+      body: JSON.stringify(samples),
+      contentType: 'application/json',
+    });
+    await page.screenshot({ path: testInfo.outputPath('picker-after-return.png') });
+    await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
+  });
+}
+
+test('closing the picker during its entrance releases the timer background', async ({ page }) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'All sessions', exact: true }).click();
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click({ force: true });
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.app > .page-fade-stack > .page-fade:not([aria-hidden])')).toHaveCSS(
+    'opacity',
+    '1',
+  );
+  await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
+});
 
 async function seedSession(page: import('@playwright/test').Page, count = 65, allDnf = false) {
   await page.goto('/');
