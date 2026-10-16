@@ -22,6 +22,8 @@ import { useTheme } from './core/useTheme';
 import { useTimer } from './core/useTimer';
 import { useFocusMode } from './core/useFocusMode';
 import { useScramble } from './core/useScramble';
+import { useSessionRoute, sessionLink } from './core/useSessionRoute';
+import { SessionPage } from './components/session/SessionPage';
 import { Background } from './components/Background';
 import { isPattern } from './core/backgrounds';
 import { Trend } from './components/Trend';
@@ -59,9 +61,10 @@ export default function App() {
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false);
+  const sessionRoute = useSessionRoute();
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
-  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog);
+  const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || !!sessionRoute);
   const sessions = useLiveQuery(() => db.sessions.orderBy('createdAt').toArray(), []) || [];
   const solves =
     useLiveQuery(
@@ -118,6 +121,7 @@ export default function App() {
     preferences.inspection,
     preferences.holdMs,
     !!dialog ||
+      !!sessionRoute ||
       view !== 'Timer' ||
       !!pendingSolve ||
       saving ||
@@ -250,6 +254,7 @@ export default function App() {
               if (focused) void changeFocus(false);
 
               if (!busy) {
+                window.location.hash = '';
                 setView('Timer');
                 e.currentTarget.blur();
               }
@@ -271,6 +276,7 @@ export default function App() {
                   className={view === v ? 'active' : ''}
                   aria-current={view === v ? 'page' : undefined}
                   onClick={(event) => {
+                    window.location.hash = '';
                     setView(v);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
@@ -295,7 +301,7 @@ export default function App() {
                 className="icon-button glass"
                 title="Enter focus mode"
                 aria-label="Enter focus mode"
-                disabled={busy || view !== 'Timer'}
+                disabled={busy || view !== 'Timer' || !!sessionRoute}
                 onClick={(event) => {
                   void changeFocus(true);
                   event.currentTarget.blur();
@@ -332,6 +338,20 @@ export default function App() {
       )}
       {!store.ready ? (
         <main className="loading">Opening your workspace…</main>
+      ) : sessionRoute ? (
+        <SessionPage
+          key={sessionRoute.id}
+          sessionId={sessionRoute.id}
+          onBack={() => {
+            window.location.hash = '';
+            setManagerSessionId(sessionRoute.id);
+            setDialog('sessions');
+          }}
+          onContinue={() => {
+            window.location.hash = '';
+            setView('Timer');
+          }}
+        />
       ) : view === 'Timer' ? (
         <motion.main animate={focusFade} className="workspace-default">
           <section className="scramble-bar solve-ui" {...hiddenUI} aria-label="Scramble">
@@ -659,6 +679,11 @@ export default function App() {
             selectedId={managerSessionId}
             onSelect={setManagerSessionId}
             onPuzzleChange={setManagerPuzzle}
+            onExpand={(id) => {
+              setDialog('');
+              void changeFocus(false);
+              window.location.hash = sessionLink(id);
+            }}
             onViewAll={(id) => {
               setHistoryFromManager(true);
               setHistorySessionId(id);
