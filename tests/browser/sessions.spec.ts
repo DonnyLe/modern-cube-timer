@@ -79,6 +79,7 @@ test('automatic sessions use the saved break setting and retain previous history
     )
     .toBe(1);
   await seedOldSolve(page);
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
   await addSolve(page);
   await expect(page.locator('.recent-list .solve-row')).toHaveCount(1);
