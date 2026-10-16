@@ -116,6 +116,7 @@ test('browsing applies selection only when the manager closes and history follow
   await page.screenshot({ path: testInfo.outputPath('session-manager-desktop.png') });
   await page.getByRole('button', { name: 'View all', exact: true }).click();
   await expect(page.locator('.session-solve-list')).toContainText('12.84');
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
   await page.locator('.session-solve-row').click();
   await expect(page.getByRole('complementary', { name: 'Solve details' })).toBeVisible();
   await page.getByRole('button', { name: 'Close solve details' }).click();

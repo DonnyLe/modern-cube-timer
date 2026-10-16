@@ -678,7 +678,6 @@ export default function App() {
             }}
             onViewAll={(id) => {
               setDialog('');
-              void changeFocus(false);
               window.location.hash = sessionLink(id, 'solves');
             }}
             onOpenSolve={(solve) => openSolve(solve, 'sessions')}
