@@ -28,3 +28,64 @@ test('missing session has a way back', async ({ page }) => {
   await page.getByRole('button', { name: 'All sessions', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
 });
+
+async function seedSession(page: import('@playwright/test').Page, count = 65) {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();
+  const sessionId = await page.evaluate(
+    (count) =>
+      new Promise<string>((resolve, reject) => {
+        const request = indexedDB.open('turn-timer');
+
+        request.onerror = () => reject(request.error);
+
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['sessions', 'solves'], 'readwrite');
+
+          tx.objectStore('sessions').put({
+            id: 'expanded-fixture',
+            name: 'Fixture practice',
+            puzzle: '333',
+            createdAt: 1800000000000,
+          });
+          for (let i = 0; i < count; i++)
+            tx.objectStore('solves').put({
+              id: `expanded-${i}`,
+              sessionId: 'expanded-fixture',
+              duration: i === 0 ? 480 : 12000 + (i % 10) * 500,
+              penalty: i === 17 ? 'DNF' : i === 16 ? '+2' : 'none',
+              scramble: "R U2 F' L2 D B2 R' U F2 D' L U2 B' R2 D2 F U' L2 B D'",
+              timestamp: 1800000000000 + i * 30000,
+              note: i === 10 ? 'Clean finish' : '',
+            });
+
+          tx.oncomplete = () => {
+            db.close();
+            resolve('expanded-fixture');
+          };
+
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      }),
+    count,
+  );
+
+  await page.goto(`/#session/${sessionId}/overview`);
+  await expect(page.getByRole('heading', { name: 'Fixture practice', exact: true })).toBeVisible();
+}
+
+test('overview shows live statistics and readable scrambles on mobile', async ({ page }) => {
+  await seedSession(page);
+  await expect(page.locator('.session-metrics')).toContainText('65');
+  await expect(page.locator('.session-metrics')).toContainText('DNF');
+  await expect(page.locator('.session-solve-row')).toHaveCount(5);
+  await expect(page.locator('.session-scramble').first()).toContainText("L2 B D'");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.locator('.session-solve-row').first().click();
+  await expect(page.getByRole('dialog', { name: 'Solve details' })).toBeVisible();
+});

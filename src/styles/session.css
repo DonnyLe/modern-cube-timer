@@ -92,3 +92,117 @@
     padding: 12px 14px;
   }
 }
+
+.session-sections {
+  display: grid;
+  gap: 20px;
+}
+.session-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+}
+.session-metrics > div {
+  border-right: 1px solid var(--outline);
+  padding: 0 24px;
+}
+.session-metrics > div:first-child {
+  padding-left: 0;
+}
+.session-metrics > div:last-child {
+  border: 0;
+}
+.session-page dt {
+  font-size: 13px;
+  opacity: 0.7;
+}
+.session-page dd {
+  margin: 8px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.session-metrics dd {
+  font-size: 30px;
+  letter-spacing: -0.7px;
+}
+.session-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(250px, 1fr);
+  gap: 20px;
+}
+.session-facts {
+  margin: 0;
+}
+.session-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--outline);
+}
+.session-facts dd {
+  font-size: 15px;
+}
+.session-footnote {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.session-solve-row {
+  display: grid;
+  grid-template-columns: 40px 90px minmax(0, 1fr) 150px;
+  gap: 16px;
+  text-align: left;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--outline);
+  padding: 16px 0;
+}
+.session-solve-row strong {
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.session-solve-row small {
+  font-size: 12px;
+  color: var(--accent);
+}
+.session-scramble {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.session-solve-row time {
+  font-size: 12px;
+  opacity: 0.7;
+}
+@media (max-width: 800px) {
+  .session-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .session-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .session-metrics > div {
+    padding: 0;
+    border: 0;
+  }
+  .session-solve-row {
+    grid-template-columns: 32px 80px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .session-solve-row time {
+    grid-column: 3;
+  }
+}
+@media (max-width: 480px) {
+  .session-solve-row .session-scramble {
+    grid-column: 1 / -1;
+  }
+  .session-solve-row time {
+    grid-column: 1 / -1;
+  }
+}
