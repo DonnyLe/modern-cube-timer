@@ -31,6 +31,39 @@ test('missing session has a way back', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
 });
 
+test('recent solves entry points open all solves in the expanded session', async ({ page }) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+  await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.getByRole('button', { name: '65 solves · Fixture practice', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/solves$/);
+});
+
+test('session trend See all opens graphs and exits focus mode safely', async ({ page }) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByLabel('Hide widgets in focus mode').uncheck();
+  await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await page.getByRole('button', { name: 'Enter focus mode', exact: true }).click();
+  await expect(page.locator('.app')).toHaveClass(/is-focused/);
+  const trend = page
+    .locator('article')
+    .filter({ has: page.getByRole('heading', { name: 'Session trend', exact: true }) });
+
+  await trend.getByRole('button', { name: 'See all', exact: true }).click();
+  await expect(page).toHaveURL(/#session\/expanded-fixture\/graphs$/);
+  await expect(page.getByRole('region', { name: 'Full session trend', exact: true })).toBeVisible();
+  await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
+  await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+});
+
 async function seedSession(page: import('@playwright/test').Page, count = 65) {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeEnabled();

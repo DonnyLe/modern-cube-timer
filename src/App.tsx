@@ -162,6 +162,11 @@ export default function App() {
     setInputError('');
   };
 
+  const openSessionPage = async (tab: 'solves' | 'graphs') => {
+    if (focused) await changeFocus(false);
+    window.location.hash = sessionLink(preferences.activeSessionId, tab);
+  };
+
   const openSessions = () => {
     setManagerSessionId(preferences.activeSessionId);
     setManagerPuzzle(session?.puzzle || '333');
@@ -458,9 +463,7 @@ export default function App() {
                   <button
                     className="text-button"
                     onClick={() => {
-                      setHistoryFromManager(false);
-                      setHistorySessionId(preferences.activeSessionId);
-                      setDialog('history');
+                      void openSessionPage('solves');
                     }}
                   >
                     See all <ArrowUpRight size={16} />
@@ -489,7 +492,12 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={openSessions}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      void openSessionPage('solves');
+                    }}
+                  >
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
@@ -507,6 +515,9 @@ export default function App() {
               <article className="widget glass">
                 <header>
                   <h2>Session trend</h2>
+                  <button className="text-button" onClick={() => void openSessionPage('graphs')}>
+                    See all <ArrowUpRight size={16} />
+                  </button>
                 </header>
                 <Trend key={session?.id} solves={solves} />
               </article>
