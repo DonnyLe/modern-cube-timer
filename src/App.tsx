@@ -164,6 +164,11 @@ export default function App() {
     setInputError('');
   };
 
+  const openSessionPage = async (tab: 'solves' | 'graphs') => {
+    if (focused) await changeFocus(false);
+    window.location.hash = sessionLink(preferences.activeSessionId, tab);
+  };
+
   const openSessions = () => {
     setManagerSessionId(preferences.activeSessionId);
     setManagerPuzzle(session?.puzzle || '333');
@@ -185,16 +190,6 @@ export default function App() {
     setReturnDialog('');
     setInputError('');
   };
-
-  const historySolves =
-    useLiveQuery(
-      () =>
-        dialog === 'history'
-          ? db.solves.where('sessionId').equals(preferences.activeSessionId).sortBy('timestamp')
-          : [],
-      [dialog, preferences.activeSessionId],
-    ) || [];
-  const historyStats = statistics(historySolves);
 
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
@@ -451,7 +446,7 @@ export default function App() {
                   <button
                     className="text-button"
                     onClick={() => {
-                      setDialog('history');
+                      void openSessionPage('solves');
                     }}
                   >
                     See all <ArrowUpRight size={16} />
@@ -480,7 +475,12 @@ export default function App() {
                   </div>
                 )}
                 <footer>
-                  <button className="text-button" onClick={openSessions}>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      void openSessionPage('solves');
+                    }}
+                  >
                     {solves.length} solves · {session?.name}
                   </button>
                   <button
@@ -498,6 +498,9 @@ export default function App() {
               <article className="widget glass">
                 <header>
                   <h2>Session trend</h2>
+                  <button className="text-button" onClick={() => void openSessionPage('graphs')}>
+                    See all <ArrowUpRight size={16} />
+                  </button>
                 </header>
                 <Trend key={session?.id} solves={solves} />
               </article>
@@ -538,12 +541,10 @@ export default function App() {
             ? 'Add a solve'
             : dialog === 'solve'
               ? 'Solve details'
-              : dialog === 'history'
-                ? 'Recent solves'
-                : 'Puzzle and sessions'
+              : 'Puzzle and sessions'
         }
         onClose={close}
-        wide={dialog === 'history' || dialog === 'sessions'}
+        wide={dialog === 'sessions'}
         allowOverflow={dialog === 'sessions'}
         className={dialog === 'sessions' ? 'session-manager-dialog' : ''}
       >
@@ -634,35 +635,6 @@ export default function App() {
               </button>
             </div>
           </form>
-        )}
-        {dialog === 'history' && (
-          <>
-            <div className="summary-grid">
-              {Object.entries(historyStats).map(([k, v]) => (
-                <div key={k}>
-                  <span>{k}</span>
-                  <strong>{k === 'count' ? v : formatTime(v)}</strong>
-                </div>
-              ))}
-            </div>
-            <div className="history-list">
-              {[...historySolves].reverse().map((s, i) => (
-                <button key={s.id} className="solve-row" onClick={() => openSolve(s, 'history')}>
-                  <span>{historySolves.length - i}</span>
-                  <strong>{formatTime(value(s))}</strong>
-                  <small>{s.note || new Date(s.timestamp).toLocaleTimeString()}</small>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => {
-                setManual('');
-                setDialog('manual');
-              }}
-            >
-              Add manual solve
-            </button>
-          </>
         )}
         {dialog === 'sessions' && (
           <SessionManager
