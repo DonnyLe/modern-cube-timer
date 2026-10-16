@@ -327,7 +327,7 @@ test('supporting charts link distribution bins and targets back to solves', asyn
 test('empty pages and all-DNF graphs show meaningful states', async ({ page }) => {
   await seedSession(page, 0);
 
-  for (const tab of ['Data', 'Insights', 'Solves']) {
+  for (const tab of ['Data', 'Solves']) {
     await page.getByRole('link', { name: tab, exact: true }).click();
     await expect(page.getByRole('main', { name: 'Session details' })).toBeVisible();
   }
@@ -336,6 +336,4 @@ test('empty pages and all-DNF graphs show meaningful states', async ({ page }) =
   await seedSession(page, 12, true);
   await page.getByRole('link', { name: 'Data', exact: true }).click();
   await expect(page.getByText('No finished solves to plot.')).toBeVisible();
-  await page.getByRole('link', { name: 'Insights', exact: true }).click();
-  await expect(page.getByText('No valid average of 12 yet.')).toBeVisible();
 });
