@@ -33,8 +33,9 @@ test('missing session has a way back', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'This session is no longer available.' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'All sessions', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Timer', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('recent solves entry points open all solves in the expanded session', async ({ page }) => {
@@ -44,6 +45,7 @@ test('recent solves entry points open all solves in the expanded session', async
   await page.locator('.recent').getByRole('button', { name: 'See all', exact: true }).click();
   await expect(page).toHaveURL(/#\/?session\/expanded-fixture\/solves$/);
   await expect(page.locator('.session-solve-row')).toHaveCount(25);
+  await expect(page.getByRole('button', { name: 'Back to Timer', exact: true })).toBeVisible();
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
   await page.getByRole('button', { name: 'Continue session', exact: true }).click();
   await page.getByRole('button', { name: '65 solves · Fixture practice', exact: true }).click();
@@ -68,6 +70,52 @@ test('session trend See all opens graphs and exits focus mode safely', async ({ 
   await expect(page.getByRole('region', { name: 'Full session trend', exact: true })).toBeVisible();
   await expect(page.locator('.app')).not.toHaveClass(/is-focused/);
   await expect(page.locator('.topbar')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Back to Timer', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Manage sessions', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('session title opens Overview independently of widgets and keeps its return context', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Continue session', exact: true }).click();
+  const entry = page.getByRole('button', { name: 'View session: Fixture practice', exact: true });
+
+  await expect(entry).toBeVisible();
+  await expect(
+    page
+      .locator('.focus-widgets')
+      .getByRole('button', { name: 'View session: Fixture practice', exact: true }),
+  ).toHaveCount(0);
+  await entry.click();
+  await expect(page).toHaveURL(/session\/expanded-fixture\/overview$/);
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await page.getByRole('link', { name: 'View all 1 annotated solves →', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Back to Timer', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Timer', exact: true }).click();
+  await expect(entry).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('picker entry keeps All sessions through filtered solves, reload and browser history', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'All sessions', exact: true }).click();
+  await page.getByRole('button', { name: 'Expand session', exact: true }).click();
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await page.getByRole('link', { name: 'View all 1 annotated solves →', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'All sessions', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.goBack();
+  await page.getByRole('button', { name: 'All sessions', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Puzzle and sessions' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fixture practice', exact: true })).toBeVisible();
 });
 
 async function seedSession(page: import('@playwright/test').Page, count = 65, allDnf = false) {

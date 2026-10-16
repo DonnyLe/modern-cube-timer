@@ -169,9 +169,9 @@ export default function App() {
     setInputError('');
   };
 
-  const openSessionPage = async (tab: 'solves' | 'graphs') => {
+  const openSessionPage = async (tab: 'overview' | 'solves' | 'graphs') => {
     if (focused) await changeFocus(false);
-    navigate(sessionPath(preferences.activeSessionId, tab));
+    navigate(sessionPath(preferences.activeSessionId, tab), { state: { sessionEntry: 'timer' } });
   };
 
   const openSessions = () => {
@@ -337,10 +337,16 @@ export default function App() {
               <SessionPage
                 key={sessionRoute?.params.sessionId}
                 precision={a.precision}
-                onBack={() => {
+                onBack={(toPicker) => {
                   navigate('/');
+                  if (!toPicker) return;
                   setManagerSessionId(
                     sessionRoute?.params.sessionId || preferences.activeSessionId,
+                  );
+                  setManagerPuzzle(
+                    sessions.find((item) => item.id === sessionRoute?.params.sessionId)?.puzzle ||
+                      session?.puzzle ||
+                      '333',
                   );
                   setDialog('sessions');
                 }}
@@ -391,7 +397,18 @@ export default function App() {
                 )}
                 <section className="timer-area">
                   <div className="timer-session-heading solve-ui" {...hiddenUI}>
-                    <p className="timer-session-name">{session?.name}</p>
+                    <button
+                      className="timer-session-name"
+                      aria-label={`View session: ${session?.name || 'Current session'}`}
+                      title="View session"
+                      disabled={busy || saving || !!pendingSolve || !session}
+                      onClick={(event) => {
+                        event.currentTarget.blur();
+                        void openSessionPage('overview');
+                      }}
+                    >
+                      {session?.name}
+                    </button>
                     <button
                       aria-label="Manage sessions"
                       title="Manage sessions"
@@ -661,11 +678,11 @@ export default function App() {
             onPuzzleChange={setManagerPuzzle}
             onExpand={(id) => {
               setDialog('');
-              navigate(sessionPath(id));
+              navigate(sessionPath(id), { state: { sessionEntry: 'sessions' } });
             }}
             onViewAll={(id) => {
               setDialog('');
-              navigate(sessionPath(id, 'solves'));
+              navigate(sessionPath(id, 'solves'), { state: { sessionEntry: 'sessions' } });
             }}
             onOpenSolve={(solve) => openSolve(solve, 'sessions')}
             precision={a.precision}

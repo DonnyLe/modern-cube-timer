@@ -1,6 +1,5 @@
+import { Link, NavLink } from './SessionLinks';
 import {
-  Link,
-  NavLink,
   Navigate,
   Route,
   Routes,
@@ -33,13 +32,15 @@ export function SessionPage({
   onContinue,
   precision,
 }: {
-  onBack: () => void;
+  onBack: (toPicker: boolean) => void;
   onContinue: () => void;
   precision: number;
 }) {
   const { sessionId = '' } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const fromPicker = location.state?.sessionEntry === 'sessions';
+  const backLabel = fromPicker ? 'All sessions' : 'Back to Timer';
   const onSolves = !!useMatch('/session/:sessionId/solves');
   const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
   const solves = useLiveQuery(
@@ -52,7 +53,7 @@ export function SessionPage({
 
   const openSolve = (solve: Solve) => {
     setSelectedId(solve.id);
-    if (!onSolves) navigate(sessionPath(sessionId, 'solves'));
+    if (!onSolves) navigate(sessionPath(sessionId, 'solves'), { state: location.state });
   };
 
   const closeDetail = () => {
@@ -70,8 +71,8 @@ export function SessionPage({
   if (!session)
     return (
       <main className="session-page">
-        <button className="text-button" onClick={onBack}>
-          <ArrowLeft size={16} /> All sessions
+        <button className="text-button" onClick={() => onBack(fromPicker)}>
+          <ArrowLeft size={16} /> {backLabel}
         </button>
         <h1>This session is no longer available.</h1>
       </main>
@@ -79,8 +80,8 @@ export function SessionPage({
 
   return (
     <main className="session-page" aria-label="Session details">
-      <button className="text-button session-back" onClick={onBack}>
-        <ArrowLeft size={16} /> All sessions
+      <button className="text-button session-back" onClick={() => onBack(fromPicker)}>
+        <ArrowLeft size={16} /> {backLabel}
       </button>
       <header className="session-header">
         <div className="session-identity">
@@ -104,6 +105,7 @@ export function SessionPage({
           <SessionRename key={session.id} session={session} />
         </div>
         <div className="session-header-actions">
+          {!fromPicker && <button onClick={() => onBack(true)}>All sessions</button>}
           <button
             disabled={!solves.length}
             onClick={() => download(csv(solves, [session]), 'session.csv', 'text/csv')}
@@ -132,7 +134,7 @@ export function SessionPage({
       <div className={selected && onSolves ? 'session-detail-grid' : ''}>
         <div>
           <Routes>
-            <Route index element={<Navigate to="overview" replace />} />
+            <Route index element={<Navigate to="overview" state={location.state} replace />} />
             <Route
               path="overview"
               element={
@@ -183,7 +185,10 @@ export function SessionPage({
                 />
               }
             />
-            <Route path="*" element={<Navigate to={sessionPath(session.id)} replace />} />
+            <Route
+              path="*"
+              element={<Navigate to={sessionPath(session.id)} state={location.state} replace />}
+            />
           </Routes>
         </div>
         {selected && onSolves && (

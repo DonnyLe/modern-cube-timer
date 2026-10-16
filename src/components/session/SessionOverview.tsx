@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link } from './SessionLinks';
 import { formatTime, value } from '../../core/statistics';
 import { compareStretches, sessionSummary } from '../../core/sessionAnalysis';
 import type { Solve } from '../../core/types';

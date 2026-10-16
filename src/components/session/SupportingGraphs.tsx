@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link } from './SessionLinks';
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from 'recharts';
 import { consistencyBlocks, distribution, underTarget } from '../../core/sessionAnalysis';

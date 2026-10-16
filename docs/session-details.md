@@ -1,6 +1,6 @@
 # Expanded session pages
 
-Open **Manage sessions**, choose a session, and select **Expand session**. **View all** opens its Solves tab directly. Browsing does not change the timer's active session; use **Continue session** to resume that session.
+Select the session name above the timer to open its Overview, or open **Manage sessions**, choose a session, and select **Expand session**. **View all** opens its Solves tab directly. Browsing does not change the timer's active session; use **Continue session** to resume that session.
 
 - **Overview** shows session statistics, a recent trend, and recent times with full scrambles.
 - **Solves** supports scramble/time/note search, penalties, note filters, sorting, and pagination. Selecting an attempt opens its scramble, cube net, time, penalty, note, and averages at that point. Deletion requires confirmation and provides Undo.
@@ -8,6 +8,10 @@ Open **Manage sessions**, choose a session, and select **Expand session**. **Vie
 - **Insights** compares opening and closing stretches, identifies the earliest best ao12 window, and links to target matches, unusual results, and annotated solves.
 
 React Router manages session and tab URLs using `#/session/<id>/<tab>` (older `#session/...` links still work) and survive reloads. Solve ranges and time bands are linked using hash query parameters. **Show all solves** clears that context. CSV export includes only the viewed session.
+
+The session name is a persistent entry point outside the widget area, so access to session details does not depend on a particular widget. Widget customization and removal remain separate work.
+
+The return link follows the entry point: **Back to Timer** from the timer title or widgets, and **All sessions** from the session picker. This context survives tab changes, filtered-solve links, reloads, and browser history. Direct links default to **Back to Timer**. **All sessions** is also available in the page header when entered from the timer.
 
 ## Statistics
 

@@ -1,4 +1,5 @@
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
+import { Link } from './SessionLinks';
 import { reviewResults } from '../../core/sessionAnalysis';
 import { sessionPath } from '../../core/routes';
 import { useMemo, useState } from 'react';

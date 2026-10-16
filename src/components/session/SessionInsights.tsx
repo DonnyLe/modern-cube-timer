@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link } from './SessionLinks';
 import { SessionReview } from './SessionReview';
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';

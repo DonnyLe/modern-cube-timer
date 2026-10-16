@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link } from './SessionLinks';
 import { useMemo } from 'react';
 import { reviewResults } from '../../core/sessionAnalysis';
 import { formatTime, value } from '../../core/statistics';
