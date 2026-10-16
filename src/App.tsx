@@ -162,7 +162,7 @@ export default function App() {
     setInputError('');
   };
 
-  const openSessionPage = async (tab: 'solves' | 'graphs') => {
+  const openSessionPage = async (tab: 'solves' | 'data') => {
     if (focused) await changeFocus(false);
     window.location.hash = sessionLink(preferences.activeSessionId, tab);
   };
@@ -278,15 +278,15 @@ export default function App() {
                 <button
                   key={v}
                   disabled={busy}
-                  className={!sessionRoute && view === v ? 'active' : ''}
-                  aria-current={!sessionRoute && view === v ? 'page' : undefined}
+                  className={view === v ? 'active' : ''}
+                  aria-current={view === v ? 'page' : undefined}
                   onClick={(event) => {
                     window.location.hash = '';
                     setView(v);
                     if (v === 'Timer') event.currentTarget.blur();
                   }}
                 >
-                  {!focused && !sessionRoute && view === v && (
+                  {!focused && view === v && (
                     <motion.span
                       initial={false}
                       className="segmented-selection"
@@ -515,7 +515,7 @@ export default function App() {
               <article className="widget glass">
                 <header>
                   <h2>Session trend</h2>
-                  <button className="text-button" onClick={() => void openSessionPage('graphs')}>
+                  <button className="text-button" onClick={() => void openSessionPage('data')}>
                     See all <ArrowUpRight size={16} />
                   </button>
                 </header>

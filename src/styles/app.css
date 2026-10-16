@@ -1712,3 +1712,47 @@ input[type='range'] {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.custom-checkbox-label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.custom-checkbox-label[data-disabled] {
+  cursor: default;
+  opacity: 0.45;
+}
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--outline);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--tint) 50%, transparent);
+  color: var(--tint);
+}
+.custom-checkbox[data-checked],
+.custom-checkbox[data-indeterminate] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.custom-checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.custom-checkbox-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .custom-checkbox:not([data-disabled]):hover {
+    border-color: var(--accent);
+  }
+}
