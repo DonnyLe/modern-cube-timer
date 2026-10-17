@@ -12,7 +12,7 @@ function readRoute() {
   try {
     const [tab = 'overview', search = ''] = (match[2] || 'overview').split('?');
 
-    return { id: decodeURIComponent(match[1]), tab, search };
+    return { id: decodeURIComponent(match[1]), tab: tab === 'graphs' ? 'data' : tab, search };
   } catch {
     return null;
   }

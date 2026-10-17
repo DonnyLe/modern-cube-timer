@@ -10,7 +10,7 @@ const options = [
 ] as const;
 const pageSize = 50;
 
-export function Trend({ solves }: { solves: Solve[] }) {
+export function Trend({ solves, fill = false }: { solves: Solve[]; fill?: boolean }) {
   const [metric, setMetric] = useState<'time' | 'ao12'>('time');
   const [older, setOlder] = useState(0);
   const end = Math.max(Math.min(pageSize, solves.length), solves.length - older);
@@ -54,7 +54,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
           </button>
         </div>
       )}
-      <div className="trend-view">
+      <div className={fill ? 'trend-view trend-view-fill' : 'trend-view'}>
         <div className="trend-selector">
           <Select label="Graph type" value={metric} options={options} onValueChange={setMetric} />
         </div>
@@ -71,6 +71,7 @@ export function Trend({ solves }: { solves: Solve[] }) {
           </div>
         ) : (
           <Graph
+            fill={fill}
             key={`${metric}-${start}`}
             points={points}
             label={`${metric === 'time' ? 'Solve times' : 'Rolling ao12'}, solves ${start + 1}–${end}`}

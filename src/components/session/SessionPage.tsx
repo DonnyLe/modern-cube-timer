@@ -5,9 +5,9 @@ import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
 import { sessionLink } from '../../core/useSessionRoute';
 import { db } from '../../data/db';
-import { restoreSolve } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
+import { restoreSolve } from '../../data/actions/solve';
 import { csv, download } from '../../data/transfer';
 import { SessionInsights } from './SessionInsights';
 import { SessionGraphs } from './SessionGraphs';
@@ -114,12 +114,12 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'graphs', 'solves', 'insights'].map((item) => (
+        {['overview', 'data', 'solves', 'insights'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
             aria-current={
-              (['graphs', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
+              (['data', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
                 ? 'page'
                 : undefined
             }
@@ -128,21 +128,26 @@ export function SessionPage({
           </a>
         ))}
       </nav>
-      <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
+      <div
+        className={
+          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
+        }
+      >
         <div>
-          {tab === 'insights' ? (
-            <SessionInsights
-              onOpenSolve={openSolve}
-              solves={solves}
-              sessionId={session.id}
-              precision={precision}
-            />
-          ) : tab === 'graphs' ? (
+          {' '}
+          {tab === 'data' ? (
             <SessionGraphs
               sessionId={session.id}
               solves={solves}
               precision={precision}
               onOpenSolve={openSolve}
+            />
+          ) : tab === 'insights' ? (
+            <SessionInsights
+              onOpenSolve={openSolve}
+              solves={solves}
+              sessionId={session.id}
+              precision={precision}
             />
           ) : tab === 'solves' ? (
             <SessionSolves
@@ -161,9 +166,6 @@ export function SessionPage({
                 precision={precision}
                 onOpenSolve={openSolve}
               />
-              <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
-                View all {solves.length} solves →
-              </a>
             </>
           )}
         </div>

@@ -2,7 +2,7 @@ import { SessionReview } from './SessionReview';
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
-import { sessionLink } from '../../core/useSessionRoute';
+import { sessionLink as sessionPath } from '../../core/useSessionRoute';
 import type { Solve } from '../../core/types';
 
 export function SessionInsights({
@@ -60,11 +60,11 @@ export function SessionInsights({
                 </div>
               </dl>
               <div className="session-bin-links">
-                <a href={`${sessionLink(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
+                <a href={`${sessionPath(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
                   Opening solves →
                 </a>
                 <a
-                  href={`${sessionLink(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
+                  href={`${sessionPath(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
                 >
                   Closing solves →
                 </a>
@@ -92,7 +92,7 @@ export function SessionInsights({
               </p>
               <a
                 className="session-all-solves"
-                href={`${sessionLink(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
+                href={`${sessionPath(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
               >
                 View these 12 solves →
               </a>
@@ -140,7 +140,7 @@ export function SessionInsights({
               </div>
               <a
                 className="session-all-solves"
-                href={`${sessionLink(sessionId, 'solves')}?under=${target}`}
+                href={`${sessionPath(sessionId, 'solves')}?under=${target}`}
               >
                 View matching solves →
               </a>
