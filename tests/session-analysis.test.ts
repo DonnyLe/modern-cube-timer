@@ -95,3 +95,32 @@ it('stretch comparisons do not overlap and explain DNF omission', () => {
   expect(compareStretches(solves)?.opening).toBe(20000);
   expect(compareStretches(Array.from({ length: 12 }, () => solve(12000, 'DNF')))).toBeNull();
 });
+
+it('summarizes finished-solve spread without changing the untrimmed DNF mean', () => {
+  const result = sessionSummary([solve(1000), solve(1000, '+2'), solve(5000), solve(8000, 'DNF')]);
+
+  expect(result).toMatchObject({
+    mean: Infinity,
+    finishedCount: 3,
+    finishedMean: 3000,
+    median: 3000,
+    slowest: 5000,
+    range: 4000,
+    q1: 2000,
+    q3: 4000,
+    dnfs: 1,
+    plusTwo: 1,
+  });
+  expect(result.standardDeviation).toBeCloseTo(Math.sqrt(8000000 / 3));
+  expect(sessionSummary([])).toMatchObject({
+    finishedCount: 0,
+    finishedMean: null,
+    standardDeviation: null,
+    slowest: null,
+    range: null,
+    q1: null,
+    q3: null,
+  });
+  expect(sessionSummary([solve(5000, 'DNF')]).standardDeviation).toBeNull();
+  expect(sessionSummary([solve(5000)]).standardDeviation).toBe(0);
+});

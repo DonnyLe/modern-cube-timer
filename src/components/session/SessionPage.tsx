@@ -113,12 +113,12 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'graphs', 'solves', 'insights'].map((item) => (
+        {['overview', 'data', 'solves', 'insights'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
             aria-current={
-              (['graphs', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
+              (['data', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
                 ? 'page'
                 : undefined
             }
@@ -127,19 +127,25 @@ export function SessionPage({
           </a>
         ))}
       </nav>
-      <div className={selected && tab === 'solves' ? 'session-detail-grid' : ''}>
+      <div
+        className={
+          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
+        }
+      >
         <div>
-          {tab === 'insights' ? (
-            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
-          ) : tab === 'graphs' ? (
+          {' '}
+          {tab === 'data' ? (
             <SessionGraphs
               sessionId={session.id}
               solves={solves}
               precision={precision}
               onOpenSolve={openSolve}
             />
+          ) : tab === 'insights' ? (
+            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
           ) : tab === 'solves' ? (
             <SessionSolves
+              sessionId={session.id}
               key={search}
               solves={solves}
               precision={precision}
@@ -154,9 +160,6 @@ export function SessionPage({
                 precision={precision}
                 onOpenSolve={openSolve}
               />
-              <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
-                View all {solves.length} solves →
-              </a>
             </>
           )}
         </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
-import { sessionLink } from '../../core/useSessionRoute';
+import { sessionLink as sessionPath } from '../../core/useSessionRoute';
 import type { Solve } from '../../core/types';
 
 export function SessionInsights({
@@ -34,7 +34,7 @@ export function SessionInsights({
               <p className="session-insight-lead">
                 {comparison.change === 0
                   ? 'Your opening and closing means matched.'
-                  : `Your final ${comparison.size} attempts averaged ${formatTime(Math.abs(comparison.change), precision)}s ${comparison.change < 0 ? 'faster' : 'slower'}.`}
+                  : `Your final ${comparison.size} attempts averaged ${(Math.abs(comparison.change) / 1000).toFixed(precision)}s ${comparison.change < 0 ? 'faster' : 'slower'}.`}
               </p>
               <dl className="session-comparison">
                 <div>
@@ -57,11 +57,11 @@ export function SessionInsights({
                 </div>
               </dl>
               <div className="session-bin-links">
-                <a href={`${sessionLink(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
+                <a href={`${sessionPath(sessionId, 'solves')}?from=1&to=${comparison.size}`}>
                   Opening solves →
                 </a>
                 <a
-                  href={`${sessionLink(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
+                  href={`${sessionPath(sessionId, 'solves')}?from=${solves.length - comparison.size + 1}&to=${solves.length}`}
                 >
                   Closing solves →
                 </a>
@@ -83,15 +83,13 @@ export function SessionInsights({
           <h2>Your strongest average of 12</h2>
           {summary.best12 ? (
             <>
-              <p className="session-insight-lead">
-                {formatTime(summary.best12.time, precision)} seconds
-              </p>
+              <p className="session-insight-lead">{formatTime(summary.best12.time, precision)}</p>
               <p className="subtle">
                 Solves {summary.best12.start + 1}–{summary.best12.end + 1} formed your best ao12.
               </p>
               <a
                 className="session-all-solves"
-                href={`${sessionLink(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
+                href={`${sessionPath(sessionId, 'solves')}?from=${summary.best12.start + 1}&to=${summary.best12.end + 1}`}
               >
                 View these 12 solves →
               </a>
@@ -130,7 +128,7 @@ export function SessionInsights({
               </p>
               <p className="subtle">
                 {solves.length ? ((matching / solves.length) * 100).toFixed(1) : '0.0'}% finished
-                below {formatTime(target, precision)} seconds.
+                below {(target / 1000).toFixed(precision)} seconds.
               </p>
               <div className="session-proportion">
                 <span
@@ -139,7 +137,7 @@ export function SessionInsights({
               </div>
               <a
                 className="session-all-solves"
-                href={`${sessionLink(sessionId, 'solves')}?under=${target}`}
+                href={`${sessionPath(sessionId, 'solves')}?under=${target}`}
               >
                 View matching solves →
               </a>
