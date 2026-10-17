@@ -16,7 +16,7 @@ import { puzzles } from '../../core/puzzles';
 import { sessionPath } from '../../core/routes';
 import { loadSessionDetails, type SessionDetails } from '../../data/sessionDetails';
 import { PageFade } from '../ui/PageFade';
-import { restoreSolve } from '../../data/actions/solve';
+import { restoreSolves } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
@@ -54,7 +54,7 @@ export function SessionPage({
   const session = data?.session;
   const solves = data?.solves;
   const [selectedId, setSelectedId] = useState('');
-  const [deleted, setDeleted] = useState<Solve | null>(null);
+  const [deleted, setDeleted] = useState<Solve[]>([]);
   const selected = solves?.find((solve) => solve.id === selectedId);
 
   const openSolve = (solve: Solve) => {
@@ -174,11 +174,12 @@ export function SessionPage({
               path="solves"
               element={
                 <SessionSolves
-                  key={location.search}
+                  key={session.id + location.search}
                   sessionId={session.id}
                   solves={solves}
                   precision={precision}
                   onOpenSolve={openSolve}
+                  onDeleted={setDeleted}
                 />
               }
             />
@@ -215,23 +216,23 @@ export function SessionPage({
             precision={precision}
             onClose={closeDetail}
             onSelect={openSolve}
-            onDeleted={setDeleted}
+            onDeleted={(solve) => setDeleted([solve])}
           />
         )}
       </div>
-      {deleted && (
+      {deleted.length > 0 && (
         <div className="session-panel session-undo" role="status">
-          Solve deleted{' '}
+          {deleted.length === 1 ? 'Solve deleted' : `${deleted.length} solves deleted`}{' '}
           <button
             onClick={() => {
-              void safeWrite(() => restoreSolve(deleted)).then((ok) => {
-                if (ok) setDeleted(null);
+              void safeWrite(() => restoreSolves(deleted)).then((ok) => {
+                if (ok) setDeleted([]);
               });
             }}
           >
             Undo delete
           </button>
-          <button onClick={() => setDeleted(null)}>Dismiss</button>
+          <button onClick={() => setDeleted([])}>Dismiss</button>
         </div>
       )}
     </main>

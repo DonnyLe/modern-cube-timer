@@ -1,3 +1,4 @@
+import { Checkbox } from '../ui/Checkbox';
 import { useCallback, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { formatTime, value } from '../../core/statistics';
@@ -7,10 +8,16 @@ export function VirtualSolveList({
   solves,
   precision,
   onOpenSolve,
+  selection,
 }: {
   solves: { solve: Solve; number: number }[];
   precision: number;
   onOpenSolve: (solve: Solve) => void;
+  selection?: {
+    checkedIds: Set<string>;
+    disabled: boolean;
+    onToggle: (id: string, checked: boolean) => void;
+  };
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const getItemKey = useCallback((index: number) => solves[index].solve.id, [solves]);
@@ -54,9 +61,18 @@ export function VirtualSolveList({
               role="listitem"
               aria-posinset={row.index + 1}
               aria-setsize={solves.length}
-              className="session-virtual-solve"
+              className={`session-virtual-solve ${selection ? 'session-selectable-solve' : ''}`}
               style={{ transform: `translateY(${row.start}px)` }}
             >
+              {selection && (
+                <Checkbox
+                  className="session-solve-checkbox"
+                  label={`Select solve ${number}`}
+                  checked={selection.checkedIds.has(solve.id)}
+                  disabled={selection.disabled}
+                  onCheckedChange={(checked) => selection.onToggle(solve.id, checked)}
+                />
+              )}
               <button
                 className="session-solve-row"
                 id={`session-solve-${solve.id}`}

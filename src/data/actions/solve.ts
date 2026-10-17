@@ -27,3 +27,26 @@ export async function restoreSolve(solve: Solve) {
     await db.solves.add(solve);
   });
 }
+
+export async function deleteSolves(sessionId: string, ids: string[]) {
+  return db.transaction('rw', db.solves, async () => {
+    const records = await db.solves.bulkGet(ids);
+    const deleted = records.filter(
+      (solve): solve is Solve => !!solve && solve.sessionId === sessionId,
+    );
+
+    await db.solves.bulkDelete(deleted.map((solve) => solve.id));
+
+    return deleted;
+  });
+}
+
+export async function restoreSolves(solves: Solve[]) {
+  await db.transaction('rw', db.sessions, db.solves, async () => {
+    for (const sessionId of new Set(solves.map((solve) => solve.sessionId))) {
+      if (!(await db.sessions.get(sessionId))) throw new Error('This session no longer exists.');
+    }
+
+    await db.solves.bulkAdd(solves);
+  });
+}
