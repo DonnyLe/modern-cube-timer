@@ -8,6 +8,9 @@ import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
 import { csv, download } from '../../data/transfer';
+import { SessionInsights } from './SessionInsights';
+import { SessionGraphs } from './SessionGraphs';
+import { SolveDetail } from './SolveDetail';
 import { SessionSolves } from './SessionSolves';
 import { SessionOverview } from './SessionOverview';
 import { PuzzleView } from '../PuzzleView';
@@ -20,7 +23,6 @@ export function SessionPage({
   onBack,
   onContinue,
   precision,
-  onOpenSolve,
 }: {
   sessionId: string;
   tab: string;
@@ -28,13 +30,26 @@ export function SessionPage({
   onBack: () => void;
   onContinue: () => void;
   precision: number;
-  onOpenSolve: (solve: Solve) => void;
 }) {
   const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
   const solves = useLiveQuery(
     () => db.solves.where('sessionId').equals(sessionId).sortBy('timestamp'),
     [sessionId],
   );
+  const [selectedId, setSelectedId] = useState('');
+  const [deleted, setDeleted] = useState<Solve | null>(null);
+  const selected = solves?.find((solve) => solve.id === selectedId);
+
+  const openSolve = (solve: Solve) => {
+    setSelectedId(solve.id);
+    if (tab !== 'solves') window.location.hash = sessionLink(sessionId, 'solves');
+  };
+
+  const closeDetail = () => {
+    setSelectedId('');
+    requestAnimationFrame(() => document.getElementById(`session-solve-${selectedId}`)?.focus());
+  };
+
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -98,31 +113,83 @@ export function SessionPage({
         </div>
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
-        {['overview', 'solves'].map((item) => (
+        {['overview', 'data', 'solves', 'insights'].map((item) => (
           <a
             key={item}
             href={sessionLink(session.id, item)}
-            aria-current={(tab === 'solves' ? 'solves' : 'overview') === item ? 'page' : undefined}
+            aria-current={
+              (['data', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
+                ? 'page'
+                : undefined
+            }
           >
-            {item === 'overview' ? 'Overview' : 'Solves'}
+            {item[0].toUpperCase() + item.slice(1)}
           </a>
         ))}
       </nav>
-      {tab === 'solves' ? (
-        <SessionSolves
-          key={search}
-          solves={solves}
-          precision={precision}
-          onOpenSolve={onOpenSolve}
-          search={search}
-        />
-      ) : (
-        <>
-          <SessionOverview solves={solves} precision={precision} onOpenSolve={onOpenSolve} />
-          <a className="session-all-solves" href={sessionLink(session.id, 'solves')}>
-            View all {solves.length} solves →
-          </a>
-        </>
+      <div
+        className={
+          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
+        }
+      >
+        <div>
+          {' '}
+          {tab === 'data' ? (
+            <SessionGraphs
+              sessionId={session.id}
+              solves={solves}
+              precision={precision}
+              onOpenSolve={openSolve}
+            />
+          ) : tab === 'insights' ? (
+            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
+          ) : tab === 'solves' ? (
+            <SessionSolves
+              sessionId={session.id}
+              key={search}
+              solves={solves}
+              precision={precision}
+              onOpenSolve={openSolve}
+              search={search}
+            />
+          ) : (
+            <>
+              <SessionOverview
+                sessionId={session.id}
+                solves={solves}
+                precision={precision}
+                onOpenSolve={openSolve}
+              />
+            </>
+          )}
+        </div>
+        {selected && tab === 'solves' && (
+          <SolveDetail
+            key={selected.id}
+            solve={selected}
+            solves={solves}
+            session={session}
+            precision={precision}
+            onClose={closeDetail}
+            onSelect={openSolve}
+            onDeleted={setDeleted}
+          />
+        )}
+      </div>
+      {deleted && (
+        <div className="session-panel session-undo" role="status">
+          Solve deleted{' '}
+          <button
+            onClick={() => {
+              void safeWrite(() => db.solves.add(deleted)).then((ok) => {
+                if (ok) setDeleted(null);
+              });
+            }}
+          >
+            Undo delete
+          </button>
+          <button onClick={() => setDeleted(null)}>Dismiss</button>
+        </div>
       )}
     </main>
   );

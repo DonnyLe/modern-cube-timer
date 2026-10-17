@@ -15,3 +15,15 @@ export function formatElapsedTime(timestamp: number) {
     ? formatter.format(-minutes, 'minute')
     : formatter.format(-Math.round(minutes / 60), 'hour');
 }
+
+export function formatSessionDuration(ms: number) {
+  if (ms <= 0) return '0s';
+  if (ms < 1000) return '<1s';
+  if (ms < 60000) return `${Math.floor(ms / 1000)}s`;
+  if (ms < 3600000) return `${Math.floor(ms / 60000)} min`;
+
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+
+  return minutes ? `${hours}h ${minutes} min` : `${hours}h`;
+}
