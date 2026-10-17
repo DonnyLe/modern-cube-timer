@@ -1,7 +1,13 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, expect, it } from 'vitest';
 import { db } from '../src/data/db';
-import { editSolve, deleteSolve, restoreSolve } from '../src/data/actions/solve';
+import {
+  editSolve,
+  deleteSolve,
+  restoreSolve,
+  deleteSolves,
+  restoreSolves,
+} from '../src/data/actions/solve';
 import type { Solve } from '../src/core/types';
 
 const solve: Solve = {
@@ -44,4 +50,21 @@ it('undo restores the exact record but cannot orphan it after session deletion',
   await db.sessions.delete('session');
   await expect(restoreSolve(solve)).rejects.toThrow('no longer exists');
   expect(await db.solves.count()).toBe(0);
+});
+
+it('bulk deletion stays in its session and undo restores all records atomically', async () => {
+  const other = { ...solve, id: 'other', sessionId: 'other-session' };
+  const second = { ...solve, id: 'second', note: 'Keep this note' };
+
+  await db.solves.bulkAdd([other, second]);
+  const deleted = await deleteSolves('session', ['solve', 'second', 'other', 'missing']);
+
+  expect(deleted).toEqual([solve, second]);
+  expect(await db.solves.toArray()).toEqual([other]);
+  await restoreSolves(deleted);
+  expect(await db.solves.bulkGet(['solve', 'second'])).toEqual([solve, second]);
+  await deleteSolves('session', ['solve', 'second']);
+  await db.sessions.delete('session');
+  await expect(restoreSolves(deleted)).rejects.toThrow('no longer exists');
+  expect(await db.solves.toArray()).toEqual([other]);
 });

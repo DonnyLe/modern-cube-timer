@@ -887,3 +887,44 @@ test('router resolves session index and unknown tabs to Overview', async ({ page
     );
   }
 });
+
+test('bulk solve selection covers the filtered virtual list and supports delete undo', async ({
+  page,
+}, testInfo) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Solves', exact: true }).click();
+  await page.getByRole('button', { name: 'Select solves', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Select solve 65', exact: true }).check();
+  await expect(page.getByText('1 selected', { exact: true })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Solve details' })).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Select all matching solves', exact: true }).check();
+  await expect(page.getByText('65 selected', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('bulk-solves-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('checkbox', { name: 'Select solve 65', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('bulk-solves-mobile.png') });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  expect(await page.locator('.session-solve-row').count()).toBeLessThan(40);
+  await page.getByLabel('Search solves', { exact: true }).fill('Clean finish');
+  await expect(page.getByText('0 selected', { exact: true })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Select all matching solves', exact: true }).check();
+  await page.getByRole('button', { name: 'Delete selected solves', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Delete 1 selected solve?');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
+  await page.getByRole('button', { name: 'Delete selected solves', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('0 matching solves');
+  await page.getByRole('button', { name: 'Undo delete', exact: true }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
+  await page.getByLabel('Search solves', { exact: true }).fill('');
+  await page.getByRole('checkbox', { name: 'Select all matching solves', exact: true }).check();
+  await page.getByRole('button', { name: 'Delete selected solves', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('0 matching solves');
+  await expect(page.getByRole('heading', { name: 'Fixture practice', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Undo delete', exact: true }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('65 matching solves');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: 'Select solve 65', exact: true })).toHaveCount(0);
+});
