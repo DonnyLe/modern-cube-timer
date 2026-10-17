@@ -1,8 +1,9 @@
 import { VirtualSolveList } from './VirtualSolveList';
 import { Checkbox } from '../ui/Checkbox';
 import { Select } from '../ui/Select';
+import { reviewResults } from '../../core/sessionAnalysis';
 import { sessionLink as sessionPath } from '../../core/useSessionRoute';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Solve } from '../../core/types';
 import { formatTime, value } from '../../core/statistics';
 
@@ -24,6 +25,10 @@ export function SessionSolves({
   const [notes, setNotes] = useState(false);
   const [order, setOrder] = useState('newest');
   const params = new URLSearchParams(search);
+  const reviewIds = useMemo(
+    () => new Set(reviewResults(solves).map((item) => item.solve.id)),
+    [solves],
+  );
   const from = Number(params.get('from') || 1);
   const to = Number(params.get('to') || solves.length);
   const target = params.has('under') ? Number(params.get('under')) : Infinity;
@@ -36,7 +41,8 @@ export function SessionSolves({
         number <= to &&
         (!params.has('under') || value(solve) < target) &&
         (penalty === 'all' || solve.penalty === penalty) &&
-        (!notes || !!solve.note.trim()) &&
+        (!(notes || params.get('notes') === '1') || !!solve.note.trim()) &&
+        (params.get('review') !== '1' || reviewIds.has(solve.id)) &&
         `${solve.scramble} ${solve.note} ${formatTime(value(solve), precision)} #${number}`
           .toLowerCase()
           .includes(query.trim().toLowerCase()),
@@ -55,9 +61,13 @@ export function SessionSolves({
       {search && (
         <div className="session-filter-context">
           <span>
-            {params.has('from') || params.has('to')
-              ? `Solves ${from}–${to}`
-              : 'Selected time range'}
+            {params.get('review') === '1'
+              ? 'Results to review'
+              : params.get('notes') === '1'
+                ? 'Annotated solves'
+                : params.has('from') || params.has('to')
+                  ? `Solves ${from}–${to}`
+                  : 'Selected time range'}
           </span>
           <a href={sessionPath(sessionId, 'solves')}>Show all solves</a>
         </div>

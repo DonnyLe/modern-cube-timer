@@ -442,3 +442,21 @@ test('session pages retain the app theme and fit mobile screens', async ({ page 
   await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('.app')).toHaveClass(/theme-light/);
 });
+
+test('review and annotated solves retain source records and provide a clear filter reset', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  const review = page.getByRole('region', { name: 'Results to review', exact: true });
+
+  await expect(review).toContainText('0.48');
+  await review.getByRole('link', { name: /Review all/ }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('3 matching solves');
+  await page.getByRole('link', { name: 'Show all solves' }).click();
+  await expect(page.getByRole('status').filter({ hasText: '65 matching solves' })).toBeVisible();
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  await page.getByRole('link', { name: /View all 1 annotated solves/ }).click();
+  await expect(page.locator('.session-result-count')).toHaveText('1 matching solve');
+  await expect(page.locator('.session-solve-row')).toContainText('#11');
+});

@@ -54,14 +54,16 @@ export default function App() {
     [inputError, setInputError] = useState(''),
     [managerSessionId, setManagerSessionId] = useState(''),
     [managerPuzzle, setManagerPuzzle] = useState<PuzzleEvent>('333'),
-    [historyFromManager, setHistoryFromManager] = useState(false),
-    [historySessionId, setHistorySessionId] = useState(''),
     [returnDialog, setReturnDialog] = useState(''),
     [deleted, setDeleted] = useState<Solve | null>(null),
     [copied, setCopied] = useState(false),
     [pendingSolve, setPendingSolve] = useState<Solve | null>(null),
     [saving, setSaving] = useState(false);
   const sessionRoute = useSessionRoute();
+
+  useEffect(() => {
+    if (sessionRoute) setDialog('');
+  }, [sessionRoute]);
   const pendingStartedAt = useRef(0);
   const closingManager = useRef(false);
   const { focused, changeFocus, focusFade } = useFocusMode(!!dialog || !!sessionRoute);
@@ -182,31 +184,12 @@ export default function App() {
         if (ok) setDialog('');
       });
     } else {
-      setDialog(
-        dialog === 'solve'
-          ? returnDialog
-          : dialog === 'history' && historyFromManager
-            ? 'sessions'
-            : '',
-      );
+      setDialog(dialog === 'solve' ? returnDialog : '');
     }
 
     setReturnDialog('');
     setInputError('');
   };
-
-  const historySolves =
-    useLiveQuery(
-      () =>
-        dialog === 'history'
-          ? db.solves
-              .where('sessionId')
-              .equals(historySessionId || preferences.activeSessionId)
-              .sortBy('timestamp')
-          : [],
-      [dialog, historySessionId, preferences.activeSessionId],
-    ) || [];
-  const historyStats = statistics(historySolves);
 
   const displayed = pendingSolve
     ? formatTime(value(pendingSolve), a.precision)
@@ -558,12 +541,10 @@ export default function App() {
             ? 'Add a solve'
             : dialog === 'solve'
               ? 'Solve details'
-              : dialog === 'history'
-                ? 'Recent solves'
-                : 'Puzzle and sessions'
+              : 'Puzzle and sessions'
         }
         onClose={close}
-        wide={dialog === 'history' || dialog === 'sessions'}
+        wide={dialog === 'sessions'}
         allowOverflow={dialog === 'sessions'}
         className={dialog === 'sessions' ? 'session-manager-dialog' : ''}
       >
@@ -655,36 +636,6 @@ export default function App() {
             </div>
           </form>
         )}
-        {dialog === 'history' && (
-          <>
-            <div className="summary-grid">
-              {Object.entries(historyStats).map(([k, v]) => (
-                <div key={k}>
-                  <span>{k}</span>
-                  <strong>{k === 'count' ? v : formatTime(v)}</strong>
-                </div>
-              ))}
-            </div>
-            <div className="history-list">
-              {[...historySolves].reverse().map((s, i) => (
-                <button key={s.id} className="solve-row" onClick={() => openSolve(s, 'history')}>
-                  <span>{historySolves.length - i}</span>
-                  <strong>{formatTime(value(s))}</strong>
-                  <small>{s.note || new Date(s.timestamp).toLocaleTimeString()}</small>
-                </button>
-              ))}
-            </div>
-            <button
-              disabled={!!historySessionId && historySessionId !== preferences.activeSessionId}
-              onClick={() => {
-                setManual('');
-                setDialog('manual');
-              }}
-            >
-              Add manual solve
-            </button>
-          </>
-        )}
         {dialog === 'sessions' && (
           <SessionManager
             theme={theme}
@@ -698,9 +649,8 @@ export default function App() {
               window.location.hash = sessionLink(id);
             }}
             onViewAll={(id) => {
-              setHistoryFromManager(true);
-              setHistorySessionId(id);
-              setDialog('history');
+              setDialog('');
+              window.location.hash = sessionLink(id, 'solves');
             }}
             onOpenSolve={(solve) => openSolve(solve, 'sessions')}
             precision={a.precision}

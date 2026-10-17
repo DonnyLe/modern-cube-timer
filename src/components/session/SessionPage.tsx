@@ -7,6 +7,7 @@ import { sessionLink } from '../../core/useSessionRoute';
 import { db } from '../../data/db';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
+import { restoreSolve } from '../../data/actions/solve';
 import { csv, download } from '../../data/transfer';
 import { SessionInsights } from './SessionInsights';
 import { SessionGraphs } from './SessionGraphs';
@@ -142,7 +143,12 @@ export function SessionPage({
               onOpenSolve={openSolve}
             />
           ) : tab === 'insights' ? (
-            <SessionInsights solves={solves} sessionId={session.id} precision={precision} />
+            <SessionInsights
+              onOpenSolve={openSolve}
+              solves={solves}
+              sessionId={session.id}
+              precision={precision}
+            />
           ) : tab === 'solves' ? (
             <SessionSolves
               sessionId={session.id}
@@ -181,7 +187,7 @@ export function SessionPage({
           Solve deleted{' '}
           <button
             onClick={() => {
-              void safeWrite(() => db.solves.add(deleted)).then((ok) => {
+              void safeWrite(() => restoreSolve(deleted)).then((ok) => {
                 if (ok) setDeleted(null);
               });
             }}

@@ -1,3 +1,4 @@
+import { SessionReview } from './SessionReview';
 import { useMemo, useState } from 'react';
 import { compareStretches, sessionSummary, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
@@ -8,10 +9,12 @@ export function SessionInsights({
   solves,
   sessionId,
   precision,
+  onOpenSolve,
 }: {
   solves: Solve[];
   sessionId: string;
   precision: number;
+  onOpenSolve: (solve: Solve) => void;
 }) {
   const summary = useMemo(() => sessionSummary(solves), [solves]);
   const comparison = useMemo(() => compareStretches(solves), [solves]);
@@ -148,6 +151,12 @@ export function SessionInsights({
           )}
         </section>
       </div>
+      <SessionReview
+        solves={solves}
+        sessionId={sessionId}
+        precision={precision}
+        onOpenSolve={onOpenSolve}
+      />
       <p className="subtle session-footnote">
         Insights describe this session's recorded times. Solve phases and technique are not
         inferred.
