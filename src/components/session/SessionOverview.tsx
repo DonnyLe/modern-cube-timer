@@ -1,8 +1,9 @@
 import { Activity, ChartNoAxesColumn, Flame, TrendingUp } from 'lucide-react';
+import { Link } from './SessionLinks';
 import { formatTime, value } from '../../core/statistics';
 import { sessionSummary } from '../../core/sessionAnalysis';
 import type { Solve } from '../../core/types';
-import { sessionLink as sessionPath } from '../../core/useSessionRoute';
+import { sessionPath } from '../../core/routes';
 import { formatSessionDuration } from '../../utils/date';
 import { Trend } from '../Trend';
 
@@ -85,13 +86,13 @@ export function SessionOverview({
               <div className="session-best-tile" key={name}>
                 <p className="subtle">{name}</p>
                 {result ? (
-                  <a
+                  <Link
                     className="session-best-value"
                     aria-label={`View ${name.toLowerCase()}: ${formatTime(result.time, precision)}`}
-                    href={`${sessionPath(sessionId, 'solves')}?from=${result.start + 1}&to=${result.end + 1}`}
+                    to={`${sessionPath(sessionId, 'solves')}?from=${result.start + 1}&to=${result.end + 1}`}
                   >
                     {formatTime(result.time, precision)}
-                  </a>
+                  </Link>
                 ) : (
                   <p className="session-best-value">—</p>
                 )}
@@ -115,9 +116,9 @@ export function SessionOverview({
                 <dd>{formatTime(summary.mean, precision)}</dd>
               </div>
             </dl>
-            <a className="session-all-solves" href={sessionPath(sessionId, 'data')}>
+            <Link className="session-all-solves" to={sessionPath(sessionId, 'data')}>
               All data ↗
-            </a>
+            </Link>
           </div>
           <Trend solves={solves} fill />
         </section>

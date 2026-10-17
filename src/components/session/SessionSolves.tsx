@@ -1,8 +1,10 @@
 import { VirtualSolveList } from './VirtualSolveList';
 import { Checkbox } from '../ui/Checkbox';
 import { Select } from '../ui/Select';
+import { useSearchParams } from 'react-router';
+import { Link } from './SessionLinks';
 import { reviewResults } from '../../core/sessionAnalysis';
-import { sessionLink as sessionPath } from '../../core/useSessionRoute';
+import { sessionPath } from '../../core/routes';
 import { useMemo, useState } from 'react';
 import type { Solve } from '../../core/types';
 import { formatTime, value } from '../../core/statistics';
@@ -12,19 +14,18 @@ export function SessionSolves({
   precision,
   onOpenSolve,
   sessionId,
-  search = '',
 }: {
   solves: Solve[];
   precision: number;
   onOpenSolve: (solve: Solve) => void;
   sessionId: string;
-  search?: string;
 }) {
   const [query, setQuery] = useState('');
   const [penalty, setPenalty] = useState('all');
   const [notes, setNotes] = useState(false);
   const [order, setOrder] = useState('newest');
-  const params = new URLSearchParams(search);
+  const [params] = useSearchParams();
+  const search = params.toString();
   const reviewIds = useMemo(
     () => new Set(reviewResults(solves).map((item) => item.solve.id)),
     [solves],
@@ -69,7 +70,7 @@ export function SessionSolves({
                   ? `Solves ${from}–${to}`
                   : 'Selected time range'}
           </span>
-          <a href={sessionPath(sessionId, 'solves')}>Show all solves</a>
+          <Link to={sessionPath(sessionId, 'solves')}>Show all solves</Link>
         </div>
       )}
       <div className="session-list-toolbar">

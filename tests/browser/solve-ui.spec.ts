@@ -11,7 +11,13 @@ async function openTimer(page: Page, inspection = false) {
   await expect(page.getByLabel('Hide UI while solving')).toBeChecked();
   if (inspection) await page.getByLabel('15-second inspection').check();
   await page.getByRole('button', { name: 'Timer', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New scramble', exact: true })).toBeEnabled();
+  await expect(page.locator('.app > .page-fade-stack > .page-fade:not([aria-hidden])')).toHaveCSS(
+    'opacity',
+    '1',
+  );
   await page.locator('[data-timer]').focus();
+  await expect(page.locator('[data-timer]')).toBeFocused();
 }
 
 async function expectSurroundingsHidden(page: Page) {

@@ -1228,18 +1228,3 @@
     margin-top: 8px;
   }
 }
-
-.session-content:has(.session-solves) > div:not(.page-fade-stack) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-@media (min-width: 1101px) {
-  .session-content:has(.session-insight-workspace) > div:not(.page-fade-stack) {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-}

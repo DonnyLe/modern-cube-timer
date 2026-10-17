@@ -1,8 +1,9 @@
+import { Link } from './SessionLinks';
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from 'recharts';
 import { consistencyBlocks, distribution, underTarget } from '../../core/sessionAnalysis';
 import { formatTime, parseTime } from '../../core/statistics';
-import { sessionLink as sessionPath } from '../../core/useSessionRoute';
+import { sessionPath } from '../../core/routes';
 import type { Solve } from '../../core/types';
 import { Graph } from '../Graph';
 import { SessionDataInfo } from './SessionDataInfo';
@@ -75,12 +76,12 @@ export function SupportingGraphs({
               <summary>View time bands (seconds)</summary>
               <div className="session-bin-links">
                 {histogram.map((bin) => (
-                  <a
+                  <Link
                     key={bin.lower}
-                    href={`${sessionPath(sessionId, 'solves')}?min=${bin.lower}&under=${bin.upper}`}
+                    to={`${sessionPath(sessionId, 'solves')}?min=${bin.lower}&under=${bin.upper}`}
                   >
                     {bin.label}s · {bin.count}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </details>
@@ -123,14 +124,14 @@ export function SupportingGraphs({
               yLabel="Share (%)"
               formatTick={(value) => `${Math.round(value)}%`}
             />
-            <a
+            <Link
               className="session-all-solves"
               aria-label="View matching solves"
-              href={`${sessionPath(sessionId, 'solves')}?under=${target}`}
+              to={`${sessionPath(sessionId, 'solves')}?under=${target}`}
             >
               {progress.at(-1)!.count} / {solves.length} under {(target / 1000).toFixed(precision)}s
               →
-            </a>
+            </Link>
           </>
         ) : (
           <p className="session-empty">Add solves to track your target.</p>
@@ -191,12 +192,12 @@ export function SupportingGraphs({
               </div>
               <div className="session-bin-links">
                 {blocks.map((block) => (
-                  <a
+                  <Link
                     key={block.start}
-                    href={`${sessionPath(sessionId, 'solves')}?from=${block.start + 1}&to=${block.end}`}
+                    to={`${sessionPath(sessionId, 'solves')}?from=${block.start + 1}&to=${block.end}`}
                   >
                     Solves {block.start + 1}–{block.end}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </>

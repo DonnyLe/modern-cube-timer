@@ -1,13 +1,24 @@
+import { NavLink } from './SessionLinks';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useParams,
+} from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Download, Pencil, Play } from 'lucide-react';
 import type { Session, Solve } from '../../core/types';
 import { puzzles } from '../../core/puzzles';
-import { sessionLink } from '../../core/useSessionRoute';
-import { db } from '../../data/db';
+import { sessionPath } from '../../core/routes';
+import { loadSessionDetails, type SessionDetails } from '../../data/sessionDetails';
+import { PageFade } from '../ui/PageFade';
+import { restoreSolve } from '../../data/actions/solve';
 import { safeWrite } from '../../data/store';
 import { activateSession, renameSession } from '../../data/actions/session';
-import { restoreSolve } from '../../data/actions/solve';
 import { csv, download } from '../../data/transfer';
 import { SessionInsights } from './SessionInsights';
 import { SessionGraphs } from './SessionGraphs';
@@ -18,32 +29,37 @@ import { PuzzleView } from '../PuzzleView';
 import '../../styles/session.css';
 
 export function SessionPage({
-  sessionId,
-  tab,
-  search,
   onBack,
   onContinue,
   precision,
+  initialData,
 }: {
-  sessionId: string;
-  tab: string;
-  search: string;
-  onBack: () => void;
+  initialData?: SessionDetails;
+  onBack: (toPicker: boolean) => void;
   onContinue: () => void;
   precision: number;
 }) {
-  const session = useLiveQuery(() => db.sessions.get(sessionId), [sessionId]);
-  const solves = useLiveQuery(
-    () => db.solves.where('sessionId').equals(sessionId).sortBy('timestamp'),
+  const { sessionId = '', '*': tab = '' } = useParams();
+  const validTab = ['overview', 'data', 'solves', 'insights'].includes(tab);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fromPicker = location.state?.sessionEntry === 'sessions';
+  const backLabel = fromPicker ? 'All sessions' : 'Back to Timer';
+  const onSolves = !!useMatch('/session/:sessionId/solves');
+  const data = useLiveQuery(
+    () => loadSessionDetails(sessionId),
     [sessionId],
+    initialData?.sessionId === sessionId ? initialData : undefined,
   );
+  const session = data?.session;
+  const solves = data?.solves;
   const [selectedId, setSelectedId] = useState('');
   const [deleted, setDeleted] = useState<Solve | null>(null);
   const selected = solves?.find((solve) => solve.id === selectedId);
 
   const openSolve = (solve: Solve) => {
     setSelectedId(solve.id);
-    if (tab !== 'solves') window.location.hash = sessionLink(sessionId, 'solves');
+    if (!onSolves) navigate(sessionPath(sessionId, 'solves'), { state: location.state });
   };
 
   const closeDetail = () => {
@@ -55,23 +71,40 @@ export function SessionPage({
 
   useEffect(() => {
     heading.current?.focus();
-  }, [sessionId, session?.id]);
+  }, [sessionId, session?.id, validTab]);
 
-  if (!solves) return <main className="session-page loading">Opening session…</main>;
+  if (!solves)
+    return (
+      <main
+        className="session-page session-pending"
+        aria-label="Session details"
+        aria-busy="true"
+      />
+    );
   if (!session)
     return (
       <main className="session-page">
-        <button className="text-button" onClick={onBack}>
-          <ArrowLeft size={16} /> All sessions
+        <button className="text-button" onClick={() => onBack(fromPicker)}>
+          <ArrowLeft size={16} /> {backLabel}
         </button>
         <h1>This session is no longer available.</h1>
       </main>
     );
 
+  // Normalize URLs outside the animated content so redirects never wait for an exit.
+  if (!validTab)
+    return (
+      <Navigate
+        to={sessionPath(session.id, tab === 'graphs' ? 'data' : 'overview') + location.search}
+        state={location.state}
+        replace
+      />
+    );
+
   return (
     <main className="session-page" aria-label="Session details">
-      <button className="text-button session-back" onClick={onBack}>
-        <ArrowLeft size={16} /> All sessions
+      <button className="text-button session-back" onClick={() => onBack(fromPicker)}>
+        <ArrowLeft size={16} /> {backLabel}
       </button>
       <header className="session-header">
         <div className="session-identity">
@@ -95,6 +128,7 @@ export function SessionPage({
           <SessionRename key={session.id} session={session} />
         </div>
         <div className="session-header-actions">
+          {!fromPicker && <button onClick={() => onBack(true)}>All sessions</button>}
           <button
             disabled={!solves.length}
             onClick={() => download(csv(solves, [session]), 'session.csv', 'text/csv')}
@@ -115,61 +149,64 @@ export function SessionPage({
       </header>
       <nav className="session-tabs" aria-label="Session navigation">
         {['overview', 'data', 'solves', 'insights'].map((item) => (
-          <a
-            key={item}
-            href={sessionLink(session.id, item)}
-            aria-current={
-              (['data', 'solves', 'insights'].includes(tab) ? tab : 'overview') === item
-                ? 'page'
-                : undefined
-            }
-          >
+          <NavLink key={item} to={sessionPath(session.id, item)} end>
             {item[0].toUpperCase() + item.slice(1)}
-          </a>
+          </NavLink>
         ))}
       </nav>
       <div
-        className={
-          selected && tab === 'solves' ? 'session-content session-detail-grid' : 'session-content'
-        }
+        className={selected && onSolves ? 'session-content session-detail-grid' : 'session-content'}
       >
-        <div>
-          {' '}
-          {tab === 'data' ? (
-            <SessionGraphs
-              sessionId={session.id}
-              solves={solves}
-              precision={precision}
-              onOpenSolve={openSolve}
+        <PageFade pageKey={location.pathname}>
+          <Routes location={location}>
+            <Route
+              path="overview"
+              element={
+                <SessionOverview
+                  sessionId={session.id}
+                  solves={solves}
+                  precision={precision}
+                  onOpenSolve={openSolve}
+                />
+              }
             />
-          ) : tab === 'insights' ? (
-            <SessionInsights
-              onOpenSolve={openSolve}
-              solves={solves}
-              sessionId={session.id}
-              precision={precision}
+            <Route
+              path="solves"
+              element={
+                <SessionSolves
+                  key={location.search}
+                  sessionId={session.id}
+                  solves={solves}
+                  precision={precision}
+                  onOpenSolve={openSolve}
+                />
+              }
             />
-          ) : tab === 'solves' ? (
-            <SessionSolves
-              sessionId={session.id}
-              key={search}
-              solves={solves}
-              precision={precision}
-              onOpenSolve={openSolve}
-              search={search}
+            <Route
+              path="data"
+              element={
+                <SessionGraphs
+                  sessionId={session.id}
+                  solves={solves}
+                  precision={precision}
+                  onOpenSolve={openSolve}
+                />
+              }
             />
-          ) : (
-            <>
-              <SessionOverview
-                sessionId={session.id}
-                solves={solves}
-                precision={precision}
-                onOpenSolve={openSolve}
-              />
-            </>
-          )}
-        </div>
-        {selected && tab === 'solves' && (
+            <Route
+              path="insights"
+              element={
+                <SessionInsights
+                  sessionId={session.id}
+                  solves={solves}
+                  precision={precision}
+                  onOpenSolve={openSolve}
+                />
+              }
+            />
+          </Routes>
+        </PageFade>
+        {selected && onSolves && (
           <SolveDetail
             key={selected.id}
             solve={selected}
