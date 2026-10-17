@@ -140,6 +140,32 @@ for (const reducedMotion of [false, true]) {
       });
 
       observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      const animate = Element.prototype.animate;
+
+      // Inspect a real native-animation frame synchronously, then restore its timeline.
+      // Busy CI runners can otherwise skip an entire short fade between RAF samples.
+      Element.prototype.animate = function (keyframes, options) {
+        const animation = animate.call(this, keyframes, options);
+
+        if (this.classList.contains('page-fade')) {
+          const duration = Number(animation.effect?.getTiming().duration);
+
+          if (duration > 0) {
+            animation.pause();
+            animation.currentTime = duration / 2;
+            observation.samples.push(Number(getComputedStyle(this).opacity));
+            animation.currentTime = 0;
+            animation.play();
+          }
+
+          const header = document.querySelector('.topbar');
+
+          if (header) observation.headers.push(Number(getComputedStyle(header).opacity));
+        }
+
+        return animation;
+      };
+
       const started = performance.now();
 
       const sample = () => {
@@ -149,11 +175,16 @@ for (const reducedMotion of [false, true]) {
 
         if (header) observation.headers.push(Number(getComputedStyle(header).opacity));
         if (performance.now() - started < 1200) requestAnimationFrame(sample);
-        else observer.disconnect();
       };
 
       requestAnimationFrame(sample);
-      Object.assign(window, { sessionTransitionObservation: observation });
+      Object.assign(window, {
+        sessionTransitionObservation: observation,
+        stopSessionTransitionObservation: () => {
+          observer.disconnect();
+          Element.prototype.animate = animate;
+        },
+      });
     });
     await page.getByRole('button', { name: 'View session: Fixture practice', exact: true }).click();
     await expect(
@@ -171,26 +202,28 @@ for (const reducedMotion of [false, true]) {
       'opacity',
       '1',
     );
-    const observation = await page.evaluate(
-      () =>
-        (
-          window as unknown as {
-            sessionTransitionObservation: {
-              loading: boolean;
-              samples: number[];
-              headers: number[];
-            };
-          }
-        ).sessionTransitionObservation,
-    );
+    const observation = await page.evaluate(() => {
+      const state = window as unknown as {
+        sessionTransitionObservation: {
+          loading: boolean;
+          samples: number[];
+          headers: number[];
+        };
+        stopSessionTransitionObservation: () => void;
+      };
 
-    expect(observation.loading).toBe(false);
-    expect(observation.headers.every((opacity) => opacity === 1)).toBe(true);
-    expect(observation.samples.some((opacity) => opacity > 0 && opacity < 1)).toBe(!reducedMotion);
+      state.stopSessionTransitionObservation();
+
+      return state.sessionTransitionObservation;
+    });
+
     await testInfo.attach('rendered-opacity-samples', {
       body: JSON.stringify(observation),
       contentType: 'application/json',
     });
+    expect(observation.loading).toBe(false);
+    expect(observation.headers.every((opacity) => opacity === 1)).toBe(true);
+    expect(observation.samples.some((opacity) => opacity > 0 && opacity < 1)).toBe(!reducedMotion);
   });
 }
 
